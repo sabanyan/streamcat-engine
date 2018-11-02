@@ -3,7 +3,7 @@
 基本的にはexecute_flow_by_uuidしか使わないはず
 """
 
-from kskp.engine.core import Step, Job, Arrow
+from .core import Step, Job, Arrow
 
 def execute(link, args, inputs):
     """

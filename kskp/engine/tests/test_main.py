@@ -36,6 +36,19 @@ class EngineTestCase(unittest.TestCase):
         result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
+    def test_flow_with_one_runnable(self):
+        """
+        datumが1つだけのフローを作成して動かす
+        """
+
+        class FlowLink:
+            def resolve(self):
+                flow = Flow()
+                return flow
+        
+        result = execute(FlowLink(), {}, {})
+        self.assertEqual(result, {})
+
     # def test_mcut(self):    
     #     s = PathFileSource('csv', '', 'a.csv')
     #     f = Frame(uuid.uuid4(), s)
