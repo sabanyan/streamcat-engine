@@ -1,18 +1,43 @@
 import unittest
-import uuid
+# import uuid
 
-from kskp.engine import main
-from kskp.engine.core import EmptyLink
-from kskp.engine.data import PathFileSource, Frame
-from kskp.mcmd import McmdLink
+from kskp.store import Command
+from kskp.engine import execute, Flow
+# from kskp.engine.data import PathFileSource, Frame
+# from kskp.mcmd import McmdLink
 
-class MainTestCase(unittest.TestCase):
-    def test_main(self):
-        result = main.execute(EmptyLink(), {}, {})
+class EngineTestCase(unittest.TestCase):
+    def test_empty_command(self):
+        """
+        仮想的にコマンドを作成して動かす
+        """
+
+        class TestCommand(Command):
+            def run(self, args, inputs):
+                print('i am test command!')
+                return {}
+
+        class EmptyLink:
+            def resolve(self):
+                return TestCommand()
+
+        result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
-    def test_mcut(self):    
-        s = PathFileSource('csv', '', 'a.csv')
-        f = Frame(uuid.uuid4(), s)
-        result = main.execute(McmdLink('mcut'), {'f': 'b,c'}, {'i': f})
+    def test_empty_flow(self):
+        """
+        仮想的にフローを作成して動かす
+        """
+
+        class EmptyLink:
+            def resolve(self):
+                return Flow()
+
+        result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
+
+    # def test_mcut(self):    
+    #     s = PathFileSource('csv', '', 'a.csv')
+    #     f = Frame(uuid.uuid4(), s)
+    #     result = main.execute(McmdLink('mcut'), {'f': 'b,c'}, {'i': f})
+    #     self.assertEqual(result, {})
