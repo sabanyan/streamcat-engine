@@ -1,7 +1,8 @@
 import uuid
 from enum import Enum, auto
 
-from kskp.engine.data import Frame
+from kskp.store import Command
+# from kskp.engine.data import Frame
 
 class Parameter:
     """
@@ -52,7 +53,20 @@ class Arrow:
         self.cod = cod
         self.datum = datum
 
-class Command:
+# class Command:
+#     def __init__(self):
+#         self.i_ports = []
+#         self.o_ports = []
+#         self.params = []
+
+#     def run(self, args, inputs):
+#         return {}
+
+#     @property
+#     def out_key(self):
+#         return self.o_ports[0].name
+
+class Flow:
     def __init__(self):
         self.i_ports = []
         self.o_ports = []
@@ -60,14 +74,6 @@ class Command:
 
     def run(self, args, inputs):
         return {}
-
-    @property
-    def out_key(self):
-        return self.o_ports[0].name
-
-class Flow:
-    def run(self, args, inputs):
-        pass
 
 class Job:
     def __init__(self, step, arrows):
@@ -119,10 +125,6 @@ class UnixCommand(Command):
     def stdin(self, inputs):
         print('inputs:', inputs)
         return list(inputs.values())[0].source.fd
-
-class EmptyLink:
-    def resolve(self):
-        return Command()
 
 class FlowUuidLink:
     def resolve(self):
