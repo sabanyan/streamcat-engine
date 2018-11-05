@@ -9,18 +9,10 @@ def execute(link, args, inputs):
     """
     全てのentrypointの基本形。
     """
-    try:
-        # linkからrunnableを生成する
-        runnable = link.resolve()
-
-        # runnableからstepを作成する
-        step = Step(runnable, args)
-
-        # port情報から、arrowを作成する
-        arrows = domains(step, inputs)
-
+    
+    try:        
         # jobを作成する
-        job = Job(step, arrows)
+        job = make_job(link, args, inputs)
 
         # jobを開始する
         job.start()
@@ -39,11 +31,30 @@ def execute(link, args, inputs):
         # return {}
         raise e
 
+def make_job(link, args, inputs):
+    # linkからrunnableを生成する
+    runnable = link.resolve()
+
+    # runnableからstepを作成する
+    step = Step(runnable, args)
+
+    # port情報から、arrowを作成する
+    arrows = domains(step, inputs)
+
+    # jobを作成する
+    job = Job(step, arrows)
+
+    return job
+
 def domains(step, inputs):
     """
     port情報から、arrowを作成する
     1つのportにつき、1つのarrowが作られる
-    """
+
+    注意：この部分は詳細なロジックを変更したので書換え予定
+    単純に、inputsを取り出せば良い（はず？）
+    """    
+
     # try:    
     #     return [Arrow(port.name, None, step, inputs[port.name]) for port 
     #                                                             in step.runnable.i_ports]
