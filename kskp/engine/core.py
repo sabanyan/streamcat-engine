@@ -76,15 +76,23 @@ class Flow:
         return {}
 
 class Job:
-    def __init__(self, step, arrows):
+    def __init__(self, step, inputs):
         self.step = step
-        self.arrows = arrows
+        self.inputs = inputs
+
+        self.arrows = []
+        self.subjobs = []
+
         self.lasts = {}
 
+        # self.errors = []
+
     def start(self):
-        inputs = {a.id: a.datum for a in self.arrows}
+        # self.arrowはこのjobから見て「子のarrowの配列」                
+        # inputs = {a.id: a.datum for a in self.arrows}
+
         # 以下、暫定
-        res = self.step.runnable.run(self.step.args, inputs)
+        res = self.step.runnable.run(self.step.args, self.inputs)
 
         for r in res:
             # 適当です、あとで直します            
