@@ -3,6 +3,8 @@
 基本的にはexecute_flow_by_uuidしか使わないはず
 """
 
+from kskp.store import Port
+
 from .core import Step, Job, Arrow
 
 def execute(link, args, inputs):
@@ -18,7 +20,7 @@ def execute(link, args, inputs):
         job.start()
 
         # 結果を取得する
-        lasts = job.lasts
+        lasts = job.step.runnable.lasts
 
         # 後始末をする
         job.dtor()
@@ -36,7 +38,7 @@ def make_job(link, args, inputs):
     runnable = link.resolve()
 
     # runnableからstepを作成する
-    step = Step(runnable, args)
+    step = Step('', runnable, args)
 
     # port情報から、arrowを作成する
     arrows = domains(step, inputs)
@@ -61,8 +63,10 @@ def domains(step, inputs):
     # except KeyError as e:
     #     # inputsに必要な引数が与えられていない
     #     raise Exception('inputsに必要な引数が与えられていません') from e
-    return [Arrow(port.name, None, step, inputs[port.name]) for port 
-                                                            in step.runnable.i_ports]
+    port_input = Port('*i*', '*')
+    port_output = Port('*o*', '*')
+    return [Arrow('input_arrow', None, None, None, port_input, step),
+            Arrow('output_arrow', Step, port_output, None, None, None)]
 
 class NotificationCenter:
     """
