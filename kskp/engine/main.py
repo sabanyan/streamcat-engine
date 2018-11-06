@@ -27,6 +27,7 @@ def execute(link, args, inputs):
 
         # 結果を返却する
         return lasts
+
     except Exception as e:
         # print(e)
         # exception_manager()
@@ -41,10 +42,10 @@ def make_job(link, args, inputs):
     step = Step('', runnable, args)
 
     # port情報から、arrowを作成する
-    arrows = domains(step, inputs)
+    # arrows = domains(step, inputs)
 
     # jobを作成する
-    job = Job(step, arrows)
+    job = Job(step, {})
 
     return job
 
@@ -67,6 +68,13 @@ def domains(step, inputs):
     port_output = Port('*o*', '*')
     return [Arrow('input_arrow', None, None, None, port_input, step),
             Arrow('output_arrow', Step, port_output, None, None, None)]
+
+# def translate_result_lasts(lasts):
+#     """
+#     帰ってきた結果を変換する(主にdictのkey)
+#     """    
+#     root_arrows = domains()
+#     new_lasts = {: v for k, v in lasts.items()}
 
 class NotificationCenter:
     """
