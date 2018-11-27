@@ -11,6 +11,8 @@ def execute(link, args, inputs):
     """
     全てのentrypointの基本形。
     """
+
+    exs = []
     
     try:        
         # jobを作成する
@@ -29,9 +31,9 @@ def execute(link, args, inputs):
         return lasts
 
     except Exception as e:
-        # print(e)
-        # exception_manager()
-        # return {}
+        print('engine.execute:', e)
+        # exs.append(exception_manager(e))
+        # return exs
         raise e
 
 def make_job(link, args, inputs):
@@ -76,15 +78,36 @@ def domains(step, inputs):
 #     root_arrows = domains()
 #     new_lasts = {: v for k, v in lasts.items()}
 
-class NotificationCenter:
+class ExceptionManager:
     """
     起こった例外を集めて処理する
     呼出可能オブジェクトであれば他のものに置換可能
     """
-    def __call__(self):
-        pass
+    def __call__(self, e):
+        """
+        eは例外
+        このクラスは、もらったexceptionをraiseするだけ
+        デフォルトはこっちだろうか（no websocket
+        """
+        raise e
 
-exception_manager = NotificationCenter()
+class ExceptionManagerWebSocket:
+    """
+    起こった例外を集めて処理する
+    WebSocket用（もらった側から順番に返していく
+    """
+    def __call__(self, e):
+        """
+        eは例外        
+        """
+        print('ExceptionManagerWebSocket:', e)
+        # そのままraiseしてしまうとそこでPython全体が終わってしまうので、
+        # 例外を値としてそのまま返す、返してそのまま一つずつ、
+        # エラーメッセージの形にしてフロント側に返却してもらう
+        return e
+
+exception_manager = ExceptionManagerWebSocket()
+# exception_manager = ExceptionManager()
 
 # ストア
 store = None

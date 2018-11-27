@@ -39,118 +39,113 @@ class Flow:
         self.arrows = []
         self.substeps = []
 
-        self.lasts = {}
+    @property
+    def lasts(self):
+        return {a.id: a.datum for a in self.arrows if a.cod is None}
 
     def run(self, args, inputs):
-        print('flow inputs:', inputs)
-
-        result = {}
-
-        # print('substeps:', self.substeps)
-
-        for _ in range(len(self.substeps) + 1):
-            print('ループ開始')
-            # まず、グラフ構造を解析する必要がある
-            # beta版同様、lastsを探す
-
-            # 最初に「最後の矢印」を集める
-            last_arrows = [a for a in self.arrows if a.cod is None]
-
-            # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
-            first_arrows = set()
-            for last_arrow in last_arrows:
-                first_arrows |= self.search_first_arrows(last_arrow, inputs)
-
-            # 対象のrunnableを集める
-            first_steps = {first_arrow.cod for first_arrow in list(first_arrows) if first_arrow.cod is not None}
-
-            # 実行すべきrunnableがもう残っていないなら、終了
-            if len(first_steps) == 0:                
-
-                # lastsを設定する
-                self.lasts = {a.id: a.datum for a in self.arrows if a.cod is None}
-                print('result lasts:', self.lasts)
-
-                # 結果を返却する(lastsとは内容が違う可能性がある)
-
-                # キーを書き換える
-                new_result = {}
-                for child_o_port_name, val in result.items():                    
-                    input_arrow = None
-                    for a in self.arrows:
-                        if a.o_port is not None and a.o_port.name == child_o_port_name:
-                            if a.i_port is not None:
-                                new_result.update({a.i_port.name: val})
-
-                # print('result ending:', result)
-                print('result ending new:', new_result)                
-                return new_result
-
-
-            # 解析が終わったので、実行開始
-
-            for first_step in first_steps:     
-                # jobを作るためにinputsを集める
-                inputs = {a.i_port.name: a.datum for a in self.arrows if a.cod == first_step}
-
-                # jobを作る
-                job = Job(first_step, inputs)
-
-                # 実行開始
-                result = job.start()
-                # print('result processing:', result)
-
-                # 結果をそれぞれのarrowに入れる
-
-                # まず、outputのarrowを取得する
-                output_arrows = {arrow for arrow in self.arrows if arrow.dom == first_step}                
-
-                # それぞれのarrowに結果を格納する
-                for output_arrow in output_arrows:
-                    # print('output_arrow:', output_arrow)
-                    # 親フローに結果を戻す場合は戻す                    
-
-                    print('result:', result)                                  
-                    output_arrow.datum = result[output_arrow.o_port.name] 
-
-        # 通常はここは通らない
-        return None
-
-    def search_first_arrows(self, target, inputs):
         """
-        与えられた引数からフロー構造を逆に辿って、
-        もっとも先頭のarrowを見つけ出す
+        arrowではなくstepを基軸にして書き直し
         """
-        
-        # データがすでに存在する場合は走査を打ち切る
-        if target.datum is not None:
-            return {target}
-        
-        # 親フローからデータが渡ってきた場合はそれを受け取ってセットする
-        # 条件は "o_portがあるのにdom stepが存在しない"
-        # (通常は出口がある以上、その基になるdom stepが必ず存在する)
-        if target.dom is None:
-            if target.o_port is not None:
-                target.datum = inputs[target.o_port.name]
-                return {target}
-            else:
-                # ここを通るということはフローの先頭なのに元のデータもないし、
-                # かつ、親フローからのデータ受取口でもないということ
-                # 正しい状態ではないのでエラー
-                # エラー情報はのちほど追加
-                raise Exception()
+        # # inputsを必要な部分に配置する
+        self.prepare_inputs(inputs)
 
-        prev_arrows = {arrow for arrow in self.arrows if arrow.cod == target.dom}
-        prev_arrows_new = set()
-        for prev_arrow in prev_arrows:
-            # print('prev_arrow これで再帰を目論む:', prev_arrow)
-            r = self.search_first_arrows(prev_arrow, inputs)
-            # print('prev_arrow 再帰を目論んだ結果:', r)
-            prev_arrows_new |= r
+        # 実行準備が整ったstepのリストを取得する
+        invokable_steps = self.search_invokable_steps()
 
-        # print('prev_arrows_new:', prev_arrows_new)
+        # 実行できるrunnableがある限りは動き続ける
+        while len(invokable_steps) > 0:
 
-        return prev_arrows_new
+            # stepのうち、実行準備が整ったものを実行する
+            self.run_invokable_steps(invokable_steps)
+
+            # 再度、実行準備が整ったstepのリストを取得しなおす
+            invokable_steps = self.search_invokable_steps()            
+
+        # 実行すべきrunnableがもう残っていないなら、終了
+        return self.make_outputs()
+
+    def prepare_inputs(self, inputs):
+        """
+        inputsを必要な部分に配置する
+        """
+        input_arrows = [a for a in self.arrows if a.is_for_input]
+        for input_arrow in input_arrows:
+            input_arrow.datum = inputs[input_arrow.o_port.name]
+
+    def search_invokable_steps(self):
+        """
+        stepのうち、実行準備が整ったものを探して返す
+        """
+
+        # まず、グラフ構造を解析する必要がある
+         
+        # 最初に「最後の矢印」を集める
+        last_steps = {a.dom for a in self.arrows if a.cod is None and a.datum is None}
+
+        # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
+        first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
+
+        print('first_steps:', first_steps)
+        return first_steps
+
+    def search_first_steps_to_run(self, original_step):
+        """
+        与えられたstepからフロー構造を逆に辿って、
+        実行準備が整ったstepを見つけ出す
+        """
+        print(f'{original_step.id}')
+        # 該当stepの実行に必要なarrowを取得する
+        prev_arrows = {a for a in self.arrows if a.cod == original_step}
+
+        # 全ての引数が埋まっていれば、実行可能とみなして走査終了
+        if all([a.datum is not None for a in prev_arrows]):
+            return {original_step}
+
+        # 埋まっていないarrowがあれば、それを逆に辿る
+        return union(self.search_first_steps_to_run(a.dom) for a in prev_arrows if a.dom is not None)
+                
+    def run_invokable_steps(self, steps):
+        """
+        stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
+        実行後、結果をarrowに格納する
+        """
+
+        for step in steps:
+            # jobを作るためにinputsを集める
+            inputs = {a.i_port.name: a.datum for a in self.arrows if a.cod == step}
+
+            # jobを作る
+            job = Job(step, inputs)
+
+            # 実行開始
+            result = job.start()
+
+            # 結果をそれぞれのarrowに入れる
+
+            # まず、outputのarrowを取得する
+            output_arrows = {arrow for arrow in self.arrows if arrow.dom == step}                
+
+            # それぞれのarrowに結果を格納する
+            for output_arrow in output_arrows:
+
+                # 親フローに結果を戻す場合は戻す                    
+                output_arrow.datum = result[output_arrow.o_port.name]
+
+    def make_outputs(self):
+        """
+        実行すべきstepがなくなった後呼び出される
+        arrowsの結果をまとめてoutputの形式に合うように整えて返す
+        """
+        return {port.name: self.get_output_datum(port).datum for port in self.o_ports}
+
+    def get_output_datum(self, o_port):
+        """
+        指定された出力ポートに対応するデータを返す
+        """
+        arrows = list(filter(lambda a:a.i_port == o_port, self.arrows))
+        return arrows[0]
+
 
 class Arrow:
     """
@@ -177,7 +172,10 @@ class Arrow:
             cod_i = self.cod
 
         return f"{self.id}, {dom_o} -> {cod_i}"
-            
+
+    @property
+    def is_for_input(self):
+        return self.dom is None and self.o_port is not None and self.datum is None
 
 class UnixCommand(Command):
     def __init__(self):
@@ -213,3 +211,13 @@ class UnixCommand(Command):
 class FlowUuidLink:
     def resolve(self):
         return Flow()
+
+def union(sets):
+    """
+    ユーティリティ関数
+    与えられた集合のiterableから、全体の和を作る
+    """
+    r = set()
+    for s in sets:
+        r |= s
+    return r
