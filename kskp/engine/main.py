@@ -31,10 +31,8 @@ def execute(link, args, inputs):
         return lasts
 
     except Exception as e:
-        print('engine.execute:', e)
-        # exs.append(exception_manager(e))
-        # return exs
-        raise e
+        exs.append(exception_manager(e))
+        return exs
 
 def make_job(link, args, inputs):
     # linkからrunnableを生成する
