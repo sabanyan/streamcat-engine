@@ -1,7 +1,6 @@
 import uuid
 
 from kskp.store import Command
-# from kskp.engine.data import Frame
 
 class Job:
     def __init__(self, step, inputs):
@@ -18,7 +17,6 @@ class Job:
             for a in self.step.runnable.arrows:
                 if a.datum is not None:
                     pass
-                    # print('a.datum:', a.datum)
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
 
 class Step:
@@ -178,40 +176,6 @@ class Arrow:
     def is_for_input(self):
         return self.dom is None and self.o_port is not None and self.datum is None
 
-class UnixCommand(Command):
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame')]
-        self.o_ports = [Port('o', 'frame')]
-
-    def run(self, args, inputs):
-        source = self.source(args, inputs)
-        # for input in inputs.values():
-        #     if isinstance(input.source, PathFileSource):
-        #         source.deletable_uuids.append(input.uuid)
-        #     elif isinstance(input.source, UnixCommandSource) or \
-        #          isinstance(input.source, PandasSource) or \
-        #          isinstance(input.source, NysolPythonSource):
-        #         source.deletable_uuids = input.source.deletable_uuids
-        #         source.deletable_uuids.append(input.uuid)
-        frame = Frame(str(uuid.uuid4()), source)
-        return { self.out_key: frame }
-
-    def source(self, args, inputs):
-        """ for override """
-        raise Exception()
-
-    def command_args(self, args, inputs):
-        """ for override """
-        raise Exception()
-
-    def stdin(self, inputs):
-        print('inputs:', inputs)
-        return list(inputs.values())[0].source.fd
-
-class FlowUuidLink:
-    def resolve(self):
-        return Flow()
 
 def union(sets):
     """

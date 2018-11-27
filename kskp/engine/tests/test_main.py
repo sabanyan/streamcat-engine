@@ -210,7 +210,7 @@ class EngineTestCase(unittest.TestCase):
                 return TestCommand()
 
         result = execute(EmptyLink(), {}, {})
-        # self.assertEqual(result, {})
+        self.assertEqual(result, {})
 
     # def test_mcut(self):    
     #     s = PathFileSource('csv', '', 'a.csv')
