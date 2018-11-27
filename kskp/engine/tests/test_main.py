@@ -86,7 +86,7 @@ class EngineTestCase(unittest.TestCase):
                 return flow
         
         result = execute(FlowLink(), {}, {})
-        self.assertEqual(result, {'o': 3})
+        self.assertEqual(result, {'o': 300})
 
     @unittest.skip
     def test_flow_with_two_runnable(self):
@@ -131,6 +131,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'o': 3})
 
+    # @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
@@ -194,6 +195,22 @@ class EngineTestCase(unittest.TestCase):
 
         self.assertEqual(result, {'dd3': 65536})        
 
+    @unittest.skip
+    def test_exception_in_command(self):
+        """
+        例外をだすコマンドをエンジンに捕まえてもらうテスト
+        """
+
+        class TestCommand(Command):
+            def run(self, args, inputs):
+                raise Exception('wowow')
+
+        class EmptyLink:
+            def resolve(self):
+                return TestCommand()
+
+        result = execute(EmptyLink(), {}, {})
+        # self.assertEqual(result, {})
 
     # def test_mcut(self):    
     #     s = PathFileSource('csv', '', 'a.csv')
