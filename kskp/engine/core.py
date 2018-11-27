@@ -47,7 +47,7 @@ class Flow:
         """
         arrowではなくstepを基軸にして書き直し
         """
-        
+
         # inputsを必要な部分に配置する
         self.prepare_inputs(inputs)
 
@@ -96,7 +96,6 @@ class Flow:
         実行準備が整ったstepを見つけ出す
         """
 
-        print(f'{original_step.id}')
         # 該当stepの実行に必要なarrowを取得する
         prev_arrows = {a for a in self.arrows if a.cod == original_step}
 
