@@ -47,7 +47,8 @@ class Flow:
         """
         arrowではなくstepを基軸にして書き直し
         """
-        # # inputsを必要な部分に配置する
+        
+        # inputsを必要な部分に配置する
         self.prepare_inputs(inputs)
 
         # 実行準備が整ったstepのリストを取得する
@@ -69,6 +70,7 @@ class Flow:
         """
         inputsを必要な部分に配置する
         """
+
         input_arrows = [a for a in self.arrows if a.is_for_input]
         for input_arrow in input_arrows:
             input_arrow.datum = inputs[input_arrow.o_port.name]
@@ -86,7 +88,6 @@ class Flow:
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
 
-        print('first_steps:', first_steps)
         return first_steps
 
     def search_first_steps_to_run(self, original_step):
@@ -94,6 +95,7 @@ class Flow:
         与えられたstepからフロー構造を逆に辿って、
         実行準備が整ったstepを見つけ出す
         """
+
         print(f'{original_step.id}')
         # 該当stepの実行に必要なarrowを取得する
         prev_arrows = {a for a in self.arrows if a.cod == original_step}
@@ -137,9 +139,9 @@ class Flow:
         実行すべきstepがなくなった後呼び出される
         arrowsの結果をまとめてoutputの形式に合うように整えて返す
         """
-        return {port.name: self.get_output_datum(port).datum for port in self.o_ports}
+        return {port.name: self.get_output_arrow(port).datum for port in self.o_ports}
 
-    def get_output_datum(self, o_port):
+    def get_output_arrow(self, o_port):
         """
         指定された出力ポートに対応するデータを返す
         """
