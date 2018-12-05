@@ -10,7 +10,10 @@ class Job:
         self.errors = []
 
     def start(self):
-        return self.step.runnable.run(self.step.args, self.inputs)
+        try:
+            return self.step.runnable.run(self.step.args, self.inputs)
+        except Exception as e:
+            self.errors.append(e)
 
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
