@@ -131,7 +131,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'o': 3})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
