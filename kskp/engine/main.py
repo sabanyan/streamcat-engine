@@ -1,16 +1,36 @@
 """
 外部とのインターフェースを規定している
 基本的にはexecute_flow_by_uuidしか使わないはず
+
+TODO: 外部からコマンド実行できるように
 """
+
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
 
 from kskp.store import Port
 
 from .core import Step, Job, Arrow
 
-def execute(link, args, inputs):
+
+class DefaultHandler(PatternMatchingEventHandler):
+    """
+    ファイル監視のイベントハンドラ
+    デフォルト実装（何もしない）
+    """
+    pass
+
+# イベントハンドラ
+job_complete_handler = None
+
+
+def execute(link, args, inputs, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
+
+    # 進捗を取得する準備を行う
+    prepare_observer(job_complete_handler)
 
     exs = []
     
@@ -106,6 +126,23 @@ class ExceptionManagerWebSocket:
 
 exception_manager = ExceptionManagerWebSocket()
 # exception_manager = ExceptionManager()
+
+def prepare_observer(job_complete_handler):
+    """
+    進捗を取得する準備を行う
+    """
+    # 進捗を取得する準備を行う
+    observer = Observer()
+
+    # 監視ディレクトリとハンドラの指定、本来はこの部分を外部から指定可能にしたい
+    if job_complete_handler is None:
+        job_complete_handler = DefaultHandler()
+    print(job_complete_handler)
+    observer.schedule(job_complete_handler, 'kskp/messages/')
+
+    # 監視を開始する
+    observer.start()
+
 
 # ストア
 store = None
