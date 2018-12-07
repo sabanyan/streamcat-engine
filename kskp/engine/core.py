@@ -54,15 +54,22 @@ class Flow:
 
         # 実行準備が整ったstepのリストを取得する
         invokable_steps = self.search_invokable_steps()
-
+        print('invokable_steps1', invokable_steps)
         # 実行できるrunnableがある限りは動き続ける
         while len(invokable_steps) > 0:
-
+            print('run_invokable_steps before')
             # stepのうち、実行準備が整ったものを実行する
             self.run_invokable_steps(invokable_steps)
-
+            print('run_invokable_steps after')
             # 再度、実行準備が整ったstepのリストを取得しなおす
-            invokable_steps = self.search_invokable_steps()            
+            invokable_steps = self.search_invokable_steps()     
+            print('invokable_steps2', invokable_steps)       
+
+        # TODO: 仮のコード
+        # (最後に全部runするコード"型変換"とみなすので、data-store内で実装したい処理)
+        for k, last in self.lasts.items():
+            r = last.run(msg='on')
+            self.arrows[k] = r
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -112,17 +119,21 @@ class Flow:
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をarrowに格納する
         """
-
+        print('steps in run_invokable_steps:', steps)
         for step in steps:
             # jobを作るためにinputsを集める
             inputs = {a.i_port.name: a.datum for a in self.arrows if a.cod == step}
+
+            # 実行したい処理の中にどのステップなのかを渡す            
+            step.runnable.context['step_id'] = step.id            
+            print('context in run_invokable_steps:', step.runnable.context)
 
             # jobを作る
             job = Job(step, inputs)
 
             # 実行開始
             result = job.start()
-
+            print('result of job.start():', result)
             # 結果をそれぞれのarrowに入れる
 
             # まず、outputのarrowを取得する
@@ -133,6 +144,7 @@ class Flow:
 
                 # 親フローに結果を戻す場合は戻す                    
                 output_arrow.datum = result[output_arrow.o_port.name]
+                print('output_arrow:', output_arrow)
 
     def make_outputs(self):
         """
@@ -140,6 +152,9 @@ class Flow:
         arrowsの結果をまとめてoutputの形式に合うように整えて返す
         """
         return {port.name: self.get_output_arrow(port).datum for port in self.o_ports}
+        # result = {port.name: self.get_output_arrow(port).datum.run() for port in self.o_ports}
+        # print('make_outputs result:', result)
+        # return result
 
     def get_output_arrow(self, o_port):
         """
