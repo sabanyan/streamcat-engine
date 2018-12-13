@@ -1,4 +1,5 @@
 import unittest
+import json
 # import uuid
 
 from kskp.store import Command, Port
@@ -86,6 +87,105 @@ class EngineTestCase(unittest.TestCase):
                 return flow
         
         result = execute(FlowLink(), {}, {})
+        self.assertEqual(result, {'o': 300})
+
+    def test_flow_json_with_one_runnable(self):
+        """
+        test_flow_with_one_runnableと同内容の
+        flowを表すJSONを読み込んで実行する
+        """
+
+        class TestCommand(Command):
+            """
+            inputとoutputが1つずつの擬似的なコマンド
+            """
+
+            def __init__(self):
+                super().__init__()
+                self.i_ports = [Port('i', 'int')]
+                self.o_ports = [Port('o', 'int')]
+
+            def run(self, args, inputs):
+                # print('i am test command!')
+                print('inputs:', inputs)
+                print(f"i is { inputs['i'] }")
+                return {'o': inputs['i'] + 200}
+
+        class FlowJsonLink:
+            """
+            フローへのリンク
+            """
+
+            def resolve(self):
+                # "projectId": 1, # プロジェクトIDそのものはなくても妥当なflowとみなす
+                # "creator": "開発用", # creatorそのものはなくても妥当なflowとみなす
+                # "createdAt": "2018-07-27T08:25:19+09:00", # createdAtそのものはなくても妥当なflowとみなす
+                json_sample = '''{                
+                    "description": "",
+                    "label": "フローテスト",
+                    "params": [],
+                    "ports": [[], []],
+                    "nodes": [
+                        {
+                            "id": "i",
+                            "type": "frame",
+                            "dataSource": "csv",
+                            "uuid": "4C545611-4569-4CD5-800E-55BE69CF8BA8"
+                        },
+                        {
+                            "id": "s1",
+                            "type": "flow",
+                            "uuid": "1D01BA67-789B-41D5-95A9-CC84D2E4EFA7",
+                            "args": {
+                                "c": "${A}>2",
+                                "f1": "B,C",
+                                "f2": "A"
+                            },
+                            "srcs": { "Ci": "Bi" },
+                            "dsts": { "Co1": "Bt" }
+                        },
+                        {
+                            "id": "o",
+                            "type": "frame",
+                            "dataSource": "csv",
+                            "uuid": null
+                        }
+                    ]
+                }'''
+
+
+                # JSONを読み込む
+                json_obj = json.loads(json_sample)
+
+                flow = Flow()                
+
+                for n in json_obj['nodes']:
+                    if n['id'] == 's1':
+                        # 本来はこのTestCommand()もlinkから作るべきかも
+                        step = Step('s1', TestCommand(), {}) # 1と2               
+                        flow.substeps.append(step)
+                    else:
+                        print('not step')
+
+                substep = list(flow.substeps)[0]
+                for n in json_obj['nodes']:
+                    if n['id'] == 'i':
+                        # i_arrows = [Arrow(port.name, None, None, 100, substeps[0].runnable.i_ports[0], substeps[0]) for port in substeps[0].runnable.i_ports]
+                        port = substep.runnable.i_ports[0]
+                        flow.arrows.append(Arrow(port.name, None, None, 100, port, substep))
+                    elif n['id'] == 'o':    
+                        # o_arrows = [Arrow(port.name, substeps[0], substeps[0].runnable.o_ports[0], None, None, None) for port in substeps[0].runnable.o_ports]                    
+                        port = substep.runnable.o_ports[0]
+                        flow.arrows.append(Arrow(port.name, substep, port, None, None, None))
+                    else:
+                        print('not datum')
+
+                # 3. i_ports / o_ports からarrowを作る
+                # flow.arrows = i_arrows + o_arrows
+
+                return flow
+        
+        result = execute(FlowJsonLink(), {}, {})
         self.assertEqual(result, {'o': 300})
 
     @unittest.skip
