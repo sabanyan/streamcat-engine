@@ -28,7 +28,7 @@ def execute(link, args, inputs, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
-
+    
     # 進捗を取得する準備を行う
     prepare_observer(job_complete_handler)
 
@@ -43,7 +43,7 @@ def execute(link, args, inputs, job_complete_handler=None):
 
         # 結果を取得する
         lasts = job.step.runnable.lasts
-
+        
         # 後始末をする
         job.dtor()
 
@@ -51,13 +51,14 @@ def execute(link, args, inputs, job_complete_handler=None):
         return lasts
 
     except Exception as e:
+        print('main:', e)
         raise
         # exs.append(exception_manager(e))
         # return exs
 
 def make_job(link, args, inputs):
     # linkからrunnableを生成する
-    runnable = link.resolve()
+    runnable = link.resolve()    
 
     # runnableからstepを作成する
     step = Step('', runnable, args)
@@ -138,7 +139,7 @@ def prepare_observer(job_complete_handler):
     # 監視ディレクトリとハンドラの指定、本来はこの部分を外部から指定可能にしたい
     if job_complete_handler is None:
         job_complete_handler = DefaultHandler()
-    print(job_complete_handler)
+    # print(job_complete_handler)
     observer.schedule(job_complete_handler, 'kskp/messages/')
 
     # 監視を開始する
