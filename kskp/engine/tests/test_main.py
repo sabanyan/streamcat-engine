@@ -5,7 +5,7 @@ import json
 from kskp.store import Command, Port
 from kskp.engine import execute, Flow, Step, Arrow, Job
 
-from kskp.engine.links import * 
+from kskp.engine.links import FlowJsonLink, Square
 
 class EngineTestCase(unittest.TestCase):
 
