@@ -32,7 +32,7 @@ def execute(link, args, inputs, job_complete_handler=None):
     # 進捗を取得する準備を行う
     prepare_observer(job_complete_handler)
 
-    exs = []
+    # exs = []
     
     try:        
         # jobを作成する
