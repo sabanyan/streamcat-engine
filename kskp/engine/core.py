@@ -1,6 +1,6 @@
 import uuid
 
-from kskp.store import Command
+from kskp.store import Command, Datum
 
 class Job:
     def __init__(self, step, inputs):
@@ -13,6 +13,7 @@ class Job:
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
         except Exception as e:
+            print(repr(e))
             self.errors.append(e)
 
     def dtor(self):
@@ -31,8 +32,10 @@ class Step:
     def __repr__(self):
         return self.id
 
-class Flow:
+class Flow(Datum):
     def __init__(self):
+        super().__init__()
+
         self.i_ports = []
         self.o_ports = []
         self.params = []
@@ -54,22 +57,27 @@ class Flow:
 
         # 実行準備が整ったstepのリストを取得する
         invokable_steps = self.search_invokable_steps()
-        print('invokable_steps1', invokable_steps)
+
+        # print('invokable_steps1', self.arrows)
+
         # 実行できるrunnableがある限りは動き続ける
         while len(invokable_steps) > 0:
-            print('run_invokable_steps before')
+
             # stepのうち、実行準備が整ったものを実行する
             self.run_invokable_steps(invokable_steps)
-            print('run_invokable_steps after')
+
+            # print('invokable_steps2', invokable_steps, self.arrows)
+            
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self.search_invokable_steps()     
-            print('invokable_steps2', invokable_steps)       
 
+            # print('invokable_steps3', invokable_steps, self.arrows)
+        
         # TODO: 仮のコード
         # (最後に全部runするコード"型変換"とみなすので、data-store内で実装したい処理)
-        for k, last in self.lasts.items():
-            r = last.run(msg='on')
-            self.arrows[k] = r
+        # for k, last in self.lasts.items():
+        #     r = last.run(msg='on')
+        #     self.arrows[k] = r
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -119,21 +127,24 @@ class Flow:
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をarrowに格納する
         """
-        print('steps in run_invokable_steps:', steps)
+
+        # print('steps in run_invokable_steps:', steps)
+
         for step in steps:
+            
             # jobを作るためにinputsを集める
             inputs = {a.i_port.name: a.datum for a in self.arrows if a.cod == step}
-
+            
             # 実行したい処理の中にどのステップなのかを渡す            
             step.runnable.context['step_id'] = step.id            
-            print('context in run_invokable_steps:', step.runnable.context)
-
+            # print('context in run_invokable_steps:', step.runnable.context)
+            
             # jobを作る
             job = Job(step, inputs)
 
             # 実行開始
             result = job.start()
-            print('result of job.start():', result)
+            # print('result of job.start():', result)
             # 結果をそれぞれのarrowに入れる
 
             # まず、outputのarrowを取得する
@@ -144,7 +155,7 @@ class Flow:
 
                 # 親フローに結果を戻す場合は戻す                    
                 output_arrow.datum = result[output_arrow.o_port.name]
-                print('output_arrow:', output_arrow)
+                # print('output_arrow:', output_arrow)
 
     def make_outputs(self):
         """
@@ -180,15 +191,25 @@ class Arrow:
 
     def __repr__(self):
         if self.o_port is not None:
-            dom_o = f"{self.dom}.{self.o_port.name}"
+            if self.dom is None:
+                dom_o = f"self.{self.o_port.name}"
+            else:
+                dom_o = f"{self.dom}.{self.o_port.name}"
         else:
-            dom_o = self.dom
-        if self.i_port is not None:
-            cod_i = f"{self.cod}.{self.i_port.name}"
-        else:
-            cod_i = self.cod
+            dom_o = f"{self.dom}.None"
 
-        return f"{self.id}, {dom_o} -> {cod_i}"
+        if self.i_port is not None:
+            if self.cod is None:
+                cod_i = f"self.{self.i_port.name}"
+            else:
+                cod_i = f"{self.cod}.{self.i_port.name}"
+        else:
+            cod_i = f"{self.cod}.None"
+        
+        if self.datum is None:
+            return f"{self.id}<{dom_o} -> {cod_i}>"
+        else:
+            return f"{self.id}<{dom_o} -({self.datum})-> {cod_i}>"
 
     @property
     def is_for_input(self):
