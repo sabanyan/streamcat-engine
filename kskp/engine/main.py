@@ -51,8 +51,9 @@ def execute(link, args, inputs, job_complete_handler=None):
         return lasts
 
     except Exception as e:
-        exs.append(exception_manager(e))
-        return exs
+        raise
+        # exs.append(exception_manager(e))
+        # return exs
 
 def make_job(link, args, inputs):
     # linkからrunnableを生成する
