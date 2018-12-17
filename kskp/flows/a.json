@@ -1,0 +1,55 @@
+{               
+    "description": "サブフロー",
+    "label": "サブフロー",
+    "params": [],
+    "ports": [
+        [{"name": "ii", "type": "int"}],
+        [{"name": "oo", "type": "int"}]
+    ],
+    "nodes": [
+        {
+            "id": "d1",
+            "type": "int",
+            "uuid": null                          
+        },
+        {
+            "id": "s1",
+            "type": "command",
+            "commandId": "square",
+            "args": {},
+            "srcs": { "i": "d1" },
+            "dsts": { "o_sq": "d2" }
+        },
+        {
+            "id": "d2",
+            "type": "int",                    
+            "uuid": null
+        },
+        {
+            "id": "s2",
+            "type": "command",
+            "commandId": "square",
+            "args": {},
+            "srcs": { "i": "d2" },
+            "dsts": { "o_sq": "d3" }
+        },
+        {
+            "id": "d3",
+            "type": "int",                    
+            "uuid": null
+        },
+        {
+            "id": "s3",
+            "type": "command",
+            "commandId": "square",
+            "args": {},
+            "srcs": { "i": "d3" },
+            "dsts": { "o_sq": "d4" }
+        },
+        {
+            "id": "d4",
+            "type": "int",                    
+            "uuid": null
+        }
+    ]
+}
