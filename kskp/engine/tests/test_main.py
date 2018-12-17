@@ -5,6 +5,124 @@ import json
 from kskp.store import Command, Port
 from kskp.engine import execute, Flow, Step, Arrow, Job
 
+class TestCommand(Command):
+    """
+    inputとoutputが1つずつの擬似的なコマンド
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'int')]
+        self.o_ports = [Port('o', 'int')]
+
+    def run(self, args, inputs):
+        # print('i am test command!')
+        print('inputs:', inputs)
+        print(f"i is { inputs['i'] }")
+        return {'o': inputs['i'] + 200}
+
+class Square(Command):
+    """
+    与えられた数値を2乗する            
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'int')]
+        self.o_ports = [Port('o_sq', 'int')]
+
+    def run(self, args, inputs):
+        # print('i am test command1!')
+        # print('inputs:', inputs)
+        # print(f"i is { inputs['i'] }")
+        return {self.o_ports[0].name: inputs['i'] ** 2}
+
+class FlowJsonLink:
+    """
+    フローへのリンク
+    """
+    def __init__(self, json_str):
+        self.json_str = json_str
+
+    def select_runnable(self, runnable_id):
+        """
+        idとなる文字列を受け取ってrunnableのインスタンスを返却する
+        """
+        table = {
+            'test': TestCommand(),
+            'square': Square()
+        }
+
+        if runnable_id not in table:
+            raise Exception(f"存在しないcommandId'{runnable_id}'が指定されています")
+
+        return table[runnable_id]
+
+    def make_flow(self, json_str):
+
+        # JSONを読み込む
+        json_obj = json.loads(json_str)
+
+        flow = Flow()                
+
+        # まず、runnableを集める
+        for node in json_obj['nodes']:
+            if node['type'] == 'command' or node['type'] == 'flow':
+                
+                # runnableのインスタンス化を行う
+                step = Step(node['id'], self.select_runnable(node['commandId']), {})
+                    
+                flow.substeps.append(step)
+
+                arrow_ids = [arrow.id for arrow in flow.arrows]
+
+                # srcとdstからarrowを作る
+                src_port = step.runnable.i_ports[0]
+                srcs = node['srcs']
+                if src_port.name not in srcs:
+                    raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
+                # 対象のarrowがすでに存在すればそれを取得する
+                if srcs[src_port.name] in arrow_ids:
+                    src_arrow = [arrow for arrow in flow.arrows if arrow.id == srcs[src_port.name]][0]                
+                    src_arrow.i_port = src_port
+                    src_arrow.cod = step
+                else:
+                    src_arrow = Arrow(srcs[src_port.name], None, None, None, src_port, step)
+                flow.arrows.append(src_arrow)
+
+                dst_port = step.runnable.o_ports[0]
+                dsts = node['dsts']
+                if dst_port.name not in dsts:
+                    raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
+                # 対象のarrowがすでに存在すればそれを取得する
+                if dsts[dst_port.name] in arrow_ids:
+                    dst_arrow = [arrow for arrow in flow.arrows if arrow.id == dsts[dst_port.name]][0]
+                    dst_arrow.dom = step
+                    dst_arrow.o_port = dst_port
+                else:
+                    dst_arrow = Arrow(dsts[dst_port.name], step, dst_port, None, None, None)
+                flow.arrows.append(dst_arrow)
+            else:
+                print('not step')
+
+        substep = list(flow.substeps)[0]
+        for node in json_obj['nodes']:
+            # arrowにdatumを入れていく
+            if node['type'] != 'command' and node['type'] != 'flow':
+                if 'value' in node and node['value'] is not None:
+                    target_arrow = [arrow for arrow in flow.arrows if arrow.id == node['id']][0]
+                    target_arrow.datum = node['value']                    
+            else:
+                print('not datum')
+
+        # 3. i_ports / o_ports からarrowを作る
+        # flow.arrows = i_arrows + o_arrows
+
+        return flow
+
+    def resolve(self):
+        return self.make_flow(self.json_str)
+
 class EngineTestCase(unittest.TestCase):
 
     @unittest.skip
@@ -95,98 +213,44 @@ class EngineTestCase(unittest.TestCase):
         flowを表すJSONを読み込んで実行する
         """
 
-        class TestCommand(Command):
-            """
-            inputとoutputが1つずつの擬似的なコマンド
-            """
+        # "projectId": 1, # プロジェクトIDそのものはなくても妥当なflowとみなす
+        # "creator": "開発用", # creatorそのものはなくても妥当なflowとみなす
+        # "createdAt": "2018-07-27T08:25:19+09:00", # createdAtそのものはなくても妥当なflowとみなす
 
-            def __init__(self):
-                super().__init__()
-                self.i_ports = [Port('i', 'int')]
-                self.o_ports = [Port('o', 'int')]
+        json_sample = '''{                
+            "description": "",
+            "label": "フローテスト",
+            "params": [],
+            "ports": [[], []],
+            "nodes": [
+                {
+                    "id": "Bi",
+                    "type": "int",
+                    "value": 100,
+                    "uuid": null                          
+                },
+                {
+                    "id": "s1",
+                    "type": "command",
+                    "commandId": "test",
+                    "args": {
+                        "c": "${A}>2",
+                        "f1": "B,C",
+                        "f2": "A"
+                    },
+                    "srcs": { "i": "Bi" },
+                    "dsts": { "o": "Bt" }
+                },
+                {
+                    "id": "Bt",
+                    "type": "int",                    
+                    "uuid": null
+                }
+            ]
+        }'''
 
-            def run(self, args, inputs):
-                # print('i am test command!')
-                print('inputs:', inputs)
-                print(f"i is { inputs['i'] }")
-                return {'o': inputs['i'] + 200}
-
-        class FlowJsonLink:
-            """
-            フローへのリンク
-            """
-
-            def resolve(self):
-                # "projectId": 1, # プロジェクトIDそのものはなくても妥当なflowとみなす
-                # "creator": "開発用", # creatorそのものはなくても妥当なflowとみなす
-                # "createdAt": "2018-07-27T08:25:19+09:00", # createdAtそのものはなくても妥当なflowとみなす
-                json_sample = '''{                
-                    "description": "",
-                    "label": "フローテスト",
-                    "params": [],
-                    "ports": [[], []],
-                    "nodes": [
-                        {
-                            "id": "i",
-                            "type": "frame",
-                            "dataSource": "csv",
-                            "uuid": "4C545611-4569-4CD5-800E-55BE69CF8BA8"
-                        },
-                        {
-                            "id": "s1",
-                            "type": "flow",
-                            "uuid": "1D01BA67-789B-41D5-95A9-CC84D2E4EFA7",
-                            "args": {
-                                "c": "${A}>2",
-                                "f1": "B,C",
-                                "f2": "A"
-                            },
-                            "srcs": { "Ci": "Bi" },
-                            "dsts": { "Co1": "Bt" }
-                        },
-                        {
-                            "id": "o",
-                            "type": "frame",
-                            "dataSource": "csv",
-                            "uuid": null
-                        }
-                    ]
-                }'''
-
-
-                # JSONを読み込む
-                json_obj = json.loads(json_sample)
-
-                flow = Flow()                
-
-                for n in json_obj['nodes']:
-                    if n['id'] == 's1':
-                        # 本来はこのTestCommand()もlinkから作るべきかも
-                        step = Step('s1', TestCommand(), {}) # 1と2               
-                        flow.substeps.append(step)
-                    else:
-                        print('not step')
-
-                substep = list(flow.substeps)[0]
-                for n in json_obj['nodes']:
-                    if n['id'] == 'i':
-                        # i_arrows = [Arrow(port.name, None, None, 100, substeps[0].runnable.i_ports[0], substeps[0]) for port in substeps[0].runnable.i_ports]
-                        port = substep.runnable.i_ports[0]
-                        flow.arrows.append(Arrow(port.name, None, None, 100, port, substep))
-                    elif n['id'] == 'o':    
-                        # o_arrows = [Arrow(port.name, substeps[0], substeps[0].runnable.o_ports[0], None, None, None) for port in substeps[0].runnable.o_ports]                    
-                        port = substep.runnable.o_ports[0]
-                        flow.arrows.append(Arrow(port.name, substep, port, None, None, None))
-                    else:
-                        print('not datum')
-
-                # 3. i_ports / o_ports からarrowを作る
-                # flow.arrows = i_arrows + o_arrows
-
-                return flow
-        
-        result = execute(FlowJsonLink(), {}, {})
-        self.assertEqual(result, {'o': 300})
+        result = execute(FlowJsonLink(json_sample), {}, {})
+        self.assertEqual(result, {'Bt': 300})
 
     @unittest.skip
     def test_flow_with_two_runnable(self):
@@ -229,28 +293,67 @@ class EngineTestCase(unittest.TestCase):
                 return flow
         
         result = execute(FlowLink(), {}, {})
-        self.assertEqual(result, {'o': 3})
+        self.assertEqual(result, {'d3': 625})
+
+    def test_flow_json_with_two_runnable(self):
+        """
+        test_flow_with_two_runnableと同内容の
+        flowを表すJSONを読み込んで実行する
+        """
+
+        json_sample = '''{                
+            "description": "",
+            "label": "",
+            "params": [],
+            "ports": [[], []],
+            "nodes": [
+                {
+                    "id": "d1",
+                    "type": "int",
+                    "value": 5,
+                    "uuid": null                          
+                },
+                {
+                    "id": "s1",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {
+                        "c": "${A}>2",
+                        "f1": "B,C",
+                        "f2": "A"
+                    },
+                    "srcs": { "i": "d1" },
+                    "dsts": { "o_sq": "d2" }
+                },
+                {
+                    "id": "d2",
+                    "type": "int",                    
+                    "uuid": null
+                },
+                {
+                    "id": "s2",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {},
+                    "srcs": { "i": "d2" },
+                    "dsts": { "o_sq": "d3" }
+                },
+                {
+                    "id": "d3",
+                    "type": "int",                    
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_sample), {}, {})
+        self.assertEqual(result, {'d3': 625})
 
     @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
         """
-        class Square(Command):
-            """
-            与えられた数値を2乗する            
-            """
-
-            def __init__(self):
-                super().__init__()
-                self.i_ports = [Port('i', 'int')]
-                self.o_ports = [Port('o_sq', 'int')]
-
-            def run(self, args, inputs):
-                # print('i am test command1!')
-                # print('inputs:', inputs)
-                # print(f"i is { inputs['i'] }")
-                return {self.o_ports[0].name: inputs['i'] ** 2}
 
         class SubFlowLink:
             """
