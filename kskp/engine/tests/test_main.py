@@ -284,7 +284,7 @@ class EngineTestCase(unittest.TestCase):
 
         self.assertEqual(result, {'dd3': 65536})        
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_json_with_subflow(self):
         """
         test_flow_with_subflowと同内容の
@@ -337,6 +337,44 @@ class EngineTestCase(unittest.TestCase):
 
         result = execute(FlowJsonLink(json_mainflow), {}, {})
         self.assertEqual(result, {'dd3': 65536})
+
+    def test_m_command_runnable(self):
+        """
+        runnableというかmcmdがちゃんとrunされるかのテスト
+        """
+
+        class McmdTestCommand(Command):
+            def __init__(self):
+                super().__init__()
+                self.i_ports = [Port('i', 'mcmd')]
+                self.o_ports = [Port('o', 'mcmd')]
+
+            def run(self, args, inputs):
+                print('run')
+                i = [['a', 'b', 'c'], [1, 2, 3]]
+                import nysol.mcmd as nm
+                if isinstance(inputs['i'], nm.mcut):
+                    ret = inputs['i']
+                    ret <<= nm.mcut(f=args['f'])
+                else:
+                    ret = nm.mcut(i=i, f=args['f'])
+                return {'o': ret}
+
+        class McmdTestLink:
+            def resolve(self):
+                flow = Flow()                
+
+                step1 = Step('s1', McmdTestCommand(), {'f': 'a,b'})
+                step2 = Step('s2', McmdTestCommand(), {'f': 'a'})
+                                
+                flow.substeps = [step1, step2]
+                flow.arrows = [Arrow('d1', None, None, 1, step1.runnable.i_ports[0], step1),
+                               Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
+                               Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]                               
+                return flow
+
+        result = execute(McmdTestLink(), {}, {})
+        self.assertEqual(result, {'d3': [['1']]})
 
     @unittest.skip
     def test_exception_in_command(self):

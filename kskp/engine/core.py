@@ -13,8 +13,9 @@ class Job:
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
         except Exception as e:
-            print(repr(e))
+            print(repr(e))            
             self.errors.append(e)
+            raise
 
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
@@ -73,11 +74,14 @@ class Flow(Datum):
 
             # print('invokable_steps3', invokable_steps, self.arrows)
         
-        # TODO: 仮のコード
-        # (最後に全部runするコード"型変換"とみなすので、data-store内で実装したい処理)
-        # for k, last in self.lasts.items():
-        #     r = last.run(msg='on')
-        #     self.arrows[k] = r
+        # FIXME: mcmd専用なので外に出す予定
+        for k, last in self.lasts.items():
+            from nysol.mcmd.nysollib.core import NysolMOD_CORE
+                        
+            if isinstance(last, NysolMOD_CORE):                
+                r = last.run(msg='on')
+                target_arrow = [arrow for arrow in self.arrows if arrow.id == k][0]                
+                target_arrow.datum = r                
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
