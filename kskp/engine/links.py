@@ -102,10 +102,8 @@ class FlowJsonLink:
 
                 arrow_ids = [arrow.id for arrow in flow.arrows]
 
-                # srcとdstからarrowを作る
-                # if len(step.runnable.i_ports) > 0:
-                for src_port in step.runnable.i_ports:
-                    # src_port = step.runnable.i_ports[0]
+                # srcとdstからarrowを作る                
+                for src_port in step.runnable.i_ports:                    
                     srcs = node['srcs']
                     if src_port.name not in srcs:
                         raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
@@ -119,10 +117,8 @@ class FlowJsonLink:
                         flow.arrows.append(src_arrow)
                     if len(flow.i_ports) > 0 and src_arrow.o_port is None:                    
                         src_arrow.o_port = src_port
-                
-                # if len(step.runnable.o_ports) > 0:
-                for dst_port in step.runnable.o_ports:
-                    # dst_port = step.runnable.o_ports[0]
+                                
+                for dst_port in step.runnable.o_ports:                    
                     dsts = node['dsts']
                     if dst_port.name not in dsts:
                         raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
