@@ -7,6 +7,36 @@ from kskp.engine import execute, Flow, Step, Arrow, Job
 
 from kskp.engine.links import FlowJsonLink, Square
 
+class MjoinTestCommand(Command):
+    """
+    複数inputのテストで使うだけのコマンド
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('m', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        cmd = nm.mjoin(i=inputs['i'], m=inputs['m'], k=args['k'])
+        return {'o': cmd}
+
+
+class MselTestCommand(Command):
+    """
+    複数outputのテストで使うだけのコマンド
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd'), Port('u', 'frame')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        cmd_o = nm.msel(i=inputs['i'], c='${金額}>30')
+        cmd_u = cmd_o.redirect('u')
+        return {'o': cmd_o, 'u': cmd_u}
+
 class EngineTestCase(unittest.TestCase):
 
     @unittest.skip
@@ -338,6 +368,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_mainflow), {}, {})
         self.assertEqual(result, {'dd3': 65536})
 
+    @unittest.skip
     def test_m_command_runnable(self):
         """
         runnableというかmcmdがちゃんとrunされるかのテスト
@@ -374,7 +405,188 @@ class EngineTestCase(unittest.TestCase):
                 return flow
 
         result = execute(McmdTestLink(), {}, {})
-        self.assertEqual(result, {'d3': [['1']]})
+        self.assertEqual(result, {'o': [['0', '2', '4']]})
+
+    @unittest.skip
+    def test_m_command_with_two_inputs(self):
+        """
+        複数inputのコマンドのテスト
+        """
+
+        class MjoinFlowLink:
+            """
+            フローへのリンク
+            """
+
+            def resolve(self):
+                flow = Flow()                
+
+                step = Step('s1', MjoinTestCommand(), {'k': 'k'})
+                flow.substeps = [step]
+
+                flow.arrows = [Arrow('ii', None, None, [['k', 'a'], [0, 2]], step.runnable.i_ports[0], step),
+                               Arrow('mm', None, None, [['k', 'b'], [0, 4]], step.runnable.i_ports[1], step),
+                               Arrow('rr', step, step.runnable.o_ports[0], None, None, None)]
+
+                return flow
+
+        result = execute(MjoinFlowLink(), {}, {})
+        self.assertEqual(result, {'rr': [['0', '2', '4']]})
+
+    def test_m_command_json_with_two_inputs(self):
+        """
+        複数inputのコマンドのテストをJSONで行う
+        """
+
+        class MjoinLink:
+            def resolve(self):
+                return MjoinTestCommand()
+
+        class MjoinFlowLink(FlowJsonLink):
+            """
+            テスト用にMjoinTestCommandを返すようにカスタマイズ
+            """        
+
+            def node2link(self, node):
+                if node['commandId'] == 'mjoin':
+                    return MjoinLink()
+                else:
+                    return super().node2link(node)
+
+        json_flow = '''{                
+            "description": "複数inputフロー",
+            "label": "複数inputフロー",
+            "params": [],
+            "ports": [[], []],
+            "nodes": [
+                {
+                    "id": "ii",
+                    "type": "frame",
+                    "value": [["k", "a"], [0, 2]],
+                    "uuid": null                          
+                },
+                {
+                    "id": "mm",
+                    "type": "frame",
+                    "value": [["k", "b"], [0, 4]],
+                    "uuid": null                          
+                },
+                {
+                    "id": "s1",
+                    "type": "command",
+                    "commandId": "mjoin",
+                    "args": { "k": "k" },
+                    "srcs": { "i": "ii", "m": "mm" },
+                    "dsts": { "o": "rr" }
+                },
+                {
+                    "id": "rr",
+                    "type": "mcmd",                    
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(MjoinFlowLink(json_flow), {}, {})
+        self.assertEqual(result, {'rr': [['0', '2', '4']]})
+
+    @unittest.skip
+    def test_m_command_with_two_outputs(self):
+        """
+        複数outputのコマンドのテスト
+        """
+
+        class MselFlowLink:
+            """
+            フローへのリンク
+            """
+
+            def resolve(self):
+                flow = Flow()                
+
+                step = Step('s1', MselTestCommand(), {'k': 'k'})
+                flow.substeps = [step]
+
+                dat1 = [['顧客', '数量', '金額'], 
+                        ['A', 1, 10],
+                        ['A', 2, 20],
+                        ['B', 1, 30],
+                        ['B', 3, 40],
+                        ['B', 1, 50]]
+
+                flow.arrows = [Arrow('ii', None, None, dat1, step.runnable.i_ports[0], step),
+                               Arrow('oo', step, step.runnable.o_ports[0], None, None, None),
+                               Arrow('uu', step, step.runnable.o_ports[1], None, None, None)]
+
+                return flow
+
+        result = execute(MselFlowLink(), {}, {})
+        correct = {'oo': [['B', '3', '40'], ['B', '1', '50']],
+                   'uu': [['A', '1', '10'], ['A', '2', '20'], ['B', '1', '30']]}
+        self.assertEqual(result, correct)
+
+    def test_m_command_json_with_two_outputs(self):
+        """
+        複数outputのコマンドのテストをJSONで行う
+        """
+
+        class MselLink:
+            def resolve(self):
+                return MselTestCommand()
+
+        class MselFlowLink(FlowJsonLink):
+            """
+            テスト用にMselTestCommandを返すようにカスタマイズ
+            """        
+
+            def node2link(self, node):
+                if node['commandId'] == 'msel':
+                    return MselLink()
+                else:
+                    return super().node2link(node)
+
+        json_flow = '''{                
+            "description": "複数outputフロー",
+            "label": "複数outputフロー",
+            "params": [],
+            "ports": [[], []],
+            "nodes": [
+                {
+                    "id": "ii",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"], 
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null                          
+                },
+                {
+                    "id": "s1",
+                    "type": "command",
+                    "commandId": "msel",
+                    "args": {},
+                    "srcs": { "i": "ii" },
+                    "dsts": { "o": "oo", "u": "uu" }
+                },
+                {
+                    "id": "oo",
+                    "type": "mcmd",
+                    "uuid": null                          
+                },
+                {
+                    "id": "uu",
+                    "type": "mcmd",                    
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(MselFlowLink(json_flow), {}, {})
+        correct = {'oo': [['B', '3', '40'], ['B', '1', '50']], 
+                   'uu': [['A', '1', '10'], ['A', '2', '20'], ['B', '1', '30']]}
+        self.assertEqual(result, correct)
 
     @unittest.skip
     def test_exception_in_command(self):
