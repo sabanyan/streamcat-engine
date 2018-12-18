@@ -137,18 +137,6 @@ class FlowJsonLink:
                         # FIXME: portが1つの前提
                         dst_arrow.i_port = flow.o_ports[0]
                 
-
-                # sublflow
-                # flow.arrows = [Arrow('d1', None, flow.i_ports[0], None, step1.runnable.i_ports[0], step1),
-                #                Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                #                Arrow('d3', step2, step2.runnable.o_ports[0], None, flow.o_ports[0], None)]   
-
-                # mainflow 
-                # flow.arrows = [Arrow('dd1', None, flow.i_ports[0], 4, ss1.runnable.i_ports[0], ss1),
-                #                Arrow('dd2', ss1, ss1.runnable.o_ports[0], None, ss2.runnable.i_ports[0], ss2),
-                #                Arrow('dd3', ss2, ss2.runnable.o_ports[0], None, flow.o_ports[0], None)]
-
-        # substep = list(flow.substeps)[0]
         for node in json_obj['nodes']:
             # arrowにdatumを入れていく
             if not self.is_node_runnable(node):
