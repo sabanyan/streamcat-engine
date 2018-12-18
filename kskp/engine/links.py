@@ -103,8 +103,9 @@ class FlowJsonLink:
                 arrow_ids = [arrow.id for arrow in flow.arrows]
 
                 # srcとdstからarrowを作る
-                if len(step.runnable.i_ports) > 0:
-                    src_port = step.runnable.i_ports[0]
+                # if len(step.runnable.i_ports) > 0:
+                for src_port in step.runnable.i_ports:
+                    # src_port = step.runnable.i_ports[0]
                     srcs = node['srcs']
                     if src_port.name not in srcs:
                         raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
@@ -116,12 +117,12 @@ class FlowJsonLink:
                     else:
                         src_arrow = Arrow(srcs[src_port.name], None, None, None, src_port, step)
                         flow.arrows.append(src_arrow)
-                    if len(flow.i_ports) > 0 and src_arrow.o_port is None:
-                        # FIXME: portが1つの前提
-                        src_arrow.o_port = flow.i_ports[0]
+                    if len(flow.i_ports) > 0 and src_arrow.o_port is None:                    
+                        src_arrow.o_port = src_port
                 
-                if len(step.runnable.o_ports) > 0:
-                    dst_port = step.runnable.o_ports[0]
+                # if len(step.runnable.o_ports) > 0:
+                for dst_port in step.runnable.o_ports:
+                    # dst_port = step.runnable.o_ports[0]
                     dsts = node['dsts']
                     if dst_port.name not in dsts:
                         raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
@@ -133,9 +134,8 @@ class FlowJsonLink:
                     else:
                         dst_arrow = Arrow(dsts[dst_port.name], step, dst_port, None, None, None)
                         flow.arrows.append(dst_arrow)
-                    if len(flow.o_ports) > 0 and dst_arrow.i_port is None:
-                        # FIXME: portが1つの前提
-                        dst_arrow.i_port = flow.o_ports[0]
+                    if len(flow.o_ports) > 0 and dst_arrow.i_port is None:                        
+                        dst_arrow.i_port = dst_port
                 
         for node in json_obj['nodes']:
             # arrowにdatumを入れていく
