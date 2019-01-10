@@ -1,0 +1,5 @@
+#END# kgload -nfn; IN=0 OUT=6; 2019/01/07 17:20:17; 2019/01/07 17:20:17
+#ERROR# field name not found: `amuont' in /dev/stdin (kgcut); kgcut f=customer,amuont; IN=0 OUT=0; 2019/01/07 17:20:17; 2019/01/07 17:20:17
+#ERROR# no data found : /dev/stdin (kgload); kgload; IN=0 OUT=0; 2019/01/07 17:20:17; 2019/01/07 17:20:17
+#ERROR# ; kgshell (script RUN KGERROR runmain on kgshell); 2019/01/07 17:20:17
+RuntimeError: runmain on kgshell
