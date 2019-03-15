@@ -73,7 +73,7 @@ class EngineTestCase(unittest.TestCase):
     @unittest.skip
     def test_flow_with_one_runnable(self):
         """
-        runnableが1つだけのフローを作成して動かす        
+        runnableが1つだけのフローを作成して動かす
         """
 
         # 以下の順番で進めることにしよう
@@ -104,20 +104,20 @@ class EngineTestCase(unittest.TestCase):
             """
 
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
 
                 # 本来はこのTestCommand()もlinkから作るべきかも
                 step = Step('s1', TestCommand(), {}) # 1と2
-                
+
                 # 3. i_ports / o_ports からarrowを作る
                 i_arrows = [Arrow(port.name, None, None, 100, step.runnable.i_ports[0], step) for port in step.runnable.i_ports]
                 o_arrows = [Arrow(port.name, step, step.runnable.o_ports[0], None, None, None) for port in step.runnable.o_ports]
-                
+
                 flow.substeps = [step]
                 flow.arrows = i_arrows + o_arrows
 
                 return flow
-        
+
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'o': 300})
 
@@ -132,7 +132,7 @@ class EngineTestCase(unittest.TestCase):
         # "creator": "開発用", # creatorそのものはなくても妥当なflowとみなす
         # "createdAt": "2018-07-27T08:25:19+09:00", # createdAtそのものはなくても妥当なflowとみなす
 
-        json_sample = '''{                
+        json_sample = '''{
             "description": "",
             "label": "フローテスト",
             "params": [],
@@ -142,7 +142,7 @@ class EngineTestCase(unittest.TestCase):
                     "id": "Bi",
                     "type": "int",
                     "value": 100,
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "s1",
@@ -158,7 +158,7 @@ class EngineTestCase(unittest.TestCase):
                 },
                 {
                     "id": "Bt",
-                    "type": "int",                    
+                    "type": "int",
                     "uuid": null
                 }
             ]
@@ -170,12 +170,12 @@ class EngineTestCase(unittest.TestCase):
     @unittest.skip
     def test_flow_with_two_runnable(self):
         """
-        runnableが2つ(command)のフローを作成して動かす        
+        runnableが2つ(command)のフローを作成して動かす
         """
 
         class Square(Command):
             """
-            与えられた数値を2乗する            
+            与えられた数値を2乗する
             """
 
             def __init__(self):
@@ -195,18 +195,18 @@ class EngineTestCase(unittest.TestCase):
             """
 
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
 
                 step1 = Step('s1', Square(), {})
                 step2 = Step('s2', Square(), {})
-                                
+
                 flow.substeps = [step1, step2]
                 flow.arrows = [Arrow('d1', None, None, 5, step1.runnable.i_ports[0], step1),
                                Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
                                Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]
 
                 return flow
-        
+
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'d3': 625})
 
@@ -217,7 +217,7 @@ class EngineTestCase(unittest.TestCase):
         flowを表すJSONを読み込んで実行する
         """
 
-        json_sample = '''{                
+        json_sample = '''{
             "description": "",
             "label": "",
             "params": [],
@@ -227,7 +227,7 @@ class EngineTestCase(unittest.TestCase):
                     "id": "d1",
                     "type": "int",
                     "value": 5,
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "s1",
@@ -243,7 +243,7 @@ class EngineTestCase(unittest.TestCase):
                 },
                 {
                     "id": "d2",
-                    "type": "int",                    
+                    "type": "int",
                     "uuid": null
                 },
                 {
@@ -256,7 +256,7 @@ class EngineTestCase(unittest.TestCase):
                 },
                 {
                     "id": "d3",
-                    "type": "int",                    
+                    "type": "int",
                     "uuid": null
                 }
             ]
@@ -277,32 +277,32 @@ class EngineTestCase(unittest.TestCase):
             """
 
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
                 flow.i_ports = [Port('ii', 'int')]
                 flow.o_ports = [Port('oo', 'int')]
 
                 step1 = Step('s1', Square(), {})
                 step2 = Step('s2', Square(), {})
-                                
+
                 flow.substeps = [step1, step2]
                 flow.arrows = [Arrow('d1', None, flow.i_ports[0], None, step1.runnable.i_ports[0], step1),
                                Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                               Arrow('d3', step2, step2.runnable.o_ports[0], None, flow.o_ports[0], None)]                               
+                               Arrow('d3', step2, step2.runnable.o_ports[0], None, flow.o_ports[0], None)]
                 print(flow.arrows)
                 return flow
-        
+
         class MainFlowLink:
             """
             フローへのリンク(親)
             """
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
                 flow.i_ports = [Port('iii', 'int')]
                 flow.o_ports = [Port('ooo', 'int')]
 
                 ss1 = Step('ss1', Square(), {})
                 ss2 = Step('ss2', SubFlowLink().resolve(), {})
-                                
+
                 flow.substeps = [ss1, ss2]
                 flow.arrows = [Arrow('dd1', None, flow.i_ports[0], 4, ss1.runnable.i_ports[0], ss1),
                                Arrow('dd2', ss1, ss1.runnable.o_ports[0], None, ss2.runnable.i_ports[0], ss2),
@@ -312,7 +312,7 @@ class EngineTestCase(unittest.TestCase):
 
         result = execute(MainFlowLink(), {}, {})
 
-        self.assertEqual(result, {'dd3': 65536})        
+        self.assertEqual(result, {'dd3': 65536})
 
     @unittest.skip
     def test_flow_json_with_subflow(self):
@@ -321,7 +321,7 @@ class EngineTestCase(unittest.TestCase):
         flowを表すJSONを読み込んで実行する
         """
 
-        json_mainflow = '''{                
+        json_mainflow = '''{
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -334,7 +334,7 @@ class EngineTestCase(unittest.TestCase):
                     "id": "dd1",
                     "type": "int",
                     "value": 4,
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "ss1",
@@ -346,7 +346,7 @@ class EngineTestCase(unittest.TestCase):
                 },
                 {
                     "id": "dd2",
-                    "type": "int",                    
+                    "type": "int",
                     "uuid": null
                 },
                 {
@@ -359,7 +359,7 @@ class EngineTestCase(unittest.TestCase):
                 },
                 {
                     "id": "dd3",
-                    "type": "int",                    
+                    "type": "int",
                     "uuid": null
                 }
             ]
@@ -393,15 +393,15 @@ class EngineTestCase(unittest.TestCase):
 
         class McmdTestLink:
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
 
                 step1 = Step('s1', McmdTestCommand(), {'f': 'a,b'})
                 step2 = Step('s2', McmdTestCommand(), {'f': 'a'})
-                                
+
                 flow.substeps = [step1, step2]
                 flow.arrows = [Arrow('d1', None, None, 1, step1.runnable.i_ports[0], step1),
                                Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                               Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]                               
+                               Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]
                 return flow
 
         result = execute(McmdTestLink(), {}, {})
@@ -419,7 +419,7 @@ class EngineTestCase(unittest.TestCase):
             """
 
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
 
                 step = Step('s1', MjoinTestCommand(), {'k': 'k'})
                 flow.substeps = [step]
@@ -433,6 +433,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(MjoinFlowLink(), {}, {})
         self.assertEqual(result, {'rr': [['0', '2', '4']]})
 
+    @unittest.skip
     def test_m_command_json_with_two_inputs(self):
         """
         複数inputのコマンドのテストをJSONで行う
@@ -445,7 +446,7 @@ class EngineTestCase(unittest.TestCase):
         class MjoinFlowLink(FlowJsonLink):
             """
             テスト用にMjoinTestCommandを返すようにカスタマイズ
-            """        
+            """
 
             def node2link(self, node):
                 if node['commandId'] == 'mjoin':
@@ -453,7 +454,7 @@ class EngineTestCase(unittest.TestCase):
                 else:
                     return super().node2link(node)
 
-        json_flow = '''{                
+        json_flow = '''{
             "description": "複数inputフロー",
             "label": "複数inputフロー",
             "params": [],
@@ -463,13 +464,13 @@ class EngineTestCase(unittest.TestCase):
                     "id": "ii",
                     "type": "frame",
                     "value": [["k", "a"], [0, 2]],
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "mm",
                     "type": "frame",
                     "value": [["k", "b"], [0, 4]],
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "s1",
@@ -481,7 +482,7 @@ class EngineTestCase(unittest.TestCase):
                 },
                 {
                     "id": "rr",
-                    "type": "mcmd",                    
+                    "type": "mcmd",
                     "uuid": null
                 }
             ]
@@ -502,12 +503,12 @@ class EngineTestCase(unittest.TestCase):
             """
 
             def resolve(self):
-                flow = Flow()                
+                flow = Flow()
 
                 step = Step('s1', MselTestCommand(), {'k': 'k'})
                 flow.substeps = [step]
 
-                dat1 = [['顧客', '数量', '金額'], 
+                dat1 = [['顧客', '数量', '金額'],
                         ['A', 1, 10],
                         ['A', 2, 20],
                         ['B', 1, 30],
@@ -525,6 +526,7 @@ class EngineTestCase(unittest.TestCase):
                    'uu': [['A', '1', '10'], ['A', '2', '20'], ['B', '1', '30']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_m_command_json_with_two_outputs(self):
         """
         複数outputのコマンドのテストをJSONで行う
@@ -537,7 +539,7 @@ class EngineTestCase(unittest.TestCase):
         class MselFlowLink(FlowJsonLink):
             """
             テスト用にMselTestCommandを返すようにカスタマイズ
-            """        
+            """
 
             def node2link(self, node):
                 if node['commandId'] == 'msel':
@@ -545,7 +547,7 @@ class EngineTestCase(unittest.TestCase):
                 else:
                     return super().node2link(node)
 
-        json_flow = '''{                
+        json_flow = '''{
             "description": "複数outputフロー",
             "label": "複数outputフロー",
             "params": [],
@@ -554,13 +556,13 @@ class EngineTestCase(unittest.TestCase):
                 {
                     "id": "ii",
                     "type": "frame",
-                    "value": [["顧客", "数量", "金額"], 
+                    "value": [["顧客", "数量", "金額"],
                         ["A", 1, 10],
                         ["A", 2, 20],
                         ["B", 1, 30],
                         ["B", 3, 40],
                         ["B", 1, 50]],
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "s1",
@@ -573,18 +575,18 @@ class EngineTestCase(unittest.TestCase):
                 {
                     "id": "oo",
                     "type": "mcmd",
-                    "uuid": null                          
+                    "uuid": null
                 },
                 {
                     "id": "uu",
-                    "type": "mcmd",                    
+                    "type": "mcmd",
                     "uuid": null
                 }
             ]
         }'''
 
         result = execute(MselFlowLink(json_flow), {}, {})
-        correct = {'oo': [['B', '3', '40'], ['B', '1', '50']], 
+        correct = {'oo': [['B', '3', '40'], ['B', '1', '50']],
                    'uu': [['A', '1', '10'], ['A', '2', '20'], ['B', '1', '30']]}
         self.assertEqual(result, correct)
 
@@ -605,8 +607,284 @@ class EngineTestCase(unittest.TestCase):
         result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
-    # def test_mcut(self):    
+    # def test_mcut(self):
     #     s = PathFileSource('csv', '', 'a.csv')
     #     f = Frame(uuid.uuid4(), s)
     #     result = main.execute(McmdLink('mcut'), {'f': 'b,c'}, {'i': f})
     #     self.assertEqual(result, {})
+
+class ExecuteTestCase(unittest.TestCase):
+    """
+    実際の実行のテスト
+    """
+
+    import json
+
+    flow_data = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+            "f": "0,1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+      ]
+    }
+
+    @unittest.skip
+    def test_simple_flow_execute(self):
+        """
+        mコマンド１個のフロー実行
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data))
+        result = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        self.assertEqual(result, correct)
+
+    @unittest.skip
+    def test_simple_flow_two_commands_execute(self):
+        """
+        mコマンド２個のフロー実行
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        result = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1'], ['A', '2']]}
+        self.assertEqual(result, correct)
+
+    @unittest.skip
+    def test_simple_flow_two_commands_preview(self):
+        """
+        mコマンド２個のフロー実行
+        真ん中のdatumでプレビューする
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        result = execute(flow_link, {}, {}, step_id='d1')
+        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        self.assertEqual(result, correct)
+
+    @unittest.skip
+    def test_simple_flow_three_commands_preview(self):
+        """
+        mコマンド３個のフロー実行
+        ２個目のdatumでプレビューする
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        result = execute(flow_link, {}, {}, step_id='d2')
+        correct = {'d2': [['A', '1'], ['A', '2']]}
+        self.assertEqual(result, correct)
+
+    def test_simple_flow_three_commands_execute(self):
+        """
+        mコマンド３個のフロー実行（逆Y字の分岐）
+        ２個目のdatumでプレビューする
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "B"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        result = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', 1]]}
+        self.assertEqual(result, correct)

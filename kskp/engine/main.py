@@ -24,26 +24,26 @@ class DefaultHandler(PatternMatchingEventHandler):
 job_complete_handler = None
 
 
-def execute(link, args, inputs, job_complete_handler=None):
+def execute(link, args, inputs, step_id=None, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
-    
+
     # 進捗を取得する準備を行う
     prepare_observer(job_complete_handler)
 
     # exs = []
-    
-    try:        
+
+    try:
         # jobを作成する
-        job = make_job(link, args, inputs)
+        job = make_job(link, args, inputs, step_id)
 
         # jobを開始する
         job.start()
 
         # 結果を取得する
         lasts = job.step.runnable.lasts
-        
+
         # 後始末をする
         job.dtor()
 
@@ -56,9 +56,9 @@ def execute(link, args, inputs, job_complete_handler=None):
         # exs.append(exception_manager(e))
         # return exs
 
-def make_job(link, args, inputs):
+def make_job(link, args, inputs, step_id):
     # linkからrunnableを生成する
-    runnable = link.resolve()    
+    runnable = link.resolve(step_id)
 
     # runnableからstepを作成する
     step = Step('', runnable, args)
@@ -78,10 +78,10 @@ def domains(step, inputs):
 
     注意：この部分は詳細なロジックを変更したので書換え予定
     単純に、inputsを取り出せば良い（はず？）
-    """    
+    """
 
-    # try:    
-    #     return [Arrow(port.name, None, step, inputs[port.name]) for port 
+    # try:
+    #     return [Arrow(port.name, None, step, inputs[port.name]) for port
     #                                                             in step.runnable.i_ports]
     # except KeyError as e:
     #     # inputsに必要な引数が与えられていない
@@ -94,7 +94,7 @@ def domains(step, inputs):
 # def translate_result_lasts(lasts):
 #     """
 #     帰ってきた結果を変換する(主にdictのkey)
-#     """    
+#     """
 #     root_arrows = domains()
 #     new_lasts = {: v for k, v in lasts.items()}
 
@@ -118,7 +118,7 @@ class ExceptionManagerWebSocket:
     """
     def __call__(self, e):
         """
-        eは例外        
+        eは例外
         """
         print('ExceptionManagerWebSocket:', e)
         # そのままraiseしてしまうとそこでPython全体が終わってしまうので、
