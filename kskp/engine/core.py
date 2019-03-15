@@ -13,7 +13,7 @@ class Job:
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
         except Exception as e:
-            print(repr(e))            
+            print(repr(e))
             self.errors.append(e)
             raise
 
@@ -68,20 +68,20 @@ class Flow(Datum):
             self.run_invokable_steps(invokable_steps)
 
             # print('invokable_steps2', invokable_steps, self.arrows)
-            
+
             # 再度、実行準備が整ったstepのリストを取得しなおす
-            invokable_steps = self.search_invokable_steps()     
+            invokable_steps = self.search_invokable_steps()
 
             # print('invokable_steps3', invokable_steps, self.arrows)
-        
+
         # FIXME: mcmd専用なので外に出す予定
         for k, last in self.lasts.items():
             from nysol.mcmd.nysollib.core import NysolMOD_CORE
-                        
-            if isinstance(last, NysolMOD_CORE):                
+
+            if isinstance(last, NysolMOD_CORE):
                 r = last.run(msg='on')
-                target_arrow = [arrow for arrow in self.arrows if arrow.id == k][0]                
-                target_arrow.datum = r                
+                target_arrow = [arrow for arrow in self.arrows if arrow.id == k][0]
+                target_arrow.datum = r
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -101,7 +101,7 @@ class Flow(Datum):
         """
 
         # まず、グラフ構造を解析する必要がある
-         
+
         # 最初に「最後の矢印」を集める
         last_steps = {a.dom for a in self.arrows if a.cod is None and a.datum is None}
 
@@ -125,7 +125,7 @@ class Flow(Datum):
 
         # 埋まっていないarrowがあれば、それを逆に辿る
         return union(self.search_first_steps_to_run(a.dom) for a in prev_arrows if a.dom is not None)
-                
+
     def run_invokable_steps(self, steps):
         """
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
@@ -135,14 +135,14 @@ class Flow(Datum):
         # print('steps in run_invokable_steps:', steps)
 
         for step in steps:
-            
+
             # jobを作るためにinputsを集める
             inputs = {a.i_port.name: a.datum for a in self.arrows if a.cod == step}
-            
-            # 実行したい処理の中にどのステップなのかを渡す            
-            step.runnable.context['step_id'] = step.id            
+
+            # 実行したい処理の中にどのステップなのかを渡す
+            step.runnable.context['step_id'] = step.id
             # print('context in run_invokable_steps:', step.runnable.context)
-            
+
             # jobを作る
             job = Job(step, inputs)
 
@@ -152,12 +152,12 @@ class Flow(Datum):
             # 結果をそれぞれのarrowに入れる
 
             # まず、outputのarrowを取得する
-            output_arrows = {arrow for arrow in self.arrows if arrow.dom == step}                
+            output_arrows = {arrow for arrow in self.arrows if arrow.dom == step}
 
             # それぞれのarrowに結果を格納する
             for output_arrow in output_arrows:
 
-                # 親フローに結果を戻す場合は戻す                    
+                # 親フローに結果を戻す場合は戻す
                 output_arrow.datum = result[output_arrow.o_port.name]
                 # print('output_arrow:', output_arrow)
 
@@ -191,7 +191,7 @@ class Arrow:
         self.o_port = o_port
         self.datum = datum
         self.i_port = i_port
-        self.cod = cod        
+        self.cod = cod
 
     def __repr__(self):
         if self.o_port is not None:
@@ -209,7 +209,7 @@ class Arrow:
                 cod_i = f"{self.cod}.{self.i_port.name}"
         else:
             cod_i = f"{self.cod}.None"
-        
+
         if self.datum is None:
             return f"{self.id}<{dom_o} -> {cod_i}>"
         else:
