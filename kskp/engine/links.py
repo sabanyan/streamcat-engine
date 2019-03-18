@@ -51,12 +51,29 @@ class MselstrCommand(Command):
     def __init__(self):
         super().__init__()
         self.i_ports = [Port('i', 'frame')]
-        self.o_ports = [Port('o', 'mcmd')]
+        self.o_ports = [Port('o', 'mcmd'), Port('u', 'mcmd')]
 
     def run(self, args, inputs):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
         cmd_o = nm.mselstr(args)
+        cmd_u = cmd_o.redirect('u')
+        return {'o': cmd_o, 'u': cmd_u}
+
+class MjoinCommand(Command):
+    """
+    mjoinコマンド（きちんとコマンドをstoreに置いたら消そう）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('m', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        args['i'] = inputs['i']
+        args['m'] = inputs['m']
+        cmd_o = nm.mjoin(args)
         return {'o': cmd_o}
 
 class CommandLink:
@@ -78,7 +95,8 @@ class CommandLink:
             'test': TestCommand(),
             'square': Square(),
             'mcut': McutCommand(),
-            'mselstr': MselstrCommand()
+            'mselstr': MselstrCommand(),
+            "mjoin": MjoinCommand()
         }
 
         if runnable_id not in table:
@@ -156,8 +174,17 @@ class FlowJsonLink:
 
                 for dst_port in step.runnable.o_ports:
                     dsts = node['dsts']
-                    if dst_port.name not in dsts:
+                    # o_portsが２つのコマンドで、片方しか使わない（片方しかフローに配置されていない）ということもあるかもしれないので
+                    # len(step.runnable.o_ports) == 1　と
+                    # if dsts.get(dst_port.name) is None:
+                    # 　　continue
+                    # を追記
+                    if dst_port.name not in dsts and len(step.runnable.o_ports) == 1:
                         raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
+
+                    if dsts.get(dst_port.name) is None:
+                        continue
+
                     # 対象のpointがすでに存在すればそれを取得する
                     if dsts[dst_port.name] in point_ids:
                         dst_point = [point for point in flow.points if point.id == dsts[dst_port.name]][0]
