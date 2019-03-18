@@ -19,7 +19,7 @@ class Job:
 
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
-            for a in self.step.runnable.arrows:
+            for a in self.step.runnable.points:
                 if a.datum is not None:
                     pass
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
@@ -41,16 +41,16 @@ class Flow(Datum):
         self.o_ports = []
         self.params = []
 
-        self.arrows = []
+        self.points = []
         self.substeps = []
 
     @property
     def lasts(self):
-        return {a.id: a.datum for a in self.arrows if a.cod is None}
+        return {a.id: a.datum for a in self.points if a.cod is None}
 
     def run(self, args, inputs):
         """
-        arrowではなくstepを基軸にして書き直し
+        pointではなくstepを基軸にして書き直し
         """
 
         # inputsを必要な部分に配置する
@@ -59,7 +59,7 @@ class Flow(Datum):
         # 実行準備が整ったstepのリストを取得する
         invokable_steps = self.search_invokable_steps()
 
-        # print('invokable_steps1', self.arrows)
+        # print('invokable_steps1', self.points)
 
         # 実行できるrunnableがある限りは動き続ける
         while len(invokable_steps) > 0:
@@ -67,12 +67,12 @@ class Flow(Datum):
             # stepのうち、実行準備が整ったものを実行する
             self.run_invokable_steps(invokable_steps)
 
-            # print('invokable_steps2', invokable_steps, self.arrows)
+            # print('invokable_steps2', invokable_steps, self.points)
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self.search_invokable_steps()
 
-            # print('invokable_steps3', invokable_steps, self.arrows)
+            # print('invokable_steps3', invokable_steps, self.points)
 
         # FIXME: mcmd専用なので外に出す予定
         for k, last in self.lasts.items():
@@ -80,8 +80,8 @@ class Flow(Datum):
 
             if isinstance(last, NysolMOD_CORE):
                 r = last.run(msg='on')
-                target_arrow = [arrow for arrow in self.arrows if arrow.id == k][0]
-                target_arrow.datum = r
+                target_point = [point for point in self.points if point.id == k][0]
+                target_point.datum = r
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -91,9 +91,9 @@ class Flow(Datum):
         inputsを必要な部分に配置する
         """
 
-        input_arrows = [a for a in self.arrows if a.is_for_input]
-        for input_arrow in input_arrows:
-            input_arrow.datum = inputs[input_arrow.o_port.name]
+        input_points = [a for a in self.points if a.is_for_input]
+        for input_point in input_points:
+            input_point.datum = inputs[input_point.o_port.name]
 
     def search_invokable_steps(self):
         """
@@ -103,7 +103,7 @@ class Flow(Datum):
         # まず、グラフ構造を解析する必要がある
 
         # 最初に「最後の矢印」を集める
-        last_steps = {a.dom for a in self.arrows if a.cod is None and a.datum is None}
+        last_steps = {a.dom for a in self.points if a.cod is None and a.datum is None}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -116,20 +116,20 @@ class Flow(Datum):
         実行準備が整ったstepを見つけ出す
         """
 
-        # 該当stepの実行に必要なarrowを取得する
-        prev_arrows = {a for a in self.arrows if a.cod == original_step}
+        # 該当stepの実行に必要なpointを取得する
+        prev_points = {a for a in self.points if a.cod == original_step}
 
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
-        if all([a.datum is not None for a in prev_arrows]):
+        if all([a.datum is not None for a in prev_points]):
             return {original_step}
 
-        # 埋まっていないarrowがあれば、それを逆に辿る
-        return union(self.search_first_steps_to_run(a.dom) for a in prev_arrows if a.dom is not None)
+        # 埋まっていないpointがあれば、それを逆に辿る
+        return union(self.search_first_steps_to_run(a.dom) for a in prev_points if a.dom is not None)
 
     def run_invokable_steps(self, steps):
         """
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
-        実行後、結果をarrowに格納する
+        実行後、結果をpointに格納する
         """
 
         # print('steps in run_invokable_steps:', steps)
@@ -137,7 +137,7 @@ class Flow(Datum):
         for step in steps:
 
             # jobを作るためにinputsを集める
-            inputs = {a.i_port.name: a.datum for a in self.arrows if a.cod == step}
+            inputs = {a.i_port.name: a.datum for a in self.points if a.cod == step}
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
@@ -149,37 +149,37 @@ class Flow(Datum):
             # 実行開始
             result = job.start()
             # print('result of job.start():', result)
-            # 結果をそれぞれのarrowに入れる
+            # 結果をそれぞれのpointに入れる
 
-            # まず、outputのarrowを取得する
-            output_arrows = {arrow for arrow in self.arrows if arrow.dom == step}
+            # まず、outputのpointを取得する
+            output_points = {point for point in self.points if point.dom == step}
 
-            # それぞれのarrowに結果を格納する
-            for output_arrow in output_arrows:
+            # それぞれのpointに結果を格納する
+            for output_point in output_points:
 
                 # 親フローに結果を戻す場合は戻す
-                output_arrow.datum = result[output_arrow.o_port.name]
-                # print('output_arrow:', output_arrow)
+                output_point.datum = result[output_point.o_port.name]
+                # print('output_point:', output_point)
 
     def make_outputs(self):
         """
         実行すべきstepがなくなった後呼び出される
-        arrowsの結果をまとめてoutputの形式に合うように整えて返す
+        pointsの結果をまとめてoutputの形式に合うように整えて返す
         """
-        return {port.name: self.get_output_arrow(port).datum for port in self.o_ports}
-        # result = {port.name: self.get_output_arrow(port).datum.run() for port in self.o_ports}
+        return {port.name: self.get_output_point(port).datum for port in self.o_ports}
+        # result = {port.name: self.get_output_point(port).datum.run() for port in self.o_ports}
         # print('make_outputs result:', result)
         # return result
 
-    def get_output_arrow(self, o_port):
+    def get_output_point(self, o_port):
         """
         指定された出力ポートに対応するデータを返す
         """
-        arrows = list(filter(lambda a:a.i_port == o_port, self.arrows))
-        return arrows[0]
+        points = list(filter(lambda a:a.i_port == o_port, self.points))
+        return points[0]
 
 
-class Arrow:
+class Point:
     """
     o->iの順番なので注意
     """

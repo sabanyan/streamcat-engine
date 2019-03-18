@@ -12,7 +12,7 @@ import nysol.mcmd as nm
 
 from kskp.store import Command, Port, Parameter
 import kskp.engine
-from kskp.engine import Flow, Step, Arrow, Job
+from kskp.engine import Flow, Step, Point, Job
 
 
 class RedirectStdStreams(object):
@@ -93,9 +93,9 @@ class TestLink:
         step2 = Step('s2', Mcut(), {'f': '0,1,2,3'})
                         
         flow.substeps = [step1, step2]
-        flow.arrows = [Arrow('d1', None, None, 'kskp/data/sample.csv', step1.runnable.i_ports[0], step1),
-                       Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                       Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]
+        flow.points = [Point('d1', None, None, 'kskp/data/sample.csv', step1.runnable.i_ports[0], step1),
+                       Point('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
+                       Point('d3', step2, step2.runnable.o_ports[0], None, None, None)]
         
         return flow
 
