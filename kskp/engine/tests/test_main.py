@@ -620,6 +620,7 @@ class ExecuteTestCase(unittest.TestCase):
 
     import json
 
+    # シンプルなmコマンド１つのフロー
     flow_data = {
       "label": "テストフロ",
       "params": [],
@@ -663,6 +664,120 @@ class ExecuteTestCase(unittest.TestCase):
             "x": True
           },
           "commandId": "mcut"
+        }
+      ]
+    }
+
+    # inputが2つあるシンプルなフロー
+    flow_data_inputs = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "id": "i2",
+          "type": "frame",
+          "label": "テストデータ2",
+          "value": [["顧客", "年齢"],
+              ["A", 21],
+              ["B", 31]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i",
+            "m": "i2"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+            "k": "顧客",
+            "f": "年齢"
+          },
+          "commandId": "mjoin"
+        }
+      ]
+    }
+
+    # outputが２つあるシンプルなフロー
+    flow_data_outputs = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d2",
+            "u": "d3"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
         }
       ]
     }
@@ -953,4 +1068,47 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow))
         result = execute(flow_link, {}, {}, step_id='d2')
         correct = {'d2': [['A', '1'], ['A', '2']]}
+        self.assertEqual(result, correct)
+
+    def test_simple_flow_execute_two_inputs(self):
+        """
+        mコマンド１個（２つのinputを持つ）のフロー実行
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs))
+        result = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1', '10', '21'],
+                          ['A', '2', '20', '21'],
+                          ['B', '1', '30', '31'],
+                          ['B', '3', '40', '31'],
+                          ['B', '1', '50', '31']]}
+        self.assertEqual(result, correct)
+
+    def test_simple_flow_execute_two_outputs(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロー実行
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
+        result = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
+                   'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+        self.assertEqual(result, correct)
+
+    def test_simple_flow_execute_two_outputs(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロープレビュー
+        oだけのテスト（d2）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
+        result = execute(flow_link, {}, {}, 'd2')
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+        self.assertEqual(result, correct)
+
+    def test_simple_flow_execute_two_outputs(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロープレビュー
+        uだけのテスト（d3）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
+        result = execute(flow_link, {}, {}, 'd3')
+        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
         self.assertEqual(result, correct)
