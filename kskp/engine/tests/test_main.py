@@ -39,7 +39,7 @@ class MselTestCommand(Command):
 
 class EngineTestCase(unittest.TestCase):
 
-    # @unittest.skip
+    @unittest.skip
     def test_empty_command(self):
         """
         仮想的にコマンドを作成して動かす
@@ -57,7 +57,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
-    # @unittest.skip
+    @unittest.skip
     def test_empty_flow(self):
         """
         仮想的にフローを作成して動かす
@@ -70,7 +70,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_with_one_runnable(self):
         """
         runnableが1つだけのフローを作成して動かす
@@ -121,7 +121,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'o': 300})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_json_with_one_runnable(self):
         """
         test_flow_with_one_runnableと同内容の
@@ -167,7 +167,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_sample), {}, {})
         self.assertEqual(result, {'Bt': 300})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_with_two_runnable(self):
         """
         runnableが2つ(command)のフローを作成して動かす
@@ -210,7 +210,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'d3': 625})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_json_with_two_runnable(self):
         """
         test_flow_with_two_runnableと同内容の
@@ -265,7 +265,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_sample), {}, {})
         self.assertEqual(result, {'d3': 625})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
@@ -407,7 +407,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(McmdTestLink(), {}, {})
         self.assertEqual(result, {'o': [['0', '2', '4']]})
 
-    # @unittest.skip
+    @unittest.skip
     def test_m_command_with_two_inputs(self):
         """
         複数inputのコマンドのテスト
@@ -433,7 +433,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(MjoinFlowLink(), {}, {})
         self.assertEqual(result, {'rr': [['0', '2', '4']]})
 
-    # @unittest.skip
+    @unittest.skip
     def test_m_command_json_with_two_inputs(self):
         """
         複数inputのコマンドのテストをJSONで行う
@@ -491,7 +491,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(MjoinFlowLink(json_flow), {}, {})
         self.assertEqual(result, {'rr': [['0', '2', '4']]})
 
-    # @unittest.skip
+    @unittest.skip
     def test_m_command_with_two_outputs(self):
         """
         複数outputのコマンドのテスト
@@ -526,7 +526,7 @@ class EngineTestCase(unittest.TestCase):
                    'uu': [['A', '1', '10'], ['A', '2', '20'], ['B', '1', '30']]}
         self.assertEqual(result, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_m_command_json_with_two_outputs(self):
         """
         複数outputのコマンドのテストをJSONで行う
@@ -756,7 +756,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result, correct)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_three_commands_preview(self):
         """
         mコマンド３個のフロー実行
@@ -823,11 +823,10 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
-        ２個目のdatumでプレビューする
         """
         add_cmd_1 = {
           "type": "command",
@@ -887,5 +886,71 @@ class ExecuteTestCase(unittest.TestCase):
 
         flow_link = FlowJsonLink(json.dumps(json_flow))
         result = execute(flow_link, {}, {})
-        correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', 1]]}
+        correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+        self.assertEqual(result, correct)
+
+    def test_simple_flow_three_commands_preview(self):
+        """
+        mコマンド３個のフロー実行（逆Y字の分岐）
+        片方（d2）をプレビュー
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "B"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        result = execute(flow_link, {}, {}, step_id='d2')
+        correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
