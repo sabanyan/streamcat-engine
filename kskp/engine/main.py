@@ -10,7 +10,7 @@ from watchdog.events import PatternMatchingEventHandler
 
 from kskp.store import Port
 
-from .core import Step, Job, Arrow
+from .core import Step, Job, Point
 
 
 class DefaultHandler(PatternMatchingEventHandler):
@@ -63,8 +63,8 @@ def make_job(link, args, inputs, step_id):
     # runnableからstepを作成する
     step = Step('', runnable, args)
 
-    # port情報から、arrowを作成する
-    # arrows = domains(step, inputs)
+    # port情報から、pointを作成する
+    # points = domains(step, inputs)
 
     # jobを作成する
     job = Job(step, {})
@@ -73,29 +73,29 @@ def make_job(link, args, inputs, step_id):
 
 def domains(step, inputs):
     """
-    port情報から、arrowを作成する
-    1つのportにつき、1つのarrowが作られる
+    port情報から、pointを作成する
+    1つのportにつき、1つのpointが作られる
 
     注意：この部分は詳細なロジックを変更したので書換え予定
     単純に、inputsを取り出せば良い（はず？）
     """
 
     # try:
-    #     return [Arrow(port.name, None, step, inputs[port.name]) for port
+    #     return [Point(port.name, None, step, inputs[port.name]) for port
     #                                                             in step.runnable.i_ports]
     # except KeyError as e:
     #     # inputsに必要な引数が与えられていない
     #     raise Exception('inputsに必要な引数が与えられていません') from e
     port_input = Port('*i*', '*')
     port_output = Port('*o*', '*')
-    return [Arrow('input_arrow', None, None, None, port_input, step),
-            Arrow('output_arrow', Step, port_output, None, None, None)]
+    return [Point('input_point', None, None, None, port_input, step),
+            Point('output_point', Step, port_output, None, None, None)]
 
 # def translate_result_lasts(lasts):
 #     """
 #     帰ってきた結果を変換する(主にdictのkey)
 #     """
-#     root_arrows = domains()
+#     root_points = domains()
 #     new_lasts = {: v for k, v in lasts.items()}
 
 class ExceptionManager:

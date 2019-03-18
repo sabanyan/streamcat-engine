@@ -1,2 +1,2 @@
 from .main import *
-from .core import Flow, Step, Job, Arrow
+from .core import Flow, Step, Job, Point

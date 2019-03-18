@@ -1,5 +1,5 @@
 from kskp.store import Command
-from kskp.engine import Flow, Step, Arrow, Port
+from kskp.engine import Flow, Step, Point, Port
 
 import json
 
@@ -132,92 +132,92 @@ class FlowJsonLink:
 
                 flow.substeps.append(step)
 
-                arrow_ids = [arrow.id for arrow in flow.arrows]
+                point_ids = [point.id for point in flow.points]
 
-                # srcとdstからarrowを作る
+                # srcとdstからpointを作る
                 for src_port in step.runnable.i_ports:
                     srcs = node['srcs']
                     if src_port.name not in srcs:
                         raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
-                    # 対象のarrowがすでに存在すればそれを取得する
-                    if srcs[src_port.name] in arrow_ids:
-                        src_arrow = [arrow for arrow in flow.arrows if arrow.id == srcs[src_port.name]][0]
-                        src_arrow.i_port = src_port
-                        src_arrow.cod = step
+                    # 対象のpointがすでに存在すればそれを取得する
+                    if srcs[src_port.name] in point_ids:
+                        src_point = [point for point in flow.points if point.id == srcs[src_port.name]][0]
+                        src_point.i_port = src_port
+                        src_point.cod = step
                     else:
-                        src_arrow = Arrow(srcs[src_port.name], None, None, None, src_port, step)
-                        flow.arrows.append(src_arrow)
-                    if len(flow.i_ports) > 0 and src_arrow.o_port is None:
-                        src_arrow.o_port = src_port
+                        src_point = Point(srcs[src_port.name], None, None, None, src_port, step)
+                        flow.points.append(src_point)
+                    if len(flow.i_ports) > 0 and src_point.o_port is None:
+                        src_point.o_port = src_port
 
                 for dst_port in step.runnable.o_ports:
                     dsts = node['dsts']
                     if dst_port.name not in dsts:
                         raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
-                    # 対象のarrowがすでに存在すればそれを取得する
-                    if dsts[dst_port.name] in arrow_ids:
-                        dst_arrow = [arrow for arrow in flow.arrows if arrow.id == dsts[dst_port.name]][0]
-                        dst_arrow.dom = step
-                        dst_arrow.o_port = dst_port
+                    # 対象のpointがすでに存在すればそれを取得する
+                    if dsts[dst_port.name] in point_ids:
+                        dst_point = [point for point in flow.points if point.id == dsts[dst_port.name]][0]
+                        dst_point.dom = step
+                        dst_point.o_port = dst_port
                     else:
-                        dst_arrow = Arrow(dsts[dst_port.name], step, dst_port, None, None, None)
-                        flow.arrows.append(dst_arrow)
-                    if len(flow.o_ports) > 0 and dst_arrow.i_port is None:
-                        dst_arrow.i_port = dst_port
+                        dst_point = Point(dsts[dst_port.name], step, dst_port, None, None, None)
+                        flow.points.append(dst_point)
+                    if len(flow.o_ports) > 0 and dst_point.i_port is None:
+                        dst_point.i_port = dst_port
 
         for node in json_obj['nodes']:
-            # arrowにdatumを入れていく
+            # pointにdatumを入れていく
             if not self.is_node_runnable(node):
                 if 'value' in node and node['value'] is not None:
-                    target_arrow = [arrow for arrow in flow.arrows if arrow.id == node['id']][0]
-                    target_arrow.datum = node['value']
+                    target_point = [point for point in flow.points if point.id == node['id']][0]
+                    target_point.datum = node['value']
 
         return flow
 
     def init_flow(self, flow, step_id):
-        # 不要なArrowを削除する
-        f = self.delete_arrow(flow, step_id)
+        # 不要なPointを削除する
+        f = self.delete_point(flow, step_id)
         return flow
 
-    def delete_arrow(self, flow, step_id):
+    def delete_point(self, flow, step_id):
         dom = None
-        # 不要なArrowを削除する
-        for arrow in flow.arrows:
-            if arrow.id == step_id:
-                last_arrow = arrow
+        # 不要なPointを削除する
+        for point in flow.points:
+            if point.id == step_id:
+                last_point = point
                 # プレビューするstep_idの場所で止める
-                arrow.i_port = None
-                arrow.cod = None
+                point.i_port = None
+                point.cod = None
                 break
 
-        # プレビューするdatumより後ろのarrowsを削除する
-        # 実行開始場所に行き着くまで（Arrowのdomとo_portがNoneのものにぶつかるまで？それともdatumを持つarrowに行き着くまで？）繰り返す
+        # プレビューするdatumより後ろのpointsを削除する
+        # 実行開始場所に行き着くまで（Pointのdomとo_portがNoneのものにぶつかるまで？それともdatumを持つpointに行き着くまで？）繰り返す
             # step_id（止まるdatum）を始点にする
-            # 始点のo_portをi_portにもつarrowを保持する（上に上がっていく）
-            # 保持対象のarrowのidを新たな始点として再度処理を行う
-        flow.arrows = self.search_connection_arrow(flow, last_arrow)
-        flow.arrows.append(last_arrow)
+            # 始点のo_portをi_portにもつpointを保持する（上に上がっていく）
+            # 保持対象のpointのidを新たな始点として再度処理を行う
+        flow.points = self.search_connection_point(flow, last_point)
+        flow.points.append(last_point)
         return flow
 
-    def search_connection_arrow(self, flow, current_arrow):
-        arrows = []
-        for arrow in flow.arrows:
-            if arrow.cod == current_arrow.dom:
-                arrows.append(arrow)
-                # 自身の上に繋がっているarrowがてっぺんに当たるまでarrowを集めてくる
-                if not (arrow.o_port is None and arrow.dom is None):
-                    arrows = arrows + self.search_connection_arrow(flow, arrow)
+    def search_connection_point(self, flow, current_point):
+        points = []
+        for point in flow.points:
+            if point.cod == current_point.dom:
+                points.append(point)
+                # 自身の上に繋がっているpointがてっぺんに当たるまでpointを集めてくる
+                if not (point.o_port is None and point.dom is None):
+                    points = points + self.search_connection_point(flow, point)
 
-        return arrows
+        return points
 
     def resolve(self, step_id=None):
         f = self.make_flow(self.json_str)
 
-        # プレビューの場合、不要なArrowを削除する
+        # プレビューの場合、不要なPointを削除する
         if step_id is not None:
             f = self.init_flow(f, step_id)
 
-        print(f.arrows)
+        print(f.points)
         return f
 
 class FlowUuidLink(FlowJsonLink):

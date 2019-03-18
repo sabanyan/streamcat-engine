@@ -3,7 +3,7 @@ import json
 # import uuid
 
 from kskp.store import Command, Port
-from kskp.engine import execute, Flow, Step, Arrow, Job
+from kskp.engine import execute, Flow, Step, Point, Job
 
 from kskp.engine.links import FlowJsonLink, Square
 
@@ -39,7 +39,7 @@ class MselTestCommand(Command):
 
 class EngineTestCase(unittest.TestCase):
 
-    @unittest.skip
+    # @unittest.skip
     def test_empty_command(self):
         """
         仮想的にコマンドを作成して動かす
@@ -57,7 +57,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
-    @unittest.skip
+    # @unittest.skip
     def test_empty_flow(self):
         """
         仮想的にフローを作成して動かす
@@ -70,7 +70,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(EmptyLink(), {}, {})
         self.assertEqual(result, {})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_with_one_runnable(self):
         """
         runnableが1つだけのフローを作成して動かす
@@ -79,8 +79,8 @@ class EngineTestCase(unittest.TestCase):
         # 以下の順番で進めることにしよう
         # 1. 該当フロー以下の全てのrunnableを作る（この時点でネストするかもしれない）
         # 2. 1. でできたrunnableをstepに入れる
-        # 3. JSONのstepごとのsrcs/dstsを基に、arrowを作って2. で作成したstepをつなげていく
-        # 4. 実行時にはsubjobsとarrowsを親につけて、それらを使って実行フェーズに入る
+        # 3. JSONのstepごとのsrcs/dstsを基に、pointを作って2. で作成したstepをつなげていく
+        # 4. 実行時にはsubjobsとpointsを親につけて、それらを使って実行フェーズに入る
 
         class TestCommand(Command):
             """
@@ -109,19 +109,19 @@ class EngineTestCase(unittest.TestCase):
                 # 本来はこのTestCommand()もlinkから作るべきかも
                 step = Step('s1', TestCommand(), {}) # 1と2
 
-                # 3. i_ports / o_ports からarrowを作る
-                i_arrows = [Arrow(port.name, None, None, 100, step.runnable.i_ports[0], step) for port in step.runnable.i_ports]
-                o_arrows = [Arrow(port.name, step, step.runnable.o_ports[0], None, None, None) for port in step.runnable.o_ports]
+                # 3. i_ports / o_ports からpointを作る
+                i_points = [Point(port.name, None, None, 100, step.runnable.i_ports[0], step) for port in step.runnable.i_ports]
+                o_points = [Point(port.name, step, step.runnable.o_ports[0], None, None, None) for port in step.runnable.o_ports]
 
                 flow.substeps = [step]
-                flow.arrows = i_arrows + o_arrows
+                flow.points = i_points + o_points
 
                 return flow
 
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'o': 300})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_json_with_one_runnable(self):
         """
         test_flow_with_one_runnableと同内容の
@@ -167,7 +167,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_sample), {}, {})
         self.assertEqual(result, {'Bt': 300})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_with_two_runnable(self):
         """
         runnableが2つ(command)のフローを作成して動かす
@@ -201,16 +201,16 @@ class EngineTestCase(unittest.TestCase):
                 step2 = Step('s2', Square(), {})
 
                 flow.substeps = [step1, step2]
-                flow.arrows = [Arrow('d1', None, None, 5, step1.runnable.i_ports[0], step1),
-                               Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                               Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]
+                flow.points = [Point('d1', None, None, 5, step1.runnable.i_ports[0], step1),
+                               Point('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
+                               Point('d3', step2, step2.runnable.o_ports[0], None, None, None)]
 
                 return flow
 
         result = execute(FlowLink(), {}, {})
         self.assertEqual(result, {'d3': 625})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_json_with_two_runnable(self):
         """
         test_flow_with_two_runnableと同内容の
@@ -265,7 +265,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_sample), {}, {})
         self.assertEqual(result, {'d3': 625})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
@@ -285,10 +285,10 @@ class EngineTestCase(unittest.TestCase):
                 step2 = Step('s2', Square(), {})
 
                 flow.substeps = [step1, step2]
-                flow.arrows = [Arrow('d1', None, flow.i_ports[0], None, step1.runnable.i_ports[0], step1),
-                               Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                               Arrow('d3', step2, step2.runnable.o_ports[0], None, flow.o_ports[0], None)]
-                print(flow.arrows)
+                flow.points = [Point('d1', None, flow.i_ports[0], None, step1.runnable.i_ports[0], step1),
+                               Point('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
+                               Point('d3', step2, step2.runnable.o_ports[0], None, flow.o_ports[0], None)]
+                print(flow.points)
                 return flow
 
         class MainFlowLink:
@@ -304,10 +304,10 @@ class EngineTestCase(unittest.TestCase):
                 ss2 = Step('ss2', SubFlowLink().resolve(), {})
 
                 flow.substeps = [ss1, ss2]
-                flow.arrows = [Arrow('dd1', None, flow.i_ports[0], 4, ss1.runnable.i_ports[0], ss1),
-                               Arrow('dd2', ss1, ss1.runnable.o_ports[0], None, ss2.runnable.i_ports[0], ss2),
-                               Arrow('dd3', ss2, ss2.runnable.o_ports[0], None, flow.o_ports[0], None)]
-                print(flow.arrows)
+                flow.points = [Point('dd1', None, flow.i_ports[0], 4, ss1.runnable.i_ports[0], ss1),
+                               Point('dd2', ss1, ss1.runnable.o_ports[0], None, ss2.runnable.i_ports[0], ss2),
+                               Point('dd3', ss2, ss2.runnable.o_ports[0], None, flow.o_ports[0], None)]
+                print(flow.points)
                 return flow
 
         result = execute(MainFlowLink(), {}, {})
@@ -399,15 +399,15 @@ class EngineTestCase(unittest.TestCase):
                 step2 = Step('s2', McmdTestCommand(), {'f': 'a'})
 
                 flow.substeps = [step1, step2]
-                flow.arrows = [Arrow('d1', None, None, 1, step1.runnable.i_ports[0], step1),
-                               Arrow('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                               Arrow('d3', step2, step2.runnable.o_ports[0], None, None, None)]
+                flow.points = [Point('d1', None, None, 1, step1.runnable.i_ports[0], step1),
+                               Point('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
+                               Point('d3', step2, step2.runnable.o_ports[0], None, None, None)]
                 return flow
 
         result = execute(McmdTestLink(), {}, {})
         self.assertEqual(result, {'o': [['0', '2', '4']]})
 
-    @unittest.skip
+    # @unittest.skip
     def test_m_command_with_two_inputs(self):
         """
         複数inputのコマンドのテスト
@@ -424,16 +424,16 @@ class EngineTestCase(unittest.TestCase):
                 step = Step('s1', MjoinTestCommand(), {'k': 'k'})
                 flow.substeps = [step]
 
-                flow.arrows = [Arrow('ii', None, None, [['k', 'a'], [0, 2]], step.runnable.i_ports[0], step),
-                               Arrow('mm', None, None, [['k', 'b'], [0, 4]], step.runnable.i_ports[1], step),
-                               Arrow('rr', step, step.runnable.o_ports[0], None, None, None)]
+                flow.points = [Point('ii', None, None, [['k', 'a'], [0, 2]], step.runnable.i_ports[0], step),
+                               Point('mm', None, None, [['k', 'b'], [0, 4]], step.runnable.i_ports[1], step),
+                               Point('rr', step, step.runnable.o_ports[0], None, None, None)]
 
                 return flow
 
         result = execute(MjoinFlowLink(), {}, {})
         self.assertEqual(result, {'rr': [['0', '2', '4']]})
 
-    @unittest.skip
+    # @unittest.skip
     def test_m_command_json_with_two_inputs(self):
         """
         複数inputのコマンドのテストをJSONで行う
@@ -491,7 +491,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(MjoinFlowLink(json_flow), {}, {})
         self.assertEqual(result, {'rr': [['0', '2', '4']]})
 
-    @unittest.skip
+    # @unittest.skip
     def test_m_command_with_two_outputs(self):
         """
         複数outputのコマンドのテスト
@@ -515,9 +515,9 @@ class EngineTestCase(unittest.TestCase):
                         ['B', 3, 40],
                         ['B', 1, 50]]
 
-                flow.arrows = [Arrow('ii', None, None, dat1, step.runnable.i_ports[0], step),
-                               Arrow('oo', step, step.runnable.o_ports[0], None, None, None),
-                               Arrow('uu', step, step.runnable.o_ports[1], None, None, None)]
+                flow.points = [Point('ii', None, None, dat1, step.runnable.i_ports[0], step),
+                               Point('oo', step, step.runnable.o_ports[0], None, None, None),
+                               Point('uu', step, step.runnable.o_ports[1], None, None, None)]
 
                 return flow
 
@@ -526,7 +526,7 @@ class EngineTestCase(unittest.TestCase):
                    'uu': [['A', '1', '10'], ['A', '2', '20'], ['B', '1', '30']]}
         self.assertEqual(result, correct)
 
-    @unittest.skip
+    # @unittest.skip
     def test_m_command_json_with_two_outputs(self):
         """
         複数outputのコマンドのテストをJSONで行う
@@ -667,7 +667,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute(self):
         """
         mコマンド１個のフロー実行
@@ -677,7 +677,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result, correct)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_two_commands_execute(self):
         """
         mコマンド２個のフロー実行
@@ -716,7 +716,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_two_commands_preview(self):
         """
         mコマンド２個のフロー実行
@@ -823,6 +823,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
