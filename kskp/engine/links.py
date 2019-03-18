@@ -1,5 +1,5 @@
 from kskp.store import Command
-from kskp.engine import Flow, Step, Point, Port
+from kskp.engine import Flow, Step, Point, Port, Tube
 
 import json
 
@@ -142,13 +142,17 @@ class FlowJsonLink:
                     # 対象のpointがすでに存在すればそれを取得する
                     if srcs[src_port.name] in point_ids:
                         src_point = [point for point in flow.points if point.id == srcs[src_port.name]][0]
-                        src_point.i_port = src_port
-                        src_point.cod = step
+                        # まだ終端扱い（targetのportとrunnableがNone）なら、上書き
+                        # 既に中間点としてparseされていたら、Tubeを追加する
+                        if src_point.target[0].port is None and src_point.target[0].runnable is None:
+                            src_point.target = [Tube(src_port, step)]
+                        else:
+                            src_point.target.append(Tube(src_port, step))
                     else:
-                        src_point = Point(srcs[src_port.name], None, None, None, src_port, step)
+                        src_point = Point(srcs[src_port.name], [Tube(None, None)], None, [Tube(src_port, step)])
                         flow.points.append(src_point)
                     if len(flow.i_ports) > 0 and src_point.o_port is None:
-                        src_point.o_port = src_port
+                        src_point.origin = [Tube(src_port, None)]
 
                 for dst_port in step.runnable.o_ports:
                     dsts = node['dsts']
@@ -157,13 +161,16 @@ class FlowJsonLink:
                     # 対象のpointがすでに存在すればそれを取得する
                     if dsts[dst_port.name] in point_ids:
                         dst_point = [point for point in flow.points if point.id == dsts[dst_port.name]][0]
-                        dst_point.dom = step
-                        dst_point.o_port = dst_port
+                        # 複数のoriginをもつPointはないとは思うが、一応書いておく
+                        if dst_point.origin[0].port is None and dst_point.origin[0].runnable is None:
+                            dst_point.origin = [Tube(dst_port, step)]
+                        else:
+                            dst_point.origin.append(Tube(dst_port, step))
                     else:
-                        dst_point = Point(dsts[dst_port.name], step, dst_port, None, None, None)
+                        dst_point = Point(dsts[dst_port.name], [Tube(dst_port, step)], None, [Tube(None, None)])
                         flow.points.append(dst_point)
                     if len(flow.o_ports) > 0 and dst_point.i_port is None:
-                        dst_point.i_port = dst_port
+                        dst_point.target = [Tube(dst_port, None)]
 
         for node in json_obj['nodes']:
             # pointにdatumを入れていく
@@ -186,8 +193,7 @@ class FlowJsonLink:
             if point.id == step_id:
                 last_point = point
                 # プレビューするstep_idの場所で止める
-                point.i_port = None
-                point.cod = None
+                point.target = [Tube(None, None)]
                 break
 
         # プレビューするdatumより後ろのpointsを削除する
@@ -202,11 +208,12 @@ class FlowJsonLink:
     def search_connection_point(self, flow, current_point):
         points = []
         for point in flow.points:
-            if point.cod == current_point.dom:
-                points.append(point)
-                # 自身の上に繋がっているpointがてっぺんに当たるまでpointを集めてくる
-                if not (point.o_port is None and point.dom is None):
-                    points = points + self.search_connection_point(flow, point)
+            for p_target in point.target:
+                if p_target.runnable == current_point.origin[0].runnable:
+                    points.append(point)
+                    # 自身の上に繋がっているpointがてっぺんに当たるまでpointを集めてくる
+                    if not (point.origin[0].port is None and point.origin[0].runnable is None):
+                        points = points + self.search_connection_point(flow, point)
 
         return points
 
@@ -217,6 +224,9 @@ class FlowJsonLink:
         if step_id is not None:
             f = self.init_flow(f, step_id)
 
+        # for point in f.points:
+        #     print('i', point.target)
+        #     print('o', point.o_port, point.o_runnable)
         print(f.points)
         return f
 

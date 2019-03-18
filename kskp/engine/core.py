@@ -46,7 +46,14 @@ class Flow(Datum):
 
     @property
     def lasts(self):
-        return {a.id: a.datum for a in self.points if a.cod is None}
+        lasts = {}
+        for p in self.points:
+            for t_tube in p.target:
+                if t_tube.runnable is None:
+                    lasts[p.id] = p.datum
+
+        # return {a.id: a.datum for a in self.points if a.target.runnable is None}
+        return lasts
 
     def run(self, args, inputs):
         """
@@ -103,7 +110,12 @@ class Flow(Datum):
         # まず、グラフ構造を解析する必要がある
 
         # 最初に「最後の矢印」を集める
-        last_steps = {a.dom for a in self.points if a.cod is None and a.datum is None}
+        last_steps = set()
+        for p in self.points:
+            for t_tube in p.target:
+                if t_tube.runnable is None and p.datum is None:
+                    last_steps.add(p.o_runnable)
+        # last_steps = {p.o_runnable for p in self.points if p.target.runnable is None and p.datum is None}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -117,14 +129,19 @@ class Flow(Datum):
         """
 
         # 該当stepの実行に必要なpointを取得する
-        prev_points = {a for a in self.points if a.cod == original_step}
+        prev_points = set()
+        for p in self.points:
+            for t_tube in p.target:
+                if t_tube.runnable == original_step:
+                    prev_points.add(p)
+        # prev_points = {a for a in self.points if a.target.runnable == original_step}
 
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
         if all([a.datum is not None for a in prev_points]):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self.search_first_steps_to_run(a.dom) for a in prev_points if a.dom is not None)
+        return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.o_runnable is not None)
 
     def run_invokable_steps(self, steps):
         """
@@ -137,7 +154,12 @@ class Flow(Datum):
         for step in steps:
 
             # jobを作るためにinputsを集める
-            inputs = {a.i_port.name: a.datum for a in self.points if a.cod == step}
+            # inputs = {a.target.port.name: a.datum for a in self.points if a.target.runnable == step}
+            inputs = {}
+            for p in self.points:
+                for t_tube in p.target:
+                    if t_tube.runnable == step:
+                        inputs[t_tube.port.name] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
@@ -152,7 +174,7 @@ class Flow(Datum):
             # 結果をそれぞれのpointに入れる
 
             # まず、outputのpointを取得する
-            output_points = {point for point in self.points if point.dom == step}
+            output_points = {point for point in self.points if point.o_runnable == step}
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
@@ -184,31 +206,32 @@ class Point:
     o->iの順番なので注意
     """
 
-    def __init__(self, id, dom, o_port, datum, i_port, cod):
+    def __init__(self, id, origin_tubes, datum, target_tubes):
         self.id = id
 
-        self.dom = dom
-        self.o_port = o_port
+        self.origin = origin_tubes
         self.datum = datum
-        self.i_port = i_port
-        self.cod = cod
+        self.target = target_tubes
 
     def __repr__(self):
+
         if self.o_port is not None:
-            if self.dom is None:
+            if self.o_runnable is None:
                 dom_o = f"self.{self.o_port.name}"
             else:
-                dom_o = f"{self.dom}.{self.o_port.name}"
+                dom_o = f"{self.o_runnable}.{self.o_port.name}"
         else:
-            dom_o = f"{self.dom}.None"
+            dom_o = f"{self.o_runnable}.None"
 
-        if self.i_port is not None:
-            if self.cod is None:
-                cod_i = f"self.{self.i_port.name}"
+        cod_i = ""
+        for tube in self.target:
+            if tube.port is not None:
+                if tube.runnable is None:
+                    cod_i += f"(self.{tube.port.name})"
+                else:
+                    cod_i += f"({tube.runnable}.{tube.port.name})"
             else:
-                cod_i = f"{self.cod}.{self.i_port.name}"
-        else:
-            cod_i = f"{self.cod}.None"
+                cod_i += f"({tube.runnable}.None)"
 
         if self.datum is None:
             return f"{self.id}<{dom_o} -> {cod_i}>"
@@ -217,8 +240,23 @@ class Point:
 
     @property
     def is_for_input(self):
-        return self.dom is None and self.o_port is not None and self.datum is None
+        return self.o_runnable is None and self.o_port is not None and self.datum is None
 
+    @property
+    def o_port(self):
+        return self.origin[0].port
+
+    @property
+    def o_runnable(self):
+        return self.origin[0].runnable
+
+class Tube:
+    """
+    portとrunnableの入れ物
+    """
+    def __init__(self, port, runnable):
+        self.port = port
+        self.runnable = runnable
 
 def union(sets):
     """
