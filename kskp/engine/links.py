@@ -1,7 +1,8 @@
 from kskp.store import Command
 from kskp.engine import Flow, Step, Point, Port, Tube
-
+import functools
 import json
+from pathlib import Path
 
 class TestCommand(Command):
     """
@@ -108,8 +109,9 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, json_str):
+    def __init__(self, json_str, step_id=None):
         self.json_str = json_str
+        self.step_id = step_id
 
     def node2link(self, node):
         if 'link' in node:
@@ -118,7 +120,7 @@ class FlowJsonLink:
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(None, node['uuid'])
+            ret = FlowUuidLink(Path('kskp/flows'), node['uuid'])
 
         return ret
 
@@ -174,7 +176,7 @@ class FlowJsonLink:
 
                 for dst_port in step.runnable.o_ports:
                     dsts = node['dsts']
-                    # o_portsが２つのコマンドで、片方しか使わない（片方しかフローに配置されていない）ということもあるかもしれないので
+                    # ２つのo_portsを持つコマンドで、片方のoutputしか使わない（片方しかフローに配置しない）ということもあるかもしれないので
                     # len(step.runnable.o_ports) == 1　と
                     # if dsts.get(dst_port.name) is None:
                     # 　　continue
@@ -196,8 +198,14 @@ class FlowJsonLink:
                     else:
                         dst_point = Point(dsts[dst_port.name], [Tube(dst_port, step)], None, [Tube(None, None)])
                         flow.points.append(dst_point)
-                    if len(flow.o_ports) > 0 and dst_point.i_port is None:
-                        dst_point.target = [Tube(dst_port, None)]
+
+                    if len(flow.o_ports) > 0:
+                        for target in dst_point.target:
+                            if target.port is None and target.runnable is None:
+                                dst_point.target = [Tube(dst_port, None)]
+
+                    # if len(flow.o_ports) > 0 and dst_point.target is [Tube(dst_port, step)]:
+                    #     dst_point.target = [Tube(dst_port, None)]
 
         for node in json_obj['nodes']:
             # pointにdatumを入れていく
@@ -208,52 +216,60 @@ class FlowJsonLink:
 
         return flow
 
-    def init_flow(self, flow, step_id):
-        # 不要なPointを削除する
-        f = self.delete_point(flow, step_id)
-        return flow
-
     def delete_point(self, flow, step_id):
         dom = None
-        # 不要なPointを削除する
+        # プレビューするstep_idの場所で止める
+        # 今はtargetのtubeをNone,Noneにしているけど、いい止め方なのかな。。。？
         for point in flow.points:
             if point.id == step_id:
                 last_point = point
-                # プレビューするstep_idの場所で止める
                 point.target = [Tube(None, None)]
                 break
 
-        # プレビューするdatumより後ろのpointsを削除する
-        # 実行開始場所に行き着くまで（Pointのdomとo_portがNoneのものにぶつかるまで？それともdatumを持つpointに行き着くまで？）繰り返す
-            # step_id（止まるdatum）を始点にする
-            # 始点のo_portをi_portにもつpointを保持する（上に上がっていく）
-            # 保持対象のpointのidを新たな始点として再度処理を行う
+
         flow.points = self.search_connection_point(flow, last_point)
         flow.points.append(last_point)
         return flow
 
     def search_connection_point(self, flow, current_point):
+        """
+        プレビューするdatumを作成するために必要なPointを絞り込む
+        どこまで登るかは、originのtarget・o_portがNoneのものにぶつかるまで？それともdatumを持つpointに行き着くまで？
+        今は後者でやっているけど、どうかな〜
+
+        1. 指定されたstep_idをもつpointのidを始点にする
+        2. 始点のo_portをi_portにもつpointを保持する（上に上がっていく）
+        3. 保持対象のpointのidを新たな始点として再度処理を行う
+        """
         points = []
+        # current_pointの上につながっているPointを探す
         for point in flow.points:
             for p_target in point.target:
                 if p_target.runnable == current_point.origin[0].runnable:
                     points.append(point)
-                    # 自身の上に繋がっているpointがてっぺんに当たるまでpointを集めてくる
-                    if not (point.origin[0].port is None and point.origin[0].runnable is None):
+                    # datumがNoneではないpointに行き着くまで登る
+                    if point.datum is None:
                         points = points + self.search_connection_point(flow, point)
 
         return points
 
-    def resolve(self, step_id=None):
+    def preview(func):
+        """
+        プレビュー処理を行う
+        flowがもつPointを、step_idを元に必要なものだけに絞り込んでいる
+        """
+        @functools.wraps(func)
+        def _deco(self):
+            flow = func(self)
+            if self.step_id is not None:
+                flow = self.delete_point(flow, self.step_id)
+            return flow
+        return _deco
+
+    @preview
+    def resolve(self):
         f = self.make_flow(self.json_str)
 
-        # プレビューの場合、不要なPointを削除する
-        if step_id is not None:
-            f = self.init_flow(f, step_id)
-
-        # for point in f.points:
-        #     print('i', point.target)
-        #     print('o', point.o_port, point.o_runnable)
         print(f.points)
         return f
 
