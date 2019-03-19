@@ -265,7 +265,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_sample), {}, {})
         self.assertEqual(result, {'d3': 625})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
@@ -278,8 +278,8 @@ class EngineTestCase(unittest.TestCase):
 
             def resolve(self):
                 flow = Flow()
-                flow.i_ports = [Port('ii', 'int')]
-                flow.o_ports = [Port('oo', 'int')]
+                flow.i_ports = [Port('d1', 'int')]
+                flow.o_ports = [Port('d3', 'int')]
 
                 step1 = Step('s1', Square(), {})
                 step2 = Step('s2', Square(), {})
@@ -297,16 +297,16 @@ class EngineTestCase(unittest.TestCase):
             """
             def resolve(self):
                 flow = Flow()
-                flow.i_ports = [Port('iii', 'int')]
-                flow.o_ports = [Port('ooo', 'int')]
+                flow.i_ports = []
+                flow.o_ports = []
 
                 ss1 = Step('ss1', Square(), {})
                 ss2 = Step('ss2', SubFlowLink().resolve(), {})
 
                 flow.substeps = [ss1, ss2]
-                flow.points = [Point('dd1', [Tube(flow.i_ports[0], None)], 4, [Tube(ss1.runnable.i_ports[0], ss1)]),
+                flow.points = [Point('dd1', [Tube(None, None)], 4, [Tube(ss1.runnable.i_ports[0], ss1)]),
                                Point('dd2', [Tube(ss1.runnable.o_ports[0], ss1)], None, [Tube(ss2.runnable.i_ports[0], ss2)]),
-                               Point('dd3', [Tube(ss2.runnable.o_ports[0], ss2)], None, [Tube(flow.o_ports[0], None)])]
+                               Point('dd3', [Tube(ss2.runnable.o_ports[0], ss2)], None, [Tube(None, None)])]
                 print(flow.points)
                 return flow
 
@@ -354,8 +354,8 @@ class EngineTestCase(unittest.TestCase):
                     "type": "flow",
                     "uuid": "a",
                     "args": {},
-                    "srcs": { "ii": "dd2" },
-                    "dsts": { "oo": "dd3" }
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
                 },
                 {
                     "id": "dd3",
@@ -1118,8 +1118,55 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
         self.assertEqual(result, correct)
 
+    # @unittest.skip
     def test_simple_flow_execute_subflow(self):
         """
-        サブフロー１個のフロー実行
+        サブフローを１個をもつフローを実行する
         """
-        pass
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": 4,
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {},
+                    "srcs": { "i": "dd1" },
+                    "dsts": { "o_sq": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": null
+                },
+                {
+                    "id": "ss2",
+                    "type": "flow",
+                    "uuid": "a",
+                    "args": {},
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
+                },
+                {
+                    "id": "dd3",
+                    "type": "int",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_mainflow), {}, {})
+        self.assertEqual(result, {'dd3': 65536})

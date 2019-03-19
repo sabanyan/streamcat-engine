@@ -171,8 +171,16 @@ class FlowJsonLink:
                     else:
                         src_point = Point(srcs[src_port.name], [Tube(None, None)], None, [Tube(src_port, step)])
                         flow.points.append(src_point)
-                    if len(flow.i_ports) > 0 and src_point.o_port is None:
-                        src_point.origin = [Tube(src_port, None)]
+
+                    if len(flow.i_ports) > 0:
+                        for origin in src_point.origin:
+                            if origin.port is None and origin.runnable is None:
+                                for i_port in flow.i_ports:
+                                    if i_port.name == src_point.id:
+                                        src_point.origin = [Tube(i_port, None)]
+
+                    # if len(flow.i_ports) > 0 and src_point.o_port is None:
+                    #     src_point.origin = [Tube(src_port, None)]
 
                 for dst_port in step.runnable.o_ports:
                     dsts = node['dsts']
@@ -202,7 +210,9 @@ class FlowJsonLink:
                     if len(flow.o_ports) > 0:
                         for target in dst_point.target:
                             if target.port is None and target.runnable is None:
-                                dst_point.target = [Tube(dst_port, None)]
+                                for o_port in flow.o_ports:
+                                    if o_port.name == dst_point.id:
+                                        dst_point.target = [Tube(o_port, None)]
 
                     # if len(flow.o_ports) > 0 and dst_point.target is [Tube(dst_port, step)]:
                     #     dst_point.target = [Tube(dst_port, None)]
