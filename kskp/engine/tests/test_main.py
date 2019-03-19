@@ -265,7 +265,7 @@ class EngineTestCase(unittest.TestCase):
         result = execute(FlowJsonLink(json_sample), {}, {})
         self.assertEqual(result, {'d3': 625})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_with_subflow(self):
         """
         サブフローからの結果を正しく取得できるかのテスト
@@ -314,7 +314,7 @@ class EngineTestCase(unittest.TestCase):
 
         self.assertEqual(result, {'dd3': 65536})
 
-    # @unittest.skip
+    @unittest.skip
     def test_flow_json_with_subflow(self):
         """
         test_flow_with_subflowと同内容の
@@ -1097,7 +1097,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct)
 
     @unittest.skip
-    def test_simple_flow_execute_two_outputs(self):
+    def test_simple_flow_preview_d2_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         oだけのテスト（d2）
@@ -1108,7 +1108,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct)
 
     @unittest.skip
-    def test_simple_flow_execute_two_outputs(self):
+    def test_simple_flow_preview_d3_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         uだけのテスト（d3）
@@ -1119,7 +1119,80 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct)
 
     # @unittest.skip
-    def test_simple_flow_execute_subflow(self):
+    def test_long_flow_execute_two_outputs(self):
+        """
+        mコマンド2個（２つのoutputを持つ）のフロー実行
+        """
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d4",
+          "label": "d4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3",
+            "u": "d4"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        result = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        self.assertEqual(result, correct)
+
+    @unittest.skip
+    def test_long_flow_preview_d2_two_outputs(self):
+        """
+        mコマンド2個（２つのoutputを持つ）のフロープレビュー
+        oだけのテスト（d2）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), 'd2')
+        result = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+        self.assertEqual(result, correct)
+
+    @unittest.skip
+    def test_long_flow_preview_d3_two_outputs(self):
+        """
+        mコマンド2個（２つのoutputを持つ）のフロープレビュー
+        uだけのテスト（d3）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), 'd3')
+        result = execute(flow_link, {}, {})
+        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+        self.assertEqual(result, correct)
+
+    @unittest.skip
+    def test_simple_flow_execute_include_subflow(self):
         """
         サブフローを１個をもつフローを実行する
         """
@@ -1170,3 +1243,270 @@ class ExecuteTestCase(unittest.TestCase):
 
         result = execute(FlowJsonLink(json_mainflow), {}, {})
         self.assertEqual(result, {'dd3': 65536})
+
+    @unittest.skip
+    def test_simple_flow_execute_include_two_subflows(self):
+        """
+        サブフローを2個をもつフローを実行する
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": 4,
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "a",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": null
+                },
+                {
+                    "id": "ss2",
+                    "type": "flow",
+                    "uuid": "a",
+                    "args": {},
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
+                },
+                {
+                    "id": "dd3",
+                    "type": "int",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_mainflow), {}, {})
+        self.assertEqual(result, {'dd3': 4294967296})
+
+    @unittest.skip
+    def test_simple_flow_preview_include_two_subflows(self):
+        """
+        サブフローを2個をもつフローを実行する
+        真ん中のdatumでプレビューする
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": 4,
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "a",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": null
+                },
+                {
+                    "id": "ss2",
+                    "type": "flow",
+                    "uuid": "a",
+                    "args": {},
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
+                },
+                {
+                    "id": "dd3",
+                    "type": "int",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_mainflow, 'dd2'), {}, {})
+        self.assertEqual(result, {'dd2': 256})
+
+    @unittest.skip
+    def test_simple_flow_execute_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "b",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_mainflow), {}, {})
+        self.assertEqual(result, {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]})
+
+    @unittest.skip
+    def test_simple_flow_preview_dd2_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+
+        片方のdatum(dd2)をプレビューする
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "b",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_mainflow, 'dd2'), {}, {})
+        self.assertEqual(result, {'dd2': [['A', '1'], ['A', '2']]})
+
+    # @unittest.skip
+    def test_simple_flow_preview_dd3_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+
+        片方のdatum(dd3)をプレビューする
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "b",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        result = execute(FlowJsonLink(json_mainflow, 'dd3'), {}, {})
+        self.assertEqual(result, {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]})
