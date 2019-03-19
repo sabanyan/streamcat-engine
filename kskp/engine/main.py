@@ -24,7 +24,7 @@ class DefaultHandler(PatternMatchingEventHandler):
 job_complete_handler = None
 
 
-def execute(link, args, inputs, step_id=None, job_complete_handler=None):
+def execute(link, args, inputs, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
@@ -36,7 +36,7 @@ def execute(link, args, inputs, step_id=None, job_complete_handler=None):
 
     try:
         # jobを作成する
-        job = make_job(link, args, inputs, step_id)
+        job = make_job(link, args, inputs)
 
         # jobを開始する
         job.start()
@@ -56,9 +56,9 @@ def execute(link, args, inputs, step_id=None, job_complete_handler=None):
         # exs.append(exception_manager(e))
         # return exs
 
-def make_job(link, args, inputs, step_id):
+def make_job(link, args, inputs):
     # linkからrunnableを生成する
-    runnable = link.resolve(step_id)
+    runnable = link.resolve()
 
     # runnableからstepを作成する
     step = Step('', runnable, args)

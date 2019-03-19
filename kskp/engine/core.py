@@ -99,6 +99,7 @@ class Flow(Datum):
         """
 
         input_points = [a for a in self.points if a.is_for_input]
+        # print('aaa', input_points, inputs)
         for input_point in input_points:
             input_point.datum = inputs[input_point.o_port.name]
 
@@ -197,8 +198,17 @@ class Flow(Datum):
         """
         指定された出力ポートに対応するデータを返す
         """
-        points = list(filter(lambda a:a.i_port == o_port, self.points))
-        return points[0]
+        points = []
+        for point in self.points:
+            for target in point.target:
+                if target.port == o_port:
+                    return point
+        # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
+        # いつかちゃんとする
+        return None
+        
+        # points = list(filter(lambda a:a.i_port == o_port, self.points))
+        # return points[0]
 
 
 class Point:

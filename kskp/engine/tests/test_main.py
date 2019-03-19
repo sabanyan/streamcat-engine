@@ -3,7 +3,7 @@ import json
 # import uuid
 
 from kskp.store import Command, Port
-from kskp.engine import execute, Flow, Step, Point, Job
+from kskp.engine import execute, Flow, Step, Point, Job, Tube
 
 from kskp.engine.links import FlowJsonLink, Square
 
@@ -285,9 +285,9 @@ class EngineTestCase(unittest.TestCase):
                 step2 = Step('s2', Square(), {})
 
                 flow.substeps = [step1, step2]
-                flow.points = [Point('d1', None, flow.i_ports[0], None, step1.runnable.i_ports[0], step1),
-                               Point('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
-                               Point('d3', step2, step2.runnable.o_ports[0], None, flow.o_ports[0], None)]
+                flow.points = [Point('d1', [Tube(flow.i_ports[0], None)], None, [Tube(step1.runnable.i_ports[0], step1)]),
+                               Point('d2', [Tube(step1.runnable.o_ports[0], step1)], None, [Tube(step2.runnable.i_ports[0], step2)]),
+                               Point('d3', [Tube(step2.runnable.o_ports[0], step2)], None, [Tube(flow.o_ports[0], None)])]
                 print(flow.points)
                 return flow
 
@@ -304,9 +304,9 @@ class EngineTestCase(unittest.TestCase):
                 ss2 = Step('ss2', SubFlowLink().resolve(), {})
 
                 flow.substeps = [ss1, ss2]
-                flow.points = [Point('dd1', None, flow.i_ports[0], 4, ss1.runnable.i_ports[0], ss1),
-                               Point('dd2', ss1, ss1.runnable.o_ports[0], None, ss2.runnable.i_ports[0], ss2),
-                               Point('dd3', ss2, ss2.runnable.o_ports[0], None, flow.o_ports[0], None)]
+                flow.points = [Point('dd1', [Tube(flow.i_ports[0], None)], 4, [Tube(ss1.runnable.i_ports[0], ss1)]),
+                               Point('dd2', [Tube(ss1.runnable.o_ports[0], ss1)], None, [Tube(ss2.runnable.i_ports[0], ss2)]),
+                               Point('dd3', [Tube(ss2.runnable.o_ports[0], ss2)], None, [Tube(flow.o_ports[0], None)])]
                 print(flow.points)
                 return flow
 
@@ -314,7 +314,7 @@ class EngineTestCase(unittest.TestCase):
 
         self.assertEqual(result, {'dd3': 65536})
 
-    @unittest.skip
+    # @unittest.skip
     def test_flow_json_with_subflow(self):
         """
         test_flow_with_subflowと同内容の
@@ -326,8 +326,8 @@ class EngineTestCase(unittest.TestCase):
             "label": "メインフロー",
             "params": [],
             "ports": [
-                [{"name": "iii", "type": "int"}],
-                [{"name": "ooo", "type": "int"}]
+                [],
+                []
             ],
             "nodes": [
                 {
@@ -782,7 +782,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute(self):
         """
         mコマンド１個のフロー実行
@@ -792,7 +792,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_two_commands_execute(self):
         """
         mコマンド２個のフロー実行
@@ -831,7 +831,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_two_commands_preview(self):
         """
         mコマンド２個のフロー実行
@@ -866,12 +866,12 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
-        result = execute(flow_link, {}, {}, step_id='d1')
+        flow_link = FlowJsonLink(json.dumps(json_flow), 'd1')
+        result = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_preview(self):
         """
         mコマンド３個のフロー実行
@@ -933,12 +933,12 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
-        result = execute(flow_link, {}, {}, step_id='d2')
+        flow_link = FlowJsonLink(json.dumps(json_flow), 'd2')
+        result = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -1004,6 +1004,7 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_simple_flow_three_commands_preview(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -1065,11 +1066,12 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
-        result = execute(flow_link, {}, {}, step_id='d2')
+        flow_link = FlowJsonLink(json.dumps(json_flow), 'd2')
+        result = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -1083,6 +1085,7 @@ class ExecuteTestCase(unittest.TestCase):
                           ['B', '1', '50', '31']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -1093,22 +1096,30 @@ class ExecuteTestCase(unittest.TestCase):
                    'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         oだけのテスト（d2）
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
-        result = execute(flow_link, {}, {}, 'd2')
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), 'd2')
+        result = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
         self.assertEqual(result, correct)
 
+    @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         uだけのテスト（d3）
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
-        result = execute(flow_link, {}, {}, 'd3')
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), 'd3')
+        result = execute(flow_link, {}, {})
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
         self.assertEqual(result, correct)
+
+    def test_simple_flow_execute_subflow(self):
+        """
+        サブフロー１個のフロー実行
+        """
+        pass
