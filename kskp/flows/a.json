@@ -1,16 +1,16 @@
-{               
+{
     "description": "サブフロー",
     "label": "サブフロー",
     "params": [],
     "ports": [
-        [{"name": "ii", "type": "int"}],
-        [{"name": "oo", "type": "int"}]
+        [{"name": "d1", "type": "int"}],
+        [{"name": "d3", "type": "int"}]
     ],
     "nodes": [
         {
             "id": "d1",
             "type": "int",
-            "uuid": null                          
+            "uuid": null
         },
         {
             "id": "s1",
@@ -22,7 +22,7 @@
         },
         {
             "id": "d2",
-            "type": "int",                    
+            "type": "int",
             "uuid": null
         },
         {
@@ -35,20 +35,7 @@
         },
         {
             "id": "d3",
-            "type": "int",                    
-            "uuid": null
-        },
-        {
-            "id": "s3",
-            "type": "command",
-            "commandId": "square",
-            "args": {},
-            "srcs": { "i": "d3" },
-            "dsts": { "o_sq": "d4" }
-        },
-        {
-            "id": "d4",
-            "type": "int",                    
+            "type": "int",
             "uuid": null
         }
     ]
