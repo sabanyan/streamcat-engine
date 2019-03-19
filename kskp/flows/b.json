@@ -1,0 +1,53 @@
+{
+    "description": "サブフロー（２つのoutput）",
+    "label": "サブフロー",
+    "params": [],
+    "ports": [
+        [{"name": "d1", "type": "frame"}],
+        [{"name": "d3", "type": "frame"}, {"name": "d4", "type": "frame"}]
+    ],
+    "nodes": [
+        {
+            "id": "d1",
+            "type": "frame",
+            "uuid": null
+        },
+        {
+            "id": "s1",
+            "type": "command",
+            "commandId": "mcut",
+            "args": {
+              "f": "0,1",
+              "x": true
+            },
+            "srcs": { "i": "d1" },
+            "dsts": { "o": "d2" }
+        },
+        {
+            "id": "d2",
+            "type": "int",
+            "uuid": null
+        },
+        {
+            "id": "s2",
+            "type": "command",
+            "commandId": "mselstr",
+            "args": {
+                "f": "顧客",
+                "v": "A"
+            },
+            "srcs": { "i": "d2" },
+            "dsts": { "o": "d3" , "u": "d4"}
+        },
+        {
+            "id": "d3",
+            "type": "frame",
+            "uuid": null
+        },
+        {
+            "id": "d4",
+            "type": "frame",
+            "uuid": null
+        }
+    ]
+}

@@ -189,7 +189,7 @@ class Flow(Datum):
         実行すべきstepがなくなった後呼び出される
         pointsの結果をまとめてoutputの形式に合うように整えて返す
         """
-        return {port.name: self.get_output_point(port).datum for port in self.o_ports}
+        return {port.name: self.get_output_point(port).datum for port in self.o_ports if self.get_output_point(port) is not None}
         # result = {port.name: self.get_output_point(port).datum.run() for port in self.o_ports}
         # print('make_outputs result:', result)
         # return result
@@ -206,7 +206,7 @@ class Flow(Datum):
         # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
         # いつかちゃんとする
         return None
-        
+
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
         # return points[0]
 

@@ -121,7 +121,11 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             ret = FlowUuidLink(Path('kskp/flows'), node['uuid'])
-
+            for subflow_datum_id, main_flow_datum_id in node['dsts'].items():
+                if main_flow_datum_id == self.step_id:
+                    ret.step_id = subflow_datum_id
+                    break
+            print(ret.step_id)
         return ret
 
     def make_ports(self, port_dict_list):
@@ -147,6 +151,7 @@ class FlowJsonLink:
         # まず、runnableを集める
         for node in json_obj['nodes']:
             if self.is_node_runnable(node):
+
                 # runnableのインスタンス化を行う
                 step = Step(node['id'], self.node2link(node).resolve(), node['args'])
 
@@ -233,7 +238,8 @@ class FlowJsonLink:
         for point in flow.points:
             if point.id == step_id:
                 last_point = point
-                point.target = [Tube(None, None)]
+                if not len(flow.o_ports) > 0:
+                    point.target = [Tube(None, None)]
                 break
 
 
@@ -258,8 +264,15 @@ class FlowJsonLink:
                 if p_target.runnable == current_point.origin[0].runnable:
                     points.append(point)
                     # datumがNoneではないpointに行き着くまで登る
+                    # サブフロー上でここに入ると、無限ループになるので、別のにしないと
                     if point.datum is None:
-                        points = points + self.search_connection_point(flow, point)
+                        # サブフローの一番上
+                        if len(flow.i_ports) > 0:
+                            if point.o_runnable is not None:
+                                points = points + self.search_connection_point(flow, point)
+                        # 普通のフローの一番上
+                        else:
+                            points = points + self.search_connection_point(flow, point)
 
         return points
 
@@ -273,6 +286,8 @@ class FlowJsonLink:
             flow = func(self)
             if self.step_id is not None:
                 flow = self.delete_point(flow, self.step_id)
+
+            print(flow.points)
             return flow
         return _deco
 
@@ -280,7 +295,6 @@ class FlowJsonLink:
     def resolve(self):
         f = self.make_flow(self.json_str)
 
-        print(f.points)
         return f
 
 class FlowUuidLink(FlowJsonLink):
