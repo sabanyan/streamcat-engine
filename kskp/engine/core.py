@@ -55,6 +55,10 @@ class Flow(Datum):
         # return {a.id: a.datum for a in self.points if a.target.runnable is None}
         return lasts
 
+    @property
+    def point_ids(self):
+        return [point.id for point in self.points]
+
     def run(self, args, inputs):
         """
         pointではなくstepを基軸にして書き直し
@@ -204,12 +208,109 @@ class Flow(Datum):
                 if target.port == o_port:
                     return point
         # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
-        # いつかちゃんとする
+        # TODO: いつかちゃんとする
         return None
 
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
         # return points[0]
 
+    def get_point_by_node_id(self, node_id):
+        """
+        指定したnode_idをもつpointを１つ返す
+        """
+        return [point for point in self.points if point.id == node_id][0]
+
+    def update_src_points(self, node_id, tube):
+        """
+        指定したnode_idとtubeでpointsを更新する
+        """
+        # 対象のpointがすでに存在すればそれを取得する
+        if node_id in self.point_ids:
+            src_point = self.get_point_by_node_id(node_id)
+            src_point.update_target(tube)
+        else:
+            src_point = Point(node_id, [Tube(None, None)], None, [tube])
+            self.points.append(src_point)
+
+        # inを外に出しているサブフローの場合は、
+        # てっぺんのPointのorigin.portを、外に出しているポート名にする
+        if len(self.i_ports) > 0 and src_point.is_first:
+            for i_port in self.i_ports:
+                # 今は「フローのi_port名」＝「datum_id（pointのid）」なのでこの条件にしている
+                if i_port.name == src_point.id:
+                    src_point.update_origin(Tube(i_port, None))
+
+    def update_dst_points(self, node_id, tube):
+        """
+        指定したnode_idとtubeでpointsを更新する
+        """
+        # 対象のpointがすでに存在すればそれを取得する
+        if node_id in self.point_ids:
+            dst_point = self.get_point_by_node_id(node_id)
+            dst_point.update_origin(tube)
+        else:
+            dst_point = Point(node_id, [tube], None, [Tube(None, None)])
+            self.points.append(dst_point)
+
+        # outを外に出しているサブフローの場合は、末端のPointのtarget.portを
+        # 外に出しているポート名にする
+        if len(self.o_ports) > 0:
+            for target in dst_point.target:
+                if target.port is None and target.runnable is None:
+                    for o_port in self.o_ports:
+                        # 今は「フローのo_port名」＝「pointのid（datum_id）」なのでこの条件にしている
+                        if o_port.name == dst_point.id:
+                            dst_point.update_target(Tube(o_port, None))
+
+    def update_point_by_value(self, node_id, value):
+        """
+        指定したnode_idをもつpointのdatumをvalueで置き換える
+        """
+        target_point = self.get_point_by_node_id(node_id)
+        target_point.datum = value
+
+    def pick_necessary_points(self, last_ids):
+        """
+        プレビュー実行するのに必要なpointを取得する
+        今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+        """
+        necessary_points = []
+        for id in last_ids:
+            for point in self.points:
+                if point.id == id:
+                    if not len(self.o_ports) > 0:
+                        point.target = [Tube(None, None)]
+                    last_point = point
+                    break
+
+            necessary_points = necessary_points + self.search_necessary_point(last_point)
+            necessary_points.append(last_point)
+
+        self.points = list(set(necessary_points))
+
+    def search_necessary_point(self, current_point):
+        """
+        プレビューするdatumを作成するために必要なPointを絞り込む
+        既にdatumを持つpointに当たるか、origin.runnableを持たないpointに当たるまで登る
+
+        1. 指定されたstep_idをもつpointのidを始点にする（current_pointのこと）
+        2. 始点のorigin.runnableをtarget.runnableにもつpointを保持する（上に上がっていく）
+        3. 保持対象のpointのidを新たな始点として再帰的に再びsearch_necessary_pointに潜る
+        """
+        points = []
+        # current_pointの上につながっているPointを探す
+        for point in self.points:
+            for p_target in point.target:
+                # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
+                # print('p_target:',id(p_target.runnable), 'current_point:',id(current_point.o_runnable))
+                if p_target.runnable is current_point.o_runnable:
+                    points.append(point)
+                    # TODO: どこまで登るかを判定している場所、もっといい書き方ある…と思う
+                    if point.datum is None and not point.is_first:
+                        # 上にrunnableがある限りは登り続ける
+                        points = points + self.search_necessary_point(point)
+
+        return points
 
 class Point:
     """
@@ -259,6 +360,40 @@ class Point:
     @property
     def o_runnable(self):
         return self.origin[0].runnable
+
+    @property
+    def is_last(self):
+        """
+        指定したポイントが終端のものかどうかを調べる
+        """
+        return self.target[0].port is None and self.target[0].runnable is None
+
+    @property
+    def is_first(self):
+        """
+        指定したポイントが始端かどうかを調べる
+        サブフローの場合は、始端のpointのportはNoneではないので
+        runnableだけで判断している
+        """
+        return self.o_runnable is None
+
+    def update_origin(self, tube):
+        """
+        指定したTubeでoriginを更新する
+        複数のoriginをもつPointはないので、上書きだけ（appendする必要がない）
+        """
+        self.origin = [tube]
+
+    def update_target(self, tube):
+        """
+        指定したTubeでtargetを更新する
+        既にtargetに有効なTubeがあった場合は追加、
+        そうではなかったら上書きする
+        """
+        if self.is_last:
+            self.target = [tube]
+        else:
+            self.target.append(tube)
 
 class Tube:
     """
