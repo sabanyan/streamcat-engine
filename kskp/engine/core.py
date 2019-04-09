@@ -24,6 +24,8 @@ class Job:
                     pass
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
 
+
+
 class Step:
     def __init__(self, id, runnable, args):
         self.id = id
@@ -32,6 +34,46 @@ class Step:
 
     def __repr__(self):
         return self.id
+
+class NysolModule(Datum):
+    def __init__(self):
+        super().__init__()
+        self.uuid = None
+        self._content = None
+
+    def set_uuid(self, uuid):
+        self.uuid = uuid
+
+    def set_content(self, module):
+        self._content = module
+
+    def run(self, msg=False):
+        # NysolModuleなので実行できるdatum
+        # NysolModule.content.run()するよりはいいかなと思ったのだがどうだろう？
+        if msg:
+            return self._content.run(msg='on')
+        else:
+            return self._content.run()
+
+    @property
+    def content(self):
+        return self._content
+
+class Frame(Datum):
+    def __init__(self):
+        super().__init__()
+        self.uuid = None
+        self._content = None
+
+    def set_uuid(self, uuid):
+        self.uuid = uuid
+
+    def set_content(self, module):
+        self._content = module
+
+    @property
+    def content(self):
+        return self._content
 
 class Flow(Datum):
     def __init__(self):
@@ -63,7 +105,6 @@ class Flow(Datum):
         """
         pointではなくstepを基軸にして書き直し
         """
-
         # inputsを必要な部分に配置する
         self.prepare_inputs(inputs)
 
@@ -87,12 +128,16 @@ class Flow(Datum):
 
         # FIXME: mcmd専用なので外に出す予定
         for k, last in self.lasts.items():
-            from nysol.mcmd.nysollib.core import NysolMOD_CORE
-
-            if isinstance(last, NysolMOD_CORE):
-                r = last.run(msg='on')
+            # from nysol.mcmd.nysollib.core import NysolMOD_CORE
+            # サブフローの最後はまだrun()する必要はないので、
+            # len(self.o_ports) == 0を条件に追記
+            if isinstance(last, NysolModule) and len(self.o_ports) == 0:
+                # 最後のものは一応Frameで作っておく
+                # 現状FrameとNysolModuleには明確な違いがない。。。
+                frame = Frame()
+                frame.set_content(last.run(msg=True))
                 target_point = [point for point in self.points if point.id == k][0]
-                target_point.datum = r
+                target_point.datum = frame
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -157,14 +202,13 @@ class Flow(Datum):
         # print('steps in run_invokable_steps:', steps)
 
         for step in steps:
-
             # jobを作るためにinputsを集める
             # inputs = {a.target.port.name: a.datum for a in self.points if a.target.runnable == step}
             inputs = {}
             for p in self.points:
                 for t_tube in p.target:
                     if t_tube.runnable == step:
-                        inputs[t_tube.port.name] = p.datum
+                        inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
@@ -177,7 +221,6 @@ class Flow(Datum):
             result = job.start()
             # print('result of job.start():', result)
             # 結果をそれぞれのpointに入れる
-
             # まず、outputのpointを取得する
             output_points = {point for point in self.points if point.o_runnable == step}
 
@@ -225,12 +268,14 @@ class Point:
     o->iの順番なので注意
     """
 
-    def __init__(self, id, origin_tubes, datum, target_tubes):
+    def __init__(self, id, origin_tubes, datum, target_tubes, cache=False):
         self.id = id
 
         self.origin = origin_tubes
         self.datum = datum
         self.target = target_tubes
+
+        self.cache = cache
 
     def __repr__(self):
 
