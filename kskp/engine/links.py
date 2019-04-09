@@ -109,9 +109,9 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, json_str, step_id=None):
+    def __init__(self, json_str, last_ids=[]):
         self.json_str = json_str
-        self.step_id = step_id
+        self.last_ids = last_ids
 
     def node2link(self, node):
         if 'link' in node:
@@ -121,12 +121,28 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             ret = FlowUuidLink(Path('kskp/flows'), node['uuid'])
-            for subflow_datum_id, main_flow_datum_id in node['dsts'].items():
-                if main_flow_datum_id == self.step_id:
-                    ret.step_id = subflow_datum_id
-                    break
-            print(ret.step_id)
+
+            # かなりの力技・・・。
+            # プレビューを行う場合、サブフロー内で余分な処理が走らないように
+            # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
+
+            # メインフローでプレビュー時、どのdstsを通るかを求める
+            dst_ids = self.pick_necessary_dst_ids(json.loads(self.json_str), self.last_ids)
+            # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
+            if len(dst_ids) > 0:
+                ret.last_ids = [port for port, datum_id in node['dsts'].items() for id in dst_ids if datum_id == id]
+
         return ret
+
+    def pick_necessary_dst_ids(self, nodes, datum_ids):
+        ids = []
+        for datum_id in datum_ids:
+            for node in nodes['nodes']:
+                if self.is_node_runnable(node) and datum_id in list(node['dsts'].values()):
+                    # 対象のnode
+                    ids = ids + self.pick_necessary_dst_ids(nodes, list(node['srcs'].values()))
+            ids.append(datum_id)
+        return list(set(ids))
 
     def make_ports(self, port_dict_list):
         """ dictのリストからportインスタンスのリストを作る """
@@ -148,8 +164,17 @@ class FlowJsonLink:
         flow.i_ports = self.make_ports(ports[0])
         flow.o_ports = self.make_ports(ports[1])
 
+        # flowを更新する
+        flow = self.update_flow_by_runnable(json_obj['nodes'], flow)
+        flow = self.update_flow_by_other_than_runnable(json_obj['nodes'], flow)
+        return flow
+
+    def update_flow_by_runnable(self, nodes, flow):
+        """
+        指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
+        """
         # まず、runnableを集める
-        for node in json_obj['nodes']:
+        for node in nodes:
             if self.is_node_runnable(node):
 
                 # runnableのインスタンス化を行う
@@ -166,31 +191,24 @@ class FlowJsonLink:
                         raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
                     # 対象のpointがすでに存在すればそれを取得する
                     if srcs[src_port.name] in point_ids:
-                        src_point = [point for point in flow.points if point.id == srcs[src_port.name]][0]
-                        # まだ終端扱い（targetのportとrunnableがNone）なら、上書き
-                        # 既に中間点としてparseされていたら、Tubeを追加する
-                        if src_point.target[0].port is None and src_point.target[0].runnable is None:
-                            src_point.target = [Tube(src_port, step)]
-                        else:
-                            src_point.target.append(Tube(src_port, step))
+                        src_point = flow.get_point_by_node_id(srcs[src_port.name])
+                        src_point.update_target(Tube(src_port, step))
                     else:
                         src_point = Point(srcs[src_port.name], [Tube(None, None)], None, [Tube(src_port, step)])
                         flow.points.append(src_point)
 
-                    if len(flow.i_ports) > 0:
-                        for origin in src_point.origin:
-                            if origin.port is None and origin.runnable is None:
-                                for i_port in flow.i_ports:
-                                    if i_port.name == src_point.id:
-                                        src_point.origin = [Tube(i_port, None)]
-
-                    # if len(flow.i_ports) > 0 and src_point.o_port is None:
-                    #     src_point.origin = [Tube(src_port, None)]
+                    # inを外に出しているサブフローの場合は、
+                    # てっぺんのPointのorigin.portを、外に出しているポート名にする
+                    if len(flow.i_ports) > 0 and src_point.is_first:
+                        for i_port in flow.i_ports:
+                            # 今は「フローのi_port名」＝「datum_id（pointのid）」なのでこの条件にしている
+                            if i_port.name == src_point.id:
+                                src_point.update_origin(Tube(i_port, None))
 
                 for dst_port in step.runnable.o_ports:
                     dsts = node['dsts']
                     # ２つのo_portsを持つコマンドで、片方のoutputしか使わない（片方しかフローに配置しない）ということもあるかもしれないので
-                    # len(step.runnable.o_ports) == 1　と
+                    # len(step.runnable.o_ports) == 1（runnableの元々の出力ポートが１つの場合）　と
                     # if dsts.get(dst_port.name) is None:
                     # 　　continue
                     # を追記
@@ -202,27 +220,29 @@ class FlowJsonLink:
 
                     # 対象のpointがすでに存在すればそれを取得する
                     if dsts[dst_port.name] in point_ids:
-                        dst_point = [point for point in flow.points if point.id == dsts[dst_port.name]][0]
-                        # 複数のoriginをもつPointはないとは思うが、一応書いておく
-                        if dst_point.origin[0].port is None and dst_point.origin[0].runnable is None:
-                            dst_point.origin = [Tube(dst_port, step)]
-                        else:
-                            dst_point.origin.append(Tube(dst_port, step))
+                        dst_point = flow.get_point_by_node_id(dsts[dst_port.name])
+                        dst_point.update_origin(Tube(dst_port, step))
                     else:
                         dst_point = Point(dsts[dst_port.name], [Tube(dst_port, step)], None, [Tube(None, None)])
                         flow.points.append(dst_point)
 
+                    # outを外に出しているサブフローの場合は、末端のPointのtarget.portを
+                    # 外に出しているポート名にする
                     if len(flow.o_ports) > 0:
                         for target in dst_point.target:
                             if target.port is None and target.runnable is None:
                                 for o_port in flow.o_ports:
+                                    # 今は「フローのo_port名」＝「pointのid（datum_id）」なのでこの条件にしている
                                     if o_port.name == dst_point.id:
-                                        dst_point.target = [Tube(o_port, None)]
+                                        dst_point.update_target(Tube(o_port, None))
 
-                    # if len(flow.o_ports) > 0 and dst_point.target is [Tube(dst_port, step)]:
-                    #     dst_point.target = [Tube(dst_port, None)]
+        return flow
 
-        for node in json_obj['nodes']:
+    def update_flow_by_other_than_runnable(self, nodes, flow):
+        """
+        指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
+        """
+        for node in nodes:
             # pointにdatumを入れていく
             if not self.is_node_runnable(node):
                 if 'value' in node and node['value'] is not None:
@@ -231,70 +251,73 @@ class FlowJsonLink:
 
         return flow
 
-    def delete_point(self, flow, step_id):
-        dom = None
-        # プレビューするstep_idの場所で止める
-        # 今はtargetのtubeをNone,Noneにしているけど、いい止め方なのかな。。。？
-        for point in flow.points:
-            if point.id == step_id:
-                last_point = point
-                if not len(flow.o_ports) > 0:
-                    point.target = [Tube(None, None)]
-                break
+    def pick_necessary_points(self, flow, last_ids):
+        # プレビュー実行するのに必要なpointを取得する
+        # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+        necessary_points = []
+        for id in last_ids:
+            for point in flow.points:
+                if point.id == id:
+                    if not len(flow.o_ports) > 0:
+                        point.target = [Tube(None, None)]
+                    last_point = point
+                    break
 
+            necessary_points = necessary_points + self.search_necessary_point(flow, last_point)
+            necessary_points.append(last_point)
 
-        flow.points = self.search_connection_point(flow, last_point)
-        flow.points.append(last_point)
-        return flow
+        return list(set(necessary_points))
 
-    def search_connection_point(self, flow, current_point):
+    def search_necessary_point(self, flow, current_point):
         """
         プレビューするdatumを作成するために必要なPointを絞り込む
-        どこまで登るかは、originのtarget・o_portがNoneのものにぶつかるまで？それともdatumを持つpointに行き着くまで？
-        今は後者でやっているけど、どうかな〜
+        既にdatumを持つpointに当たるか、origin.runnableを持たないpointに当たるまで登る
 
-        1. 指定されたstep_idをもつpointのidを始点にする
-        2. 始点のo_portをi_portにもつpointを保持する（上に上がっていく）
-        3. 保持対象のpointのidを新たな始点として再度処理を行う
+        1. 指定されたstep_idをもつpointのidを始点にする（current_pointのこと）
+        2. 始点のorigin.runnableをtarget.runnableにもつpointを保持する（上に上がっていく）
+        3. 保持対象のpointのidを新たな始点として再帰的に再びsearch_necessary_pointに潜る
         """
         points = []
         # current_pointの上につながっているPointを探す
         for point in flow.points:
             for p_target in point.target:
-                if p_target.runnable == current_point.origin[0].runnable:
+                # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
+                # print('p_target:',id(p_target.runnable), 'current_point:',id(current_point.o_runnable))
+                if p_target.runnable is current_point.o_runnable:
                     points.append(point)
-                    # datumがNoneではないpointに行き着くまで登る
-                    # サブフロー上でここに入ると、無限ループになるので、別のにしないと
+                    # どこまで登るかを判定している場所
+                    # もっといい書き方あるはず
                     if point.datum is None:
-                        # サブフローの一番上
-                        if len(flow.i_ports) > 0:
-                            if point.o_runnable is not None:
-                                points = points + self.search_connection_point(flow, point)
-                        # 普通のフローの一番上
-                        else:
-                            points = points + self.search_connection_point(flow, point)
+                        # 上にrunnableがある限りは登り続ける
+                        if not point.is_first:
+                            points = points + self.search_necessary_point(flow, point)
 
         return points
 
     def preview(func):
         """
         プレビュー処理を行う
-        flowがもつPointを、step_idを元に必要なものだけに絞り込んでいる
+        flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
         """
         @functools.wraps(func)
         def _deco(self):
             flow = func(self)
-            if self.step_id is not None:
-                flow = self.delete_point(flow, self.step_id)
+            if len(self.last_ids) > 0:
+                flow.points = self.pick_necessary_points(flow, self.last_ids)
 
             print(flow.points)
             return flow
         return _deco
 
-    @preview
     def resolve(self):
         f = self.make_flow(self.json_str)
 
+        # プレビュー処理を行う
+        # flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
+        if len(self.last_ids) > 0:
+            f.points = self.pick_necessary_points(f, self.last_ids)
+
+        print(f.points)
         return f
 
 class FlowUuidLink(FlowJsonLink):

@@ -55,6 +55,10 @@ class Flow(Datum):
         # return {a.id: a.datum for a in self.points if a.target.runnable is None}
         return lasts
 
+    @property
+    def point_ids(self):
+        return [point.id for point in self.points]
+
     def run(self, args, inputs):
         """
         pointではなくstepを基軸にして書き直し
@@ -204,12 +208,17 @@ class Flow(Datum):
                 if target.port == o_port:
                     return point
         # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
-        # いつかちゃんとする
+        # TODO: いつかちゃんとする
         return None
 
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
         # return points[0]
 
+    def get_point_by_node_id(self, node_id):
+        """
+        指定したnode_idをもつpointを１つ返す
+        """
+        return [point for point in self.points if point.id == node_id][0]
 
 class Point:
     """
@@ -259,6 +268,40 @@ class Point:
     @property
     def o_runnable(self):
         return self.origin[0].runnable
+
+    @property
+    def is_last(self):
+        """
+        指定したポイントが終端のものかどうかを調べる
+        """
+        return self.target[0].port is None and self.target[0].runnable is None
+
+    @property
+    def is_first(self):
+        """
+        指定したポイントが始端かどうかを調べる
+        サブフローの場合は、始端のpointのportはNoneではないので
+        runnableだけで判断している
+        """
+        return self.o_runnable is None
+
+    def update_origin(self, tube):
+        """
+        指定したTubeでoriginを更新する
+        複数のoriginをもつPointはないので、上書きだけ（appendする必要がない）
+        """
+        self.origin = [tube]
+
+    def update_target(self, tube):
+        """
+        指定したTubeでtargetを更新する
+        既にtargetに有効なTubeがあった場合は追加、
+        そうではなかったら上書きする
+        """
+        if self.is_last:
+            self.target = [tube]
+        else:
+            self.target.append(tube)
 
 class Tube:
     """
