@@ -1,5 +1,5 @@
 from kskp.store import Command
-from kskp.engine import Flow, Step, Point, Port, Tube, NysolModule, Frame, Datum
+from kskp.engine import Flow, Step, Point, Port, Tube, NysolModule, Frame, Datum, Store, Folder
 import functools
 import json
 import uuid
@@ -32,6 +32,7 @@ class Square(Command):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
         frame = Frame()
+        frame.set_uuid(str(uuid.uuid4()))
         frame.set_content(inputs['i'] ** 2)
         return {self.o_ports[0].name: frame}
 
@@ -48,6 +49,7 @@ class McutCommand(Command):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
         nysol_module = NysolModule()
+        nysol_module.set_uuid(str(uuid.uuid4()))
         nysol_module.set_content(nm.mcut(args))
         return {'o': nysol_module}
 
@@ -68,7 +70,9 @@ class MselstrCommand(Command):
         nysol_module_o = NysolModule()
         nysol_module_u = NysolModule()
 
+        nysol_module_o.set_uuid(str(uuid.uuid4()))
         nysol_module_o.set_content(cmd_o)
+        nysol_module_u.set_uuid(str(uuid.uuid4()))
         nysol_module_u.set_content(cmd_o.redirect('u'))
         return {'o': nysol_module_o, 'u': nysol_module_u}
 
@@ -86,6 +90,7 @@ class MjoinCommand(Command):
         args['i'] = inputs['i']
         args['m'] = inputs['m']
         nysol_module = NysolModule()
+        nysol_module.set_uuid(str(uuid.uuid4()))
         nysol_module.set_content(nm.mjoin(args))
         return {'o': nysol_module}
 
@@ -111,25 +116,28 @@ class SaverCommand(Command):
     """
     def __init__(self):
         super().__init__()
-        self.i_ports = [Port('i', 'frame'), Port('store', 'frame')]
+        self.i_ports = [Port('i', 'frame'), Port('store', 'store')]
         self.o_ports = [Port('o', 'mcmd')]
 
     def run(self, args, inputs):
-        from unittest.mock import MagicMock
-        mock_input = MagicMock()
-        mock_input['store'].save.side_effect = self.save
-        # cmd_o = inputs['store'].save(inputs['i'])
-        cmd_o = mock_input['store'].save(inputs['i'])
-        return {'o': cmd_o}
+        nysol_module = NysolModule()
+        nysol_module.set_content(inputs['store'].save(inputs['i']))
+        return {'o': nysol_module}
 
-    def save(self, input):
-        import nysol.mcmd as nm
-        frame_name = str(uuid.uuid4())
-        args = {}
-        args['i'] = input
-        args['o'] = 'kskp/data/' + frame_name + '.csv'
-        cmd_o = nm.m2tee(args)
-        return cmd_o
+class LoaderCommand(Command):
+    """
+    指定した場所からデータを取ってくる（テスト用）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('store', 'store')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        # どうやって事前のinputsにStoreを入れようか。。。
+        nysol_module = NysolModule()
+        nysol_module.set_content(inputs['store'].load(args['uuid']))
+        return {'o': nysol_module}
 
 class CommandLink:
     """
@@ -303,9 +311,17 @@ class FlowJsonLink:
             if not self.is_node_runnable(node):
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
-                if 'value' in node and node['value'] is not None:
+                if 'value' in node and node['value'] is not None and node.get('uuid') is None:
                     target_point.datum = node['value']
-
+                # uuidが既に振られている場合は、それをnysol_module化しpointのdatumに入れる
+                elif node.get('uuid') is not None:
+                    # TODO: saverとloaderでpointやステップを追加する処理があり、
+                    # なんとかまとめられないかな〜？
+                    step = Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node.get('uuid')})
+                    loader_point = Point('loader_point', [Tube(None, None)], Folder(), [Tube(Port('store', 'store'), step)])
+                    target_point.origin = [Tube(Port('o', 'frame'), step)]
+                    flow.points.append(loader_point)
+                    flow.substeps.append(step)
         return flow
 
     def pick_necessary_points(self, flow, last_ids):
@@ -377,14 +393,15 @@ class FlowJsonLink:
         # キャッシュ処理
         cache_point = [point for point in f.points if point.cache]
         for point in cache_point:
-            # pointが末端ならm2teeを入れない
+            # pointが末端ならm。。。？
             if point.is_last:
                 pass
             else:
                 # 出力コマンドとそれが出すpointを追加
                 mtee_id = str(uuid.uuid4())
                 step = Step(mtee_id, SaverCommand(), None)
-                add_point = Point(mtee_id, [Tube(Port('o', 'mcmd'), step)], None, [Tube(None, None)])
+                add_point = Point('cache_point', [Tube(Port('o', 'mcmd'), step)], None, [Tube(None, None)])
+                saver_point = Point('saver_point', [Tube(None, None)], Folder(), [Tube(Port('store', 'store'), step)])
 
                 # cacheするpointと追加したpointのtargetを設定する
                 add_point.target = point.target
@@ -392,6 +409,7 @@ class FlowJsonLink:
 
                 f.substeps.append(step)
                 f.points.append(add_point)
+                f.points.append(saver_point)
             # jsonを更新する
             pass
 
