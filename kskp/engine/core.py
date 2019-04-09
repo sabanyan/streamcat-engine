@@ -1,5 +1,5 @@
 import uuid
-
+from pathlib import Path
 from kskp.store import Command, Datum
 
 class Job:
@@ -24,16 +24,90 @@ class Job:
                     pass
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
 
+class Store(Datum):
+    """
+    できたdatumを入れておく場所
+    """
+    def __init__(self):
+        self.data = {} # dict keyはUUID、valはdatum？
 
+    def issue_uuid(self):
+        """
+        uuidを発行する
+        """
+        new_uuid = str(uuid.uuid4())
+        self.data[new_uuid] = None
+        return new_uuid
 
-class Step:
-    def __init__(self, id, runnable, args):
-        self.id = id
-        self.runnable = runnable
-        self.args = args
+    def set_datum(self, datum, uuid):
+        """
+        指定したuuidとdatumを対応づけて保存しておく
+        """
+        if self.data[uuid] is None:
+            self.data[uuid] = datum
+        else:
+            # 上書きするか、Falseを返すかどうしよう？
+            pass
 
-    def __repr__(self):
-        return self.id
+        return True
+
+    def save(self, datum):
+        """
+        override用
+        """
+        pass
+
+    def load(self, uuid):
+        """
+        override用
+        引数uuidにしているけど、いいのか？
+        """
+        pass
+
+class Folder(Store):
+    """
+    ディレクトリに保存するStore
+    """
+    def __init__(self):
+        super().__init__()
+        # TODO: どのディレクトリにでも保存できるように決め打ちはやめたほうがいいよね。
+        self.cache_dir_path = Path('kskp/data/cache_frames')
+        self.frame_dir_path = Path('kskp/data')
+
+    def save(self, datum):
+        import nysol.mcmd as nm
+        uuid = self.issue_uuid()
+        self.set_datum(datum, uuid)
+
+        args = {}
+        args['i'] = datum
+        args['o'] = (self.cache_dir_path / (uuid + '.csv')).as_posix()
+
+        # ここら辺でdbにuuidとファイル名を保存する感じ？
+        # 今はファイル名＝uuidだが。
+        cmd_o = nm.m2tee(args)
+        return cmd_o
+
+    def load(self, uuid):
+        import nysol.mcmd as nm
+
+        # TODO: 本当はuuidを使ってdbからcsvの場所を取ってくる
+
+        # 今はとりあえず直接取ってくる(uuid==csvのファイル名)
+        path = None
+        for flow_path in self.frame_dir_path.iterdir():
+            if flow_path.stem == uuid:
+                path = flow_path
+                break
+
+        args = {}
+        args['i'] = flow_path.as_posix()
+        cmd_o = nm.m2tee(args)
+        return cmd_o
+
+    @property
+    def content(self):
+        return self
 
 class NysolModule(Datum):
     def __init__(self):
@@ -74,6 +148,15 @@ class Frame(Datum):
     @property
     def content(self):
         return self._content
+
+class Step:
+    def __init__(self, id, runnable, args):
+        self.id = id
+        self.runnable = runnable
+        self.args = args
+
+    def __repr__(self):
+        return self.id
 
 class Flow(Datum):
     def __init__(self):
@@ -226,7 +309,6 @@ class Flow(Datum):
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
-
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result[output_point.o_port.name]
                 # print('output_point:', output_point)
