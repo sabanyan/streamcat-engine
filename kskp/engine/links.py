@@ -1,7 +1,8 @@
 from kskp.store import Command
-from kskp.engine import Flow, Step, Point, Port, Tube
+from kskp.engine import Flow, Step, Point, Port, Tube, NysolModule, Frame, Datum
 import functools
 import json
+import uuid
 from pathlib import Path
 
 class TestCommand(Command):
@@ -28,7 +29,11 @@ class Square(Command):
         self.o_ports = [Port('o_sq', 'int')]
 
     def run(self, args, inputs):
-        return {self.o_ports[0].name: inputs['i'] ** 2}
+        # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
+        # ラップするのはなんでもいいかなと思いframeにした。
+        frame = Frame()
+        frame.set_content(inputs['i'] ** 2)
+        return {self.o_ports[0].name: frame}
 
 class McutCommand(Command):
     """
@@ -42,8 +47,9 @@ class McutCommand(Command):
     def run(self, args, inputs):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
-        cmd_o = nm.mcut(args)
-        return {'o': cmd_o}
+        nysol_module = NysolModule()
+        nysol_module.set_content(nm.mcut(args))
+        return {'o': nysol_module}
 
 class MselstrCommand(Command):
     """
@@ -58,8 +64,13 @@ class MselstrCommand(Command):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
         cmd_o = nm.mselstr(args)
-        cmd_u = cmd_o.redirect('u')
-        return {'o': cmd_o, 'u': cmd_u}
+
+        nysol_module_o = NysolModule()
+        nysol_module_u = NysolModule()
+
+        nysol_module_o.set_content(cmd_o)
+        nysol_module_u.set_content(cmd_o.redirect('u'))
+        return {'o': nysol_module_o, 'u': nysol_module_u}
 
 class MjoinCommand(Command):
     """
@@ -74,8 +85,51 @@ class MjoinCommand(Command):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
         args['m'] = inputs['m']
+        nysol_module = NysolModule()
+        nysol_module.set_content(nm.mjoin(args))
+        return {'o': nysol_module}
+
+class MteeCommand(Command):
+    """
+    Mteeコマンド
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        args['i'] = inputs['i']
+        args['m'] = inputs['m']
         cmd_o = nm.mjoin(args)
         return {'o': cmd_o}
+
+class SaverCommand(Command):
+    """
+    指定した場所に出力するコマンド（テスト用）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('store', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        from unittest.mock import MagicMock
+        mock_input = MagicMock()
+        mock_input['store'].save.side_effect = self.save
+        # cmd_o = inputs['store'].save(inputs['i'])
+        cmd_o = mock_input['store'].save(inputs['i'])
+        return {'o': cmd_o}
+
+    def save(self, input):
+        import nysol.mcmd as nm
+        frame_name = str(uuid.uuid4())
+        args = {}
+        args['i'] = input
+        args['o'] = 'kskp/data/' + frame_name + '.csv'
+        cmd_o = nm.m2tee(args)
+        return cmd_o
 
 class CommandLink:
     """
@@ -97,7 +151,9 @@ class CommandLink:
             'square': Square(),
             'mcut': McutCommand(),
             'mselstr': MselstrCommand(),
-            "mjoin": MjoinCommand()
+            "mjoin": MjoinCommand(),
+            "store": SaverCommand(),
+            "mtee": MteeCommand()
         }
 
         if runnable_id not in table:
@@ -245,8 +301,9 @@ class FlowJsonLink:
         for node in nodes:
             # pointにdatumを入れていく
             if not self.is_node_runnable(node):
+                target_point = [point for point in flow.points if point.id == node['id']][0]
+                target_point.cache = node.get('makeCache')
                 if 'value' in node and node['value'] is not None:
-                    target_point = [point for point in flow.points if point.id == node['id']][0]
                     target_point.datum = node['value']
 
         return flow
@@ -316,6 +373,27 @@ class FlowJsonLink:
         # flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
         if len(self.last_ids) > 0:
             f.points = self.pick_necessary_points(f, self.last_ids)
+
+        # キャッシュ処理
+        cache_point = [point for point in f.points if point.cache]
+        for point in cache_point:
+            # pointが末端ならm2teeを入れない
+            if point.is_last:
+                pass
+            else:
+                # 出力コマンドとそれが出すpointを追加
+                mtee_id = str(uuid.uuid4())
+                step = Step(mtee_id, SaverCommand(), None)
+                add_point = Point(mtee_id, [Tube(Port('o', 'mcmd'), step)], None, [Tube(None, None)])
+
+                # cacheするpointと追加したpointのtargetを設定する
+                add_point.target = point.target
+                point.target = [Tube(Port('i', 'frame'), step)]
+
+                f.substeps.append(step)
+                f.points.append(add_point)
+            # jsonを更新する
+            pass
 
         print(f.points)
         return f
