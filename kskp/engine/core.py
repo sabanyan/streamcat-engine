@@ -1,4 +1,5 @@
 import uuid
+import json
 from pathlib import Path
 from kskp.store import Command, Datum
 
@@ -19,10 +20,22 @@ class Job:
 
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
-            for a in self.step.runnable.points:
-                if a.datum is not None:
+            self.cache_save()
+            for point in self.step.runnable.points:
+                if point.datum is not None:
                     pass
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
+
+    def cache_save(self):
+        """
+        やっていることは2つ
+        ・キャッシュをdbに保存する
+        ・flowのjsonを書き換えている
+        JobじゃなくてFlowのメソッドでもいいかも
+        """
+        for point in self.step.runnable.points:
+            if isinstance(point.datum, Cache):
+                point.datum.save()
 
 class Store(Datum):
     """
@@ -74,19 +87,22 @@ class Folder(Store):
         self.cache_dir_path = Path('kskp/data/cache_frames')
         self.frame_dir_path = Path('kskp/data')
 
-    def save(self, datum):
+    def save(self, args, datum):
         import nysol.mcmd as nm
         uuid = self.issue_uuid()
         self.set_datum(datum, uuid)
 
-        args = {}
-        args['i'] = datum
-        args['o'] = (self.cache_dir_path / (uuid + '.csv')).as_posix()
+        args['cache_path'] = (self.cache_dir_path / (uuid + '.csv'))
+        command_args = {}
+        command_args['i'] = datum
+        command_args['o'] = args['cache_path'].as_posix()
 
-        # ここら辺でdbにuuidとファイル名を保存する感じ？
-        # 今はファイル名＝uuidだが。
-        cmd_o = nm.m2tee(args)
-        return cmd_o
+        datum = Cache()
+        datum.set_uuid(uuid)
+        datum.set_cache_info(args)
+        datum.set_content(nm.m2tee(command_args))
+
+        return datum
 
     def load(self, uuid):
         import nysol.mcmd as nm
@@ -100,10 +116,10 @@ class Folder(Store):
                 path = flow_path
                 break
 
-        args = {}
-        args['i'] = flow_path.as_posix()
-        cmd_o = nm.m2tee(args)
-        return cmd_o
+        datum = NysolModule()
+        datum.set_content(nm.m2tee({'i':path.as_posix()}))
+
+        return datum
 
     @property
     def content(self):
@@ -122,7 +138,7 @@ class NysolModule(Datum):
         self._content = module
 
     def run(self, msg=False):
-        # NysolModuleなので実行できるdatum
+        # NysolModuleなので実行できるdatum？と思ったのでrun()を追加した
         # NysolModule.content.run()するよりはいいかなと思ったのだがどうだろう？
         if msg:
             return self._content.run(msg='on')
@@ -132,6 +148,59 @@ class NysolModule(Datum):
     @property
     def content(self):
         return self._content
+
+class Cache(Datum):
+    def __init__(self):
+        super().__init__()
+        self.uuid = None
+        self.info = {}
+        self._content = None
+
+    def set_uuid(self, uuid):
+        self.uuid = uuid
+
+    def set_content(self, module):
+        self._content = module
+
+    def set_cache_info(self, params):
+        self.info = params
+
+    def save(self):
+        # キャッシュが作成されているか確認
+        if not self.created_complete:
+            # とりあえずfalseを返す
+            return False
+
+        # dbに保存
+        self.save_to_db()
+
+        # jsonのnodeのuuidを変更
+        self.update_json_node()
+
+    def save_to_db(self):
+        # TODO: DBと連携するようになったら処理を記載する
+        pass
+
+    def update_json_node(self):
+        if self.info.get('flow_uuid') is None:
+            return
+
+        flow_path = [path for path in Path('kskp/flows').iterdir() if path.stem == self.info.get('flow_uuid')][0]
+        flow_json = json.loads(flow_path.read_text())
+        for node in flow_json['nodes']:
+            if node['id'] == self.info.get('datum_id'):
+                node['uuid'] = self.uuid
+        flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
+
+    @property
+    def content(self):
+        return self._content
+
+    @property
+    def created_complete(self):
+        if self.info.get('cache_path') is not None:
+            return self.info.get('cache_path').exists()
+
 
 class Frame(Datum):
     def __init__(self):
@@ -291,6 +360,9 @@ class Flow(Datum):
             for p in self.points:
                 for t_tube in p.target:
                     if t_tube.runnable == step:
+                        # contentを渡すか、datumを渡すかで悩んでいる
+                        # datumを渡すと受け手側で必ずinputs['i'].contentみたいにとり出させるのが煩わしかったのでcontent渡している
+                        # commandがpointのcontentを知っているのも気持ち悪いし。。。
                         inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
@@ -344,6 +416,13 @@ class Flow(Datum):
         指定したnode_idをもつpointを１つ返す
         """
         return [point for point in self.points if point.id == node_id][0]
+
+    def get_cache_datum_by_point_id(self, point_id):
+        """
+        指定したpointの、キャッシュとなっているpointのdatumを取得する
+        """
+        cache_point = [point for point in self.points if point.id == point_id + '_cache'][0]
+        return cache_point.datum
 
 class Point:
     """

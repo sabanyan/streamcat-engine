@@ -4,8 +4,8 @@ import json
 
 from kskp.store import Command, Port
 from kskp.engine import execute, Flow, Step, Point, Job, Tube
-
-from kskp.engine.links import FlowJsonLink, Square
+from pathlib import Path
+from kskp.engine.links import FlowJsonLink, Square, FlowUuidLink
 
 class MjoinTestCommand(Command):
     """
@@ -1042,7 +1042,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result['d2'].content, correct['d2'])
         self.assertEqual(result['d3'].content, correct['d3'])
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_three_commands_preview_d2(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -2034,24 +2034,35 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
+
         json_flow = json.loads(json.dumps(self.flow_data))
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        path = Path('kskp/flows/test.json')
+        write_data_to_json(path, json_flow)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
         result = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
         self.assertEqual(result['d3'].content, correct['d3'])
 
-        correct_json = json.loads(flow_link.json_str)
-        cache_nodes = [node for node in correct_json['nodes'] if node['id'] in ['d2']]
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d2']]
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            Path('kskp/data/cache_frames/' + node['uuid'] + '.csv').unlink()
 
-        # for node in cache_nodes:
-        #     self.assertIsNotNone(node['uuid'])
+        # 後片付け
+        path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
@@ -2061,3 +2072,9 @@ class ExecuteTestCase(unittest.TestCase):
         result = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result['d1'].content, correct['d1'])
+
+def write_data_to_json(path, data):
+    """
+    データをJSONとしてファイルに書き込むヘルパー
+    """
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
