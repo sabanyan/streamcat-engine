@@ -303,17 +303,25 @@ class FlowJsonLink:
                     target_point.datum = node['value']
                 # uuidが既に振られている場合は、loaderから取ってくるようにする
                 elif node.get('uuid') is not None:
-                    self.put_loader(node.get('uuid'), target_point, flow)
+                    store = Folder(Path('kskp/data'))
+                    self.put_loader(node.get('uuid'), target_point, flow, store)
 
         return flow
 
-    def put_loader(self, node_uuid, target_point, flow):
+    def make_loader_step(self, node_uuid):
+        """
+        指定したuuidのデータを取ってくるLoaderStepを作成する
+        """
+        return Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
+
+    def put_loader(self, node_uuid, target_point, flow, store):
         """
         target_point(uuidが既にあるdatumのpoint)の前に
         LoaderStepとStorePointをくっつける
+        Loaderは指定したstoreからデータを取ってくる
         """
-        loader_step = Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
-        store_point = Point(node_uuid + 'loader_point', [Tube(None, None)], Folder(), [Tube(Port('store', 'store'), loader_step)])
+        loader_step = self.make_loader_step(node_uuid)
+        store_point = Point(node_uuid + 'loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
         target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
         flow.points.append(store_point)
         flow.substeps.append(loader_step)
@@ -361,20 +369,35 @@ class FlowJsonLink:
 
         return points
 
-    def preview(func):
+    def make_saver_step(self, args):
         """
-        プレビュー処理を行う
-        flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
+        saverを作成する
         """
-        @functools.wraps(func)
-        def _deco(self):
-            flow = func(self)
-            if len(self.last_ids) > 0:
-                flow.points = self.pick_necessary_points(flow, self.last_ids)
+        return Step(str(uuid.uuid4()), SaverCommand(), args)
 
-            print(flow.points)
-            return flow
-        return _deco
+    def put_cache_saver(self, point, flow, store):
+        """
+        指定したpointに対してキャッシュを作成する。キャッシュはstoreオブジェクトが指定する場所に。
+        lastsなら最後に設置し、そうでないなら間に挟むように設置する
+        とりあえず隔離しただけなのできもい、ごちゃごちゃしてる
+        """
+        # 出力コマンドとそれが出すpointを追加
+        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならとりあえず何も渡さない
+        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
+        saver_step = self.make_saver_step(args)
+        add_point = Point(point.id + '_cache', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        store_point = Point(point.id + '_saver_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+
+        # pointの向き先を変更する
+        if not point.is_last:
+            # lastsじゃない場合は追加したppintを次のstepに繋げる
+            add_point.target = point.target
+
+        point.target = [Tube(Port('i', 'frame'), saver_step)]
+
+        flow.substeps.append(saver_step)
+        flow.points.append(add_point)
+        flow.points.append(store_point)
 
     def resolve(self):
         f = self.make_flow(self.json_str)
@@ -387,38 +410,12 @@ class FlowJsonLink:
         # キャッシュ作成処理
         cache_point = [point for point in f.points if point.cache]
         for point in cache_point:
-            store = Folder()
+            # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
+            store = Folder(Path('kskp/data/cache_frames'))
             self.put_cache_saver(point, f, store)
-            # jsonを更新する
-            pass
 
         print(f.points)
         return f
-
-    def put_cache_saver(self, point, flow, store):
-        """
-        指定したpointに対してキャッシュを作成する
-        lastsなら最後に設置し、そうでないなら間に挟むように設置する
-        とりあえず隔離しただけなのできもい、ごちゃごちゃしてる
-        """
-        # 出力コマンドとそれが出すpointを追加
-        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならとりあえず何も渡さない
-        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
-        saver_step = Step(str(uuid.uuid4()), SaverCommand(), args)
-        add_point = Point(point.id + '_cache', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        store_point = Point(point.id + '_saver_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
-
-        # cacheするpointと追加したpointのtargetを設定する
-
-        # lastsじゃない場合は追加したppintを次のstepに繋げる
-        if not point.is_last:
-            add_point.target = point.target
-
-        point.target = [Tube(Port('i', 'frame'), saver_step)]
-
-        flow.substeps.append(saver_step)
-        flow.points.append(add_point)
-        flow.points.append(store_point)
 
 class FlowUuidLink(FlowJsonLink):
     """
