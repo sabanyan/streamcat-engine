@@ -32,7 +32,6 @@ class Square(Command):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
         frame = Frame()
-        frame.set_uuid(str(uuid.uuid4()))
         frame.set_content(inputs['i'] ** 2)
         return {self.o_ports[0].name: frame}
 
@@ -49,7 +48,6 @@ class McutCommand(Command):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
         nysol_module = NysolModule()
-        nysol_module.set_uuid(str(uuid.uuid4()))
         nysol_module.set_content(nm.mcut(args))
         return {'o': nysol_module}
 
@@ -70,9 +68,7 @@ class MselstrCommand(Command):
         nysol_module_o = NysolModule()
         nysol_module_u = NysolModule()
 
-        nysol_module_o.set_uuid(str(uuid.uuid4()))
         nysol_module_o.set_content(cmd_o)
-        nysol_module_u.set_uuid(str(uuid.uuid4()))
         nysol_module_u.set_content(cmd_o.redirect('u'))
         return {'o': nysol_module_o, 'u': nysol_module_u}
 
@@ -90,7 +86,6 @@ class MjoinCommand(Command):
         args['i'] = inputs['i']
         args['m'] = inputs['m']
         nysol_module = NysolModule()
-        nysol_module.set_uuid(str(uuid.uuid4()))
         nysol_module.set_content(nm.mjoin(args))
         return {'o': nysol_module}
 
@@ -112,7 +107,7 @@ class MteeCommand(Command):
 
 class SaverCommand(Command):
     """
-    指定した場所に出力するコマンド（テスト用）
+    指定されているstoreに出力するコマンド（テスト用）
     """
     def __init__(self):
         super().__init__()
@@ -120,13 +115,11 @@ class SaverCommand(Command):
         self.o_ports = [Port('o', 'mcmd')]
 
     def run(self, args, inputs):
-        nysol_module = NysolModule()
-        nysol_module.set_content(inputs['store'].save(inputs['i']))
-        return {'o': nysol_module}
+        return {'o': inputs['store'].save(args, inputs['i'])}
 
 class LoaderCommand(Command):
     """
-    指定した場所からデータを取ってくる（テスト用）
+    指定したstoreからデータを取ってくる（テスト用）
     """
     def __init__(self):
         super().__init__()
@@ -134,10 +127,7 @@ class LoaderCommand(Command):
         self.o_ports = [Port('o', 'mcmd')]
 
     def run(self, args, inputs):
-        # どうやって事前のinputsにStoreを入れようか。。。
-        nysol_module = NysolModule()
-        nysol_module.set_content(inputs['store'].load(args['uuid']))
-        return {'o': nysol_module}
+        return {'o': inputs['store'].load(args['uuid'])}
 
 class CommandLink:
     """
@@ -229,8 +219,8 @@ class FlowJsonLink:
         flow.o_ports = self.make_ports(ports[1])
 
         # flowを更新する
-        flow = self.update_flow_by_runnable(json_obj['nodes'], flow)
-        flow = self.update_flow_by_other_than_runnable(json_obj['nodes'], flow)
+        self.update_flow_by_runnable(json_obj['nodes'], flow)
+        self.update_flow_by_other_than_runnable(json_obj['nodes'], flow)
         return flow
 
     def update_flow_by_runnable(self, nodes, flow):
@@ -300,8 +290,6 @@ class FlowJsonLink:
                                     if o_port.name == dst_point.id:
                                         dst_point.update_target(Tube(o_port, None))
 
-        return flow
-
     def update_flow_by_other_than_runnable(self, nodes, flow):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
@@ -313,16 +301,22 @@ class FlowJsonLink:
                 target_point.cache = node.get('makeCache')
                 if 'value' in node and node['value'] is not None and node.get('uuid') is None:
                     target_point.datum = node['value']
-                # uuidが既に振られている場合は、それをnysol_module化しpointのdatumに入れる
+                # uuidが既に振られている場合は、loaderから取ってくるようにする
                 elif node.get('uuid') is not None:
-                    # TODO: saverとloaderでpointやステップを追加する処理があり、
-                    # なんとかまとめられないかな〜？
-                    step = Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node.get('uuid')})
-                    loader_point = Point('loader_point', [Tube(None, None)], Folder(), [Tube(Port('store', 'store'), step)])
-                    target_point.origin = [Tube(Port('o', 'frame'), step)]
-                    flow.points.append(loader_point)
-                    flow.substeps.append(step)
+                    self.put_loader(node.get('uuid'), target_point, flow)
+
         return flow
+
+    def put_loader(self, node_uuid, target_point, flow):
+        """
+        target_point(uuidが既にあるdatumのpoint)の前に
+        LoaderStepとStorePointをくっつける
+        """
+        loader_step = Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
+        store_point = Point(node_uuid + 'loader_point', [Tube(None, None)], Folder(), [Tube(Port('store', 'store'), loader_step)])
+        target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
+        flow.points.append(store_point)
+        flow.substeps.append(loader_step)
 
     def pick_necessary_points(self, flow, last_ids):
         # プレビュー実行するのに必要なpointを取得する
@@ -390,31 +384,41 @@ class FlowJsonLink:
         if len(self.last_ids) > 0:
             f.points = self.pick_necessary_points(f, self.last_ids)
 
-        # キャッシュ処理
+        # キャッシュ作成処理
         cache_point = [point for point in f.points if point.cache]
         for point in cache_point:
-            # pointが末端ならm。。。？
-            if point.is_last:
-                pass
-            else:
-                # 出力コマンドとそれが出すpointを追加
-                mtee_id = str(uuid.uuid4())
-                step = Step(mtee_id, SaverCommand(), None)
-                add_point = Point('cache_point', [Tube(Port('o', 'mcmd'), step)], None, [Tube(None, None)])
-                saver_point = Point('saver_point', [Tube(None, None)], Folder(), [Tube(Port('store', 'store'), step)])
-
-                # cacheするpointと追加したpointのtargetを設定する
-                add_point.target = point.target
-                point.target = [Tube(Port('i', 'frame'), step)]
-
-                f.substeps.append(step)
-                f.points.append(add_point)
-                f.points.append(saver_point)
+            store = Folder()
+            self.put_cache_saver(point, f, store)
             # jsonを更新する
             pass
 
         print(f.points)
         return f
+
+    def put_cache_saver(self, point, flow, store):
+        """
+        指定したpointに対してキャッシュを作成する
+        lastsなら最後に設置し、そうでないなら間に挟むように設置する
+        とりあえず隔離しただけなのできもい、ごちゃごちゃしてる
+        """
+        # 出力コマンドとそれが出すpointを追加
+        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならとりあえず何も渡さない
+        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
+        saver_step = Step(str(uuid.uuid4()), SaverCommand(), args)
+        add_point = Point(point.id + '_cache', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        store_point = Point(point.id + '_saver_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+
+        # cacheするpointと追加したpointのtargetを設定する
+
+        # lastsじゃない場合は追加したppintを次のstepに繋げる
+        if not point.is_last:
+            add_point.target = point.target
+
+        point.target = [Tube(Port('i', 'frame'), saver_step)]
+
+        flow.substeps.append(saver_step)
+        flow.points.append(add_point)
+        flow.points.append(store_point)
 
 class FlowUuidLink(FlowJsonLink):
     """
