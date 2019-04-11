@@ -42,6 +42,7 @@ class Store(Datum):
     できたdatumを入れておく場所
     """
     def __init__(self):
+        super().__init__()
         self.data = {} # dict keyはUUID、valはdatum？
 
     def issue_uuid(self):
@@ -80,19 +81,19 @@ class Store(Datum):
 class Folder(Store):
     """
     ディレクトリに保存するStore
+    コンストラクタで指定したディレクトリに保存する
+    指定したディレクトリパスはpathlibのPathオブジェクト
     """
-    def __init__(self):
+    def __init__(self, dir_path):
         super().__init__()
-        # TODO: どのディレクトリにでも保存できるように決め打ちはやめたほうがいいよね。
-        self.cache_dir_path = Path('kskp/data/cache_frames')
-        self.frame_dir_path = Path('kskp/data')
+        self.dir_path = dir_path
 
     def save(self, args, datum):
         import nysol.mcmd as nm
         uuid = self.issue_uuid()
         self.set_datum(datum, uuid)
 
-        args['cache_path'] = (self.cache_dir_path / (uuid + '.csv'))
+        args['cache_path'] = (self.dir_path / (uuid + '.csv'))
         command_args = {}
         command_args['i'] = datum
         command_args['o'] = args['cache_path'].as_posix()
@@ -111,7 +112,7 @@ class Folder(Store):
 
         # 今はとりあえず直接取ってくる(uuid==csvのファイル名)
         path = None
-        for flow_path in self.frame_dir_path.iterdir():
+        for flow_path in self.dir_path.iterdir():
             if flow_path.stem == uuid:
                 path = flow_path
                 break
