@@ -1,5 +1,5 @@
 from kskp.store import Command
-from kskp.engine import Flow, Step, Point, Port, Tube, NysolModule, Frame, Datum, Store, Folder
+from kskp.engine import Flow, Step, Point, Port, Tube, NysolModule, Frame, Datum, Store, Folder, Cache
 import functools
 import json
 import uuid
@@ -115,7 +115,32 @@ class SaverCommand(Command):
         self.o_ports = [Port('o', 'mcmd')]
 
     def run(self, args, inputs):
-        return {'o': inputs['store'].save(args, inputs['i'])}
+        datum_module, uuid = inputs['store'].save(args, inputs['i'])
+        return {'o': self.wrap_datum(datum_module, args, uuid)}
+
+    def wrap_datum(self, datum_module, args, uuid):
+        datum = Frame()
+        datum.set_uuid(uuid)
+        datum.set_cache_info(args)
+        datum.set_content(datum_module)
+        return datum
+
+class CacheSaverCommand(SaverCommand):
+    """
+    指定されているstoreに出力するコマンド（テスト用）
+    キャッシュ作成用なので、Cache型で返す
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('store', 'store')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def wrap_datum(self, datum_module, args, uuid):
+        datum = Cache()
+        datum.set_uuid(uuid)
+        datum.set_cache_info(args)
+        datum.set_content(datum_module)
+        return datum
 
 class LoaderCommand(Command):
     """
@@ -369,38 +394,47 @@ class FlowJsonLink:
 
         return points
 
-    def make_saver_step(self, args):
+    def make_saver_step(self, args, saver):
         """
-        saverを作成する
+        saverコマンドのstepを作成する
         """
-        return Step(str(uuid.uuid4()), SaverCommand(), args)
+        return Step(str(uuid.uuid4()), saver, args)
 
-    def put_cache_saver(self, point, flow, store):
+    def put_saver(self, point, flow, store, saver=SaverCommand()):
         """
-        指定したpointに対してキャッシュを作成する。キャッシュはstoreオブジェクトが指定する場所に。
+        指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
         とりあえず隔離しただけなのできもい、ごちゃごちゃしてる
         """
         # 出力コマンドとそれが出すpointを追加
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
-        saver_step = self.make_saver_step(args)
-        add_point = Point(point.id + '_cache', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        saver_step = self.make_saver_step(args, saver)
+        cache_point = Point(point.id + '_cache', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         store_point = Point(point.id + '_saver_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
 
         # pointの向き先を変更する
         if not point.is_last:
-            # lastsじゃない場合は追加したppintを次のstepに繋げる
-            add_point.target = point.target
+            # lastsじゃない場合は追加したpointを次のstepに繋げる
+            cache_point.target = point.target
 
         point.target = [Tube(Port('i', 'frame'), saver_step)]
 
         flow.substeps.append(saver_step)
-        flow.points.append(add_point)
+        flow.points.append(cache_point)
         flow.points.append(store_point)
 
     def resolve(self):
         f = self.make_flow(self.json_str)
+
+        # lastたちにjob_saverをくっつける
+        # とりあえずサブフローのことは考えずにやってみる
+        last_point = [point for point in f.points if point.is_last]
+        for point in last_point:
+            if point.cache:
+                continue
+            store = Folder(Path('kskp/data/result'))
+            self.put_saver(point, f, store)
 
         # プレビュー処理を行う
         # flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
@@ -412,7 +446,7 @@ class FlowJsonLink:
         for point in cache_point:
             # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
             store = Folder(Path('kskp/data/cache_frames'))
-            self.put_cache_saver(point, f, store)
+            self.put_saver(point, f, store, CacheSaverCommand())
 
         print(f.points)
         return f

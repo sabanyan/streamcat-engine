@@ -1042,7 +1042,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result['d2'].content, correct['d2'])
         self.assertEqual(result['d3'].content, correct['d3'])
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_preview_d2(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -2048,9 +2048,10 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
-        result = execute(flow_link, {}, {})
+        lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
-        self.assertEqual(result['d3'].content, correct['d3'])
+        result = get_frame_by_uuid(lasts['d3_cache'].uuid, 'kskp/data/result/')
+        self.assertEqual(result, correct['d3'])
 
         # uuidが書き換わっているかのテスト
         result_json = json.loads(path.read_text())
@@ -2061,8 +2062,97 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 後片付け
         path.unlink()
+        Path('kskp/data/result/' + lasts['d3_cache'].uuid + '.csv').unlink()
 
     # @unittest.skip
+    def test_simple_flow_execute_generate_last_cache(self):
+        """
+        mコマンド３個のフロー実行
+        最後のdatumをキャッシュする
+        """
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv",
+          "makeCache": True,
+          "cacheCreatedAt": ""
+        }
+
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        path = Path('kskp/flows/test.json')
+        write_data_to_json(path, json_flow)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1']]}
+        result = get_frame_by_uuid(lasts['d3_cache'].uuid, 'kskp/data/cache_frames/')
+        self.assertEqual(result, correct['d3'])
+
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d3']]
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            Path('kskp/data/cache_frames/' + node['uuid'] + '.csv').unlink()
+
+        # 後片付け
+        path.unlink()
+
+    @unittest.skip
     def test_simple_flow_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
@@ -2072,6 +2162,20 @@ class ExecuteTestCase(unittest.TestCase):
         result = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         self.assertEqual(result['d1'].content, correct['d1'])
+
+def get_frame_by_uuid(uuid, dir_path):
+    """
+    指定したuuidのframeを取得する
+    """
+    import csv
+    result = []
+    with open(dir_path + uuid + '.csv', 'r') as f:
+        rows = csv.reader(f)
+        header = next(rows)
+        for row in rows:
+            result.append(row)
+
+    return result
 
 def write_data_to_json(path, data):
     """
