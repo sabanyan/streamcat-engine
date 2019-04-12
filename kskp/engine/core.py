@@ -2,6 +2,7 @@ import uuid
 import json
 from pathlib import Path
 from kskp.store import Command, Datum
+from datetime import datetime, timedelta, timezone
 
 class Job:
     def __init__(self, step, inputs):
@@ -21,6 +22,7 @@ class Job:
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
             self.cache_save()
+
             for point in self.step.runnable.points:
                 if point.datum is not None:
                     pass
@@ -28,14 +30,17 @@ class Job:
 
     def cache_save(self):
         """
-        やっていることは2つ
+        やっていることは3つ
+        ・キャッシュが作成されているかの確認
         ・キャッシュをdbに保存する
         ・flowのjsonを書き換えている
-        JobじゃなくてFlowのメソッドでもいいかも
+        Flowに委譲したほうがいいかな？
         """
-        for point in self.step.runnable.points:
-            if isinstance(point.datum, Cache):
-                point.datum.save()
+        self.step.runnable.cache_store.save()
+        # 配下のflowに関してもcache保存処理を行う
+        for substep in self.step.runnable.substeps:
+            if isinstance(substep.runnable, Flow):
+                substep.runnable.cache_store.save()
 
 class Store(Datum):
     """
@@ -93,17 +98,12 @@ class Folder(Store):
         uuid = self.issue_uuid()
         self.set_datum(datum, uuid)
 
-        args['cache_path'] = (self.dir_path / (uuid + '.csv'))
+        args['dir_path'] = (self.dir_path / (uuid + '.csv')) if args.get('file_name') is None else args.get('file_name')
         command_args = {}
         command_args['i'] = datum
-        command_args['o'] = args['cache_path'].as_posix()
+        command_args['o'] = args['dir_path'].as_posix()
 
-        datum = Cache()
-        datum.set_uuid(uuid)
-        datum.set_cache_info(args)
-        datum.set_content(nm.m2tee(command_args))
-
-        return datum
+        return nm.m2tee(command_args), uuid
 
     def load(self, uuid):
         import nysol.mcmd as nm
@@ -125,6 +125,22 @@ class Folder(Store):
     @property
     def content(self):
         return self
+
+class CacheStore(Store):
+    """
+    キャッシュを置いておくStore
+    基本的には1Flow1つ持っている感じ？とりあえずそうしている。
+    """
+    def __init__(self):
+        super().__init__()
+        self.cache_list = []
+
+    def save(self):
+        for cache in self.cache_list:
+            cache.save()
+
+    def append(self, cache_point):
+        self.cache_list.append(cache_point)
 
 class NysolModule(Datum):
     def __init__(self):
@@ -150,18 +166,15 @@ class NysolModule(Datum):
     def content(self):
         return self._content
 
-class Cache(Datum):
+class Cache(NysolModule):
+    """
+    とりあえずNysolModuleを継承した（実行時には普通のNysolModuleとして扱いたいので）
+    となるとCacheはNysolModuleあり気になってしまうが。。。
+    まぁ何か困ったことが出現したらその時に考えよう。。。
+    """
     def __init__(self):
         super().__init__()
-        self.uuid = None
         self.info = {}
-        self._content = None
-
-    def set_uuid(self, uuid):
-        self.uuid = uuid
-
-    def set_content(self, module):
-        self._content = module
 
     def set_cache_info(self, params):
         self.info = params
@@ -191,6 +204,8 @@ class Cache(Datum):
         for node in flow_json['nodes']:
             if node['id'] == self.info.get('datum_id'):
                 node['uuid'] = self.uuid
+                JST = timezone(timedelta(hours=+9), 'JST')
+                node['cacheCreatedAt'] = datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S')
         flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
 
     @property
@@ -199,25 +214,39 @@ class Cache(Datum):
 
     @property
     def created_complete(self):
-        if self.info.get('cache_path') is not None:
-            return self.info.get('cache_path').exists()
+        if self.info.get('dir_path') is not None:
+            return self.info.get('dir_path').exists()
 
 
-class Frame(Datum):
+class Frame(NysolModule):
     def __init__(self):
         super().__init__()
-        self.uuid = None
-        self._content = None
+        self.info = {}
 
-    def set_uuid(self, uuid):
-        self.uuid = uuid
+    def set_cache_info(self, params):
+        self.info = params
 
-    def set_content(self, module):
-        self._content = module
+    def save(self):
+        # キャッシュが作成されているか確認
+        if not self.created_complete:
+            # とりあえずfalseを返す
+            return False
+
+        # dbに保存
+        self.save_to_db()
+
+    def save_to_db(self):
+        # TODO: DBと連携するようになったら処理を記載する
+        pass
 
     @property
     def content(self):
         return self._content
+
+    @property
+    def created_complete(self):
+        if self.info.get('dir_path') is not None:
+            return self.info.get('dir_path').exists()
 
 class Step:
     def __init__(self, id, runnable, args):
@@ -238,6 +267,8 @@ class Flow(Datum):
 
         self.points = []
         self.substeps = []
+
+        self.cache_store = CacheStore()
 
     @property
     def lasts(self):
@@ -281,16 +312,12 @@ class Flow(Datum):
 
         # FIXME: mcmd専用なので外に出す予定
         for k, last in self.lasts.items():
-            # from nysol.mcmd.nysollib.core import NysolMOD_CORE
-            # サブフローの最後はまだrun()する必要はないので、
-            # len(self.o_ports) == 0を条件に追記
-            if isinstance(last, NysolModule) and len(self.o_ports) == 0:
-                # 最後のものは一応Frameで作っておく
-                # 現状FrameとNysolModuleには明確な違いがない。。。
-                frame = Frame()
-                frame.set_content(last.run(msg=True))
-                target_point = [point for point in self.points if point.id == k][0]
-                target_point.datum = frame
+            from nysol.mcmd.nysollib.core import NysolMOD_CORE
+            # サブフローの最後はまだrun()する必要はないので、len(self.o_ports) == 0を条件に追記
+            if isinstance(last.content, NysolMOD_CORE) and len(self.o_ports) == 0:
+                last.run(msg=True)
+                # target_point = [point for point in self.points if point.id == k][0]
+                # target_point.datum = frame
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -384,6 +411,8 @@ class Flow(Datum):
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result[output_point.o_port.name]
+                if isinstance(output_point.datum, Cache):
+                    self.cache_store.append(output_point.datum)
                 # print('output_point:', output_point)
 
     def make_outputs(self):
