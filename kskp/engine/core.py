@@ -21,38 +21,13 @@ class Job:
 
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
-            self.cache_save()
-            self.lasts_save()
+            # 今のFlowのdtorは、cacheやlastsを保存しているだけ
+            self.step.runnable.dtor()
+            
             for point in self.step.runnable.points:
                 if point.datum is not None:
                     pass
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
-
-    def cache_save(self):
-        """
-        やっていることは3つ
-        ・キャッシュが作成されているかの確認
-        ・キャッシュをdbに保存する
-        ・flowのjsonを書き換えている
-        Flowに委譲したほうがいいかな？
-        """
-        self.step.runnable.cache_store.save()
-        # 配下のflowに関してもcache保存処理を行う
-        for substep in self.step.runnable.substeps:
-            if isinstance(substep.runnable, Flow):
-                substep.runnable.cache_store.save()
-
-    def lasts_save(self):
-        """
-        やっていることは2つ
-        ・キャッシュが作成されているかの確認
-        ・キャッシュをdbに保存する
-        """
-        self.step.runnable.lasts_store.save()
-        # 配下のflowに関してもcache保存処理を行う
-        for substep in self.step.runnable.substeps:
-            if isinstance(substep.runnable, Flow):
-                substep.runnable.lasts_store.save()
 
 # TODO: kskp-data-storeに移す
 class Store(Datum):
@@ -451,6 +426,14 @@ class Flow(Datum):
         """
         cache_point = [point for point in self.points if point.id == point_id + '_cache'][0]
         return cache_point.datum
+
+    def dtor(self):
+        self.cache_store.save()
+        self.lasts_store.save()
+        # 配下のflowのdtorも動かす
+        for substep in self.substeps:
+            if isinstance(substep.runnable, Flow):
+                substep.runnable.dtor()
 
 class Point:
     """
