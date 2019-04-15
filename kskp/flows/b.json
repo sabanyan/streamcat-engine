@@ -3,8 +3,8 @@
     "label": "サブフロー",
     "params": [],
     "ports": [
-        [{"name": "d1", "type": "frame"}],
-        [{"name": "d3", "type": "frame"}, {"name": "d4", "type": "frame"}]
+        [{"label": "入力", "nodeId": "d1", "type": "frame"}],
+        [{"label": "出力1", "nodeId": "d3", "type": "frame"}, {"label": "出力2", "nodeId": "d4", "type": "frame"}]
     ],
     "nodes": [
         {

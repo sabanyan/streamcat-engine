@@ -225,7 +225,7 @@ class FlowJsonLink:
 
     def make_ports(self, port_dict_list):
         """ dictのリストからportインスタンスのリストを作る """
-        return [Port(p['name'], p['type']) for p in port_dict_list]
+        return [Port(p['nodeId'], p['type']) for p in port_dict_list]
 
     def is_node_runnable(self, node):
         """ 指定されたnodeがrunnableかどうかを判断する """
