@@ -23,7 +23,7 @@ class Job:
         if isinstance(self.step.runnable, Flow):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
             self.step.runnable.dtor()
-            
+
             for point in self.step.runnable.points:
                 if point.datum is not None:
                     pass
