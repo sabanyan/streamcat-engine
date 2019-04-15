@@ -32,7 +32,7 @@ class Square(Command):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
         frame = Frame()
-        frame.set_content(inputs['i'] ** 2)
+        frame.set_content([[inputs['i'][0][0] ** 2]])
         return {self.o_ports[0].name: frame}
 
 class McutCommand(Command):
@@ -407,39 +407,46 @@ class FlowJsonLink:
         とりあえず隔離しただけなのできもい、ごちゃごちゃしてる
         """
         # 出力コマンドとそれが出すpointを追加
-        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならとりあえず何も渡さない
+        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         saver_step = self.make_saver_step(args, saver)
-        cache_point = Point(point.id + '_cache', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        store_point = Point(point.id + '_saver_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+
+        # 新たに生成されるpointのidを、保存対象のpointのidにする（とりあえず保存対象のpointのidには、idが被らない様に適当に_をつけた）
+        # lastsは実行後cacheだろうがそうでなかろうが、storeに保存されるもので新たにsaver後のpointが必ず生成される。
+        # そうなると、その新しいpointがresultとして{point.id: uuid}の様な形でfrontに返される。
+        # その際に、resultで不都合が起きない様に、新たに生成されるpointのidを保存対象のpoint.idにしている。
+        saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        point.id = point.id + '_'
 
         # pointの向き先を変更する
         if not point.is_last:
             # lastsじゃない場合は追加したpointを次のstepに繋げる
-            cache_point.target = point.target
+            saver_point.target = point.target
 
         point.target = [Tube(Port('i', 'frame'), saver_step)]
 
         flow.substeps.append(saver_step)
-        flow.points.append(cache_point)
+        flow.points.append(saver_point)
         flow.points.append(store_point)
 
     def resolve(self):
         f = self.make_flow(self.json_str)
 
-        # lastたちにjob_saverをくっつける
-        # とりあえずサブフローのことは考えずにやってみる
-        last_point = [point for point in f.points if point.is_last]
-        for point in last_point:
-            if point.cache:
-                continue
-            store = Folder(Path('kskp/data/result'))
-            self.put_saver(point, f, store)
-
         # プレビュー処理を行う
         # flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
         if len(self.last_ids) > 0:
             f.points = self.pick_necessary_points(f, self.last_ids)
+
+        # lasts出力処理
+        last_point = [point for point in f.points if point.is_last]
+        for point in last_point:
+            # lastsがキャッシュ出力対象の場合、あとでsaverやpointをくっつけるので
+            # ここではスルーする
+            if point.cache:
+                continue
+            store = Folder(Path('kskp/data/result'))
+            self.put_saver(point, f, store)
 
         # キャッシュ作成処理
         cache_point = [point for point in f.points if point.cache]
