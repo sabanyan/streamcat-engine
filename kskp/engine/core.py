@@ -22,7 +22,7 @@ class Job:
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
             self.cache_save()
-
+            self.lasts_save()
             for point in self.step.runnable.points:
                 if point.datum is not None:
                     pass
@@ -42,6 +42,19 @@ class Job:
             if isinstance(substep.runnable, Flow):
                 substep.runnable.cache_store.save()
 
+    def lasts_save(self):
+        """
+        やっていることは2つ
+        ・キャッシュが作成されているかの確認
+        ・キャッシュをdbに保存する
+        """
+        self.step.runnable.lasts_store.save()
+        # 配下のflowに関してもcache保存処理を行う
+        for substep in self.step.runnable.substeps:
+            if isinstance(substep.runnable, Flow):
+                substep.runnable.lasts_store.save()
+
+# TODO: kskp-data-storeに移す
 class Store(Datum):
     """
     できたdatumを入れておく場所
@@ -126,9 +139,9 @@ class Folder(Store):
     def content(self):
         return self
 
-class CacheStore(Store):
+class FrameStore(Store):
     """
-    キャッシュを置いておくStore
+    Frameを置いておくStore
     基本的には1Flow1つ持っている感じ？とりあえずそうしている。
     """
     def __init__(self):
@@ -166,58 +179,6 @@ class NysolModule(Datum):
     def content(self):
         return self._content
 
-class Cache(NysolModule):
-    """
-    とりあえずNysolModuleを継承した（実行時には普通のNysolModuleとして扱いたいので）
-    となるとCacheはNysolModuleあり気になってしまうが。。。
-    まぁ何か困ったことが出現したらその時に考えよう。。。
-    """
-    def __init__(self):
-        super().__init__()
-        self.info = {}
-
-    def set_cache_info(self, params):
-        self.info = params
-
-    def save(self):
-        # キャッシュが作成されているか確認
-        if not self.created_complete:
-            # とりあえずfalseを返す
-            return False
-
-        # dbに保存
-        self.save_to_db()
-
-        # jsonのnodeのuuidを変更
-        self.update_json_node()
-
-    def save_to_db(self):
-        # TODO: DBと連携するようになったら処理を記載する
-        pass
-
-    def update_json_node(self):
-        if self.info.get('flow_uuid') is None:
-            return
-
-        flow_path = [path for path in Path('kskp/flows').iterdir() if path.stem == self.info.get('flow_uuid')][0]
-        flow_json = json.loads(flow_path.read_text())
-        for node in flow_json['nodes']:
-            if node['id'] == self.info.get('datum_id'):
-                node['uuid'] = self.uuid
-                JST = timezone(timedelta(hours=+9), 'JST')
-                node['cacheCreatedAt'] = datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S')
-        flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
-
-    @property
-    def content(self):
-        return self._content
-
-    @property
-    def created_complete(self):
-        if self.info.get('dir_path') is not None:
-            return self.info.get('dir_path').exists()
-
-
 class Frame(NysolModule):
     def __init__(self):
         super().__init__()
@@ -248,6 +209,40 @@ class Frame(NysolModule):
         if self.info.get('dir_path') is not None:
             return self.info.get('dir_path').exists()
 
+class Cache(Frame):
+    """
+    FrameもCacheもどちらも実ファイルを生成するdatumであり、
+    違いはflowのjsonを書き換えるか書き換えないか（今の所）
+    ということでFrameを継承したものにしてみた。
+    """
+    def __init__(self):
+        super().__init__()
+
+    def save(self):
+        # キャッシュが作成されているか確認
+        if not self.created_complete:
+            # とりあえずfalseを返す
+            return False
+
+        # dbに保存
+        self.save_to_db()
+
+        # jsonのnodeのuuidを変更
+        self.update_json_node()
+
+    def update_json_node(self):
+        if self.info.get('flow_uuid') is None:
+            return
+
+        flow_path = [path for path in Path('kskp/flows').iterdir() if path.stem == self.info.get('flow_uuid')][0]
+        flow_json = json.loads(flow_path.read_text())
+        for node in flow_json['nodes']:
+            if node['id'] == self.info.get('datum_id'):
+                node['uuid'] = self.uuid
+                JST = timezone(timedelta(hours=+9), 'JST')
+                node['cacheCreatedAt'] = datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S')
+        flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
+
 class Step:
     def __init__(self, id, runnable, args):
         self.id = id
@@ -268,7 +263,8 @@ class Flow(Datum):
         self.points = []
         self.substeps = []
 
-        self.cache_store = CacheStore()
+        self.cache_store = FrameStore()
+        self.lasts_store = FrameStore()
 
     @property
     def lasts(self):
@@ -413,6 +409,8 @@ class Flow(Datum):
                 output_point.datum = result[output_point.o_port.name]
                 if isinstance(output_point.datum, Cache):
                     self.cache_store.append(output_point.datum)
+                elif isinstance(output_point.datum, Frame):
+                    self.lasts_store.append(output_point.datum)
                 # print('output_point:', output_point)
 
     def make_outputs(self):
