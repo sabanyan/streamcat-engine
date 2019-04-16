@@ -227,6 +227,27 @@ class Step:
     def __repr__(self):
         return self.id
 
+    def replace_args(self, raplace_args):
+        """
+        自身のargsにフロー変数を使っている箇所があれば、raplace_argsの値で置き換える
+        """
+        import re
+        # TODO: 正規表現やreplace対象を外に出す。
+        for param, value in raplace_args.items():
+            for step_param, step_value in self.args.items():
+                # ネスト深くなるので、continueを利用してネストを浅くした
+                if not isinstance(step_value, str):
+                    continue
+
+                r = re.search(r'@\[(\S*?)\]', step_value)
+
+                if r is None:
+                    continue
+
+                for g in r.groups():
+                    if param == g:
+                        self.args[step_param] = step_value.replace(f'@[{g}]', value)
+
 class Flow(Datum):
     def __init__(self):
         super().__init__()
@@ -272,7 +293,7 @@ class Flow(Datum):
         while len(invokable_steps) > 0:
 
             # stepのうち、実行準備が整ったものを実行する
-            self.run_invokable_steps(invokable_steps)
+            self.run_invokable_steps(invokable_steps, args)
 
             # print('invokable_steps2', invokable_steps, self.points)
 
@@ -344,7 +365,7 @@ class Flow(Datum):
         # 埋まっていないpointがあれば、それを逆に辿る
         return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.o_runnable is not None)
 
-    def run_invokable_steps(self, steps):
+    def run_invokable_steps(self, steps, flow_args):
         """
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
@@ -353,6 +374,10 @@ class Flow(Datum):
         # print('steps in run_invokable_steps:', steps)
 
         for step in steps:
+            # flow変数を使ってargsを書き換える
+            if len(flow_args) > 0:
+                step.replace_args(flow_args)
+
             # jobを作るためにinputsを集める
             # inputs = {a.target.port.name: a.datum for a in self.points if a.target.runnable == step}
             inputs = {}
