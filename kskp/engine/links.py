@@ -239,7 +239,6 @@ class FlowJsonLink:
                 if p_target.runnable is current_point.o_runnable:
                     points.append(point)
                     # どこまで登るかを判定している場所
-                    # もっといい書き方あるはず
                     if point.datum is None:
                         # 上にrunnableがある限りは登り続ける
                         if not point.is_first:
@@ -264,11 +263,6 @@ class FlowJsonLink:
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
-
-        # 新たに生成されるpointのidを、保存対象のpointのidにする（とりあえず保存対象のpointのidには、idが被らない様に適当に_をつけた）
-        # lastsは実行後cacheだろうがそうでなかろうが、storeに保存されるもので新たにsaver後のpointが必ず生成される。
-        # そうなると、その新しいpointがresultとして{point.id: uuid}の様な形でfrontに返される。
-        # その際に、resultで不都合が起きない様に、新たに生成されるpointのidを保存対象のpoint.idにしている。
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         point.id = str(uuid.uuid4())
 
@@ -286,10 +280,18 @@ class FlowJsonLink:
     def resolve(self):
         f = self.make_flow(self.json_str)
 
-        # プレビュー処理を行う
-        # flowがもつPointを、last_idsを元に実行に必要なものだけを絞り込んで取得している
-        if len(self.last_ids) > 0:
-            f.points = self.pick_necessary_points(f, self.last_ids)
+        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
+
+        # self.last_idsには
+        # メインフローの場合 ： プレビューするdatumのid群
+        # サブフローの場合　 ： 親の実行に必要なlastのid群
+        # が入っている。（はず）
+        # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
+
+        # フローメソッドを結構使い倒しているので、
+        # FlowJsonLinkではなく、Flowの振る舞いにしたほうがいいのかな。。。？
+        lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
+        f.points = self.pick_necessary_points(f, lasts)
 
         # キャッシュ作成処理
         cache_point = [point for point in f.points if point.cache]
@@ -298,7 +300,7 @@ class FlowJsonLink:
             store = Folder(Path('kskp/data/cache_frames'))
             self.put_saver(point, f, store, CacheSaverCommand())
 
-        # lasts出力処理（is_root=Trueの場合のみ）
+        # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_point = [point for point in f.points if point.is_last]
             for point in last_point:
