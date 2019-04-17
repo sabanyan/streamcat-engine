@@ -617,8 +617,11 @@ class ExecuteTestCase(unittest.TestCase):
     """
     実際の実行のテスト
     """
-
     import json
+
+
+    RESULT_DIR = 'kskp/data/result/'
+    CACHE_DIR = 'kskp/data/cache_frames/'
 
     # シンプルなmコマンド１つのフロー
     flow_data = {
@@ -819,7 +822,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute(self):
         """
         mコマンド１個のフロー実行
@@ -827,13 +830,13 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(self.flow_data))
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
-        result = get_frame_by_uuid(lasts['d1'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_two_commands_execute(self):
         """
         mコマンド２個のフロー実行
@@ -870,13 +873,13 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
-        result = get_frame_by_uuid(lasts['d2'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_two_commands_preview(self):
         """
         mコマンド２個のフロー実行
@@ -914,13 +917,13 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow), ['d1'])
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
-        result = get_frame_by_uuid(lasts['d1'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_three_commands_preview(self):
         """
         mコマンド３個のフロー実行
@@ -985,13 +988,13 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow), ['d2'])
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
-        result = get_frame_by_uuid(lasts['d2'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -1055,16 +1058,16 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
-        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, 'kskp/data/result/')
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result_d2, correct['d2'])
         self.assertEqual(result_d3, correct['d3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d2'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_three_commands_preview_d2(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -1129,13 +1132,13 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow), ['d2'])
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
-        result = get_frame_by_uuid(lasts['d2'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -1147,13 +1150,13 @@ class ExecuteTestCase(unittest.TestCase):
                           ['B', '1', '30', '31'],
                           ['B', '3', '40', '31'],
                           ['B', '1', '50', '31']]}
-        result = get_frame_by_uuid(lasts['d1'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -1162,16 +1165,16 @@ class ExecuteTestCase(unittest.TestCase):
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
                    'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
-        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, 'kskp/data/result/')
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result_d2, correct['d2'])
         self.assertEqual(result_d3, correct['d3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d2'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_preview_d2_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -1180,14 +1183,14 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), ['d2'])
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
-        result = get_frame_by_uuid(lasts['d2'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d2'])
         self.assertIsNone(lasts.get('d3'))
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_preview_d3_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -1196,14 +1199,14 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), ['d3'])
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
-        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d3'])
         self.assertIsNone(lasts.get('d2'))
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_long_flow_execute_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロー実行
@@ -1252,16 +1255,16 @@ class ExecuteTestCase(unittest.TestCase):
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
-        result_d4 = get_frame_by_uuid(lasts['d4'].uuid, 'kskp/data/result/')
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
         self.assertEqual(result_d3, correct['d3'])
         self.assertEqual(result_d4, correct['d4'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['d4'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_long_flow_preview_d2_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロープレビュー
@@ -1310,14 +1313,14 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow), ['d3'])
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1'], ['A', '2']]}
-        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d3'])
         self.assertIsNone(lasts.get('d4'))
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_long_flow_preview_d3_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロープレビュー
@@ -1365,14 +1368,14 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow), ['d4'])
         lasts = execute(flow_link, {}, {})
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
-        result = get_frame_by_uuid(lasts['d4'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d4'])
         self.assertIsNone(lasts.get('d3'))
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d4'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_include_subflow(self):
         """
         サブフローを１個をもつフローを実行する
@@ -1424,13 +1427,13 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd3': [['65536']]}
-        result = get_frame_by_uuid(lasts['dd3'].uuid, 'kskp/data/result/', header=False)
+        result = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR, header=False)
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
@@ -1482,13 +1485,13 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd3': [['4294967296']]}
-        result = get_frame_by_uuid(lasts['dd3'].uuid, 'kskp/data/result/', header=False)
+        result = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR, header=False)
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_preview_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
@@ -1541,13 +1544,13 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
         correct = {'dd2': [['256']]}
-        result = get_frame_by_uuid(lasts['dd2'].uuid, 'kskp/data/result/', header=False)
+        result = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR, header=False)
         self.assertEqual(result, correct['dd2'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1598,16 +1601,16 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, 'kskp/data/result/')
-        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, 'kskp/data/result/')
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd3, correct['dd3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd2'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['dd3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_preview_dd2_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1660,13 +1663,13 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']]}
-        result = get_frame_by_uuid(lasts['dd2'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['dd2'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_preview_dd3_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1719,13 +1722,13 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow, ['dd3']), {}, {})
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
-        result = get_frame_by_uuid(lasts['dd3'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1833,16 +1836,16 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json.dumps(json_flow)), {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
-        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, 'kskp/data/result/')
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, 'kskp/data/result/')
+        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, self.RESULT_DIR)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
         self.assertEqual(result_dd4, correct['dd4'])
         self.assertEqual(result_dd5, correct['dd5'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd4'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['dd5'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd4'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_complex_flow_preview_include_branch_output_subflowss(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1951,13 +1954,13 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd5']), {}, {})
         correct = {'dd5': [['1'], ['3'], ['1']]}
-        result = get_frame_by_uuid(lasts['dd5'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['dd5'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd5'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_complex_flow_two_preview_include_branch_output_subflowss(self):
         """
         おまけ（プレビューを２つしてみた。）
@@ -2066,16 +2069,16 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd2', 'dd5']), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, 'kskp/data/result/')
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, 'kskp/data/result/')
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd5, correct['dd5'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd2'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['dd5'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_generate_one_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2150,7 +2153,7 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
-        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d3'])
 
         # uuidが書き換わっているかのテスト
@@ -2158,13 +2161,13 @@ class ExecuteTestCase(unittest.TestCase):
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d2']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
-            Path('kskp/data/cache_frames/' + node['uuid'] + '.csv').unlink()
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
 
         # 後片付け
         path.unlink()
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2239,7 +2242,7 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
-        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d3'])
 
         # uuidが書き換わっているかのテスト
@@ -2247,13 +2250,13 @@ class ExecuteTestCase(unittest.TestCase):
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d3']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
-            Path('kskp/data/cache_frames/' + node['uuid'] + '.csv').unlink()
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
         path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -2374,8 +2377,8 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
-        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, 'kskp/data/result/')
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, 'kskp/data/result/')
+        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, self.RESULT_DIR)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
         self.assertEqual(result_dd4, correct['dd4'])
         self.assertEqual(result_dd5, correct['dd5'])
 
@@ -2384,14 +2387,14 @@ class ExecuteTestCase(unittest.TestCase):
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['dd2', 'dd5']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
-            Path('kskp/data/cache_frames/' + node['uuid'] + '.csv').unlink()
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd4'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['dd5'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd4'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
         path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
         サブフローが１つのフローを実行する
@@ -2443,16 +2446,16 @@ class ExecuteTestCase(unittest.TestCase):
 
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, 'kskp/data/result/')
-        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, 'kskp/data/result/')
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd3, correct['dd3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['dd2'].uuid + '.csv').unlink()
-        Path('kskp/data/result/' + lasts['dd3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
@@ -2461,11 +2464,11 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(self.flow_data_use_by_csv))
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
-        result = get_frame_by_uuid(lasts['d1'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
     # @unittest.skip
     def test_simple_flow_execute_data_source_from_cache(self):
@@ -2511,7 +2514,7 @@ class ExecuteTestCase(unittest.TestCase):
           "type": "frame",
           "id": "d2",
           "label": "d2",
-          "uuid": None,
+          "uuid": "cache_data",
           "dataSource": "csv"
         }
 
@@ -2532,29 +2535,13 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
-        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
         self.assertEqual(result, correct['d3'])
 
         # 後片付け
-        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+        Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-
-    @unittest.skip
-    def test_simple_flow_preview_data_source_from_cache_(self):
-        """
-        1つのmコマンドを持つフローを実行する
-        uuidがNoneではないdatumをプレビュー
-        """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_use_by_csv))
-        lasts = execute(flow_link, {}, {})
-        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
-        result = get_frame_by_uuid(lasts['d1'].uuid, 'kskp/data/result/')
-        self.assertEqual(result, correct['d1'])
-
-        # 後片付け
-        Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
-
-    @unittest.skip
+    # @unittest.skip
     def test_simple_subflow_execute_by_append_inputs(self):
         """
         1つのサブフローを実行する
@@ -2574,16 +2561,16 @@ class ExecuteTestCase(unittest.TestCase):
             lasts = execute(flow_link, {}, inputs)
             correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
-            result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
-            result_d4 = get_frame_by_uuid(lasts['d4'].uuid, 'kskp/data/result/')
+            result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+            result_d4 = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
             self.assertEqual(result_d3, correct['d3'])
             self.assertEqual(result_d4, correct['d4'])
 
             # 後片付け
-            Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
-            Path('kskp/data/result/' + lasts['d4'].uuid + '.csv').unlink()
+            Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
+            Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_subflow_execute_by_append_inputs_and_args(self):
         """
         1つのサブフローを実行する
@@ -2610,14 +2597,14 @@ class ExecuteTestCase(unittest.TestCase):
             lasts = execute(flow_link, args, inputs)
             correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
-            result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
-            result_d4 = get_frame_by_uuid(lasts['d4'].uuid, 'kskp/data/result/')
+            result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+            result_d4 = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
             self.assertEqual(result_d3, correct['d3'])
             self.assertEqual(result_d4, correct['d4'])
 
             # 後片付け
-            Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
-            Path('kskp/data/result/' + lasts['d4'].uuid + '.csv').unlink()
+            Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
+            Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
 # Helpler
 def get_frame_by_uuid(uuid, dir_path, header=True):
