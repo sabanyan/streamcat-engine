@@ -1,0 +1,163 @@
+from kskp.engine import Port, NysolModule, Frame, Cache
+from kskp.store import Command
+
+# とりあえずコマンドだけ避難しておく
+# kskp-data-storeに移動させたら消してください
+class TestCommand(Command):
+    """
+    inputとoutputが1つずつの擬似的なコマンド
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'int')]
+        self.o_ports = [Port('o', 'int')]
+
+    def run(self, args, inputs):
+        return {'o': inputs['i'] + 200}
+
+class Square(Command):
+    """
+    与えられた数値を2乗する
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'int')]
+        self.o_ports = [Port('o_sq', 'int')]
+
+    def run(self, args, inputs):
+        # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
+        # ラップするのはなんでもいいかなと思いframeにした。
+        frame = Frame()
+        frame.set_content([[inputs['i'][0][0] ** 2]])
+        return {self.o_ports[0].name: frame}
+
+class McutCommand(Command):
+    """
+    mcutコマンド（きちんとコマンドをstoreに置いたら消そう）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        args['i'] = inputs['i']
+        nysol_module = NysolModule()
+        nysol_module.set_content(nm.mcut(args))
+        return {'o': nysol_module}
+
+class MselstrCommand(Command):
+    """
+    mselstrコマンド（きちんとコマンドをstoreに置いたら消そう）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd'), Port('u', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        args['i'] = inputs['i']
+        cmd_o = nm.mselstr(args)
+
+        nysol_module_o = NysolModule()
+        nysol_module_u = NysolModule()
+
+        nysol_module_o.set_content(cmd_o)
+        nysol_module_u.set_content(cmd_o.redirect('u'))
+        return {'o': nysol_module_o, 'u': nysol_module_u}
+
+class MjoinCommand(Command):
+    """
+    mjoinコマンド（きちんとコマンドをstoreに置いたら消そう）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('m', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        args['i'] = inputs['i']
+        args['m'] = inputs['m']
+        nysol_module = NysolModule()
+        nysol_module.set_content(nm.mjoin(args))
+        return {'o': nysol_module}
+
+class MteeCommand(Command):
+    """
+    Mteeコマンド
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        args['i'] = inputs['i']
+        args['m'] = inputs['m']
+        cmd_o = nm.mjoin(args)
+        return {'o': cmd_o}
+
+class SaverCommand(Command):
+    """
+    指定されているstoreに出力するコマンド（テスト用）
+    基本的にはlastsを保存するためにある
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('store', 'store')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        # 1. storeにsaveする
+        datum_module, uuid = inputs['store'].save(args, inputs['i'])
+        # 2. lasts用なのでコマンド実行のrunをする（繋げる必要はない）
+        self.wrap_datum(datum_module, args, uuid).run(msg=True)
+
+        return {'o': self.wrap_datum(datum_module, args, uuid)}
+
+    def get_datum_obj(self):
+        return Frame()
+
+    def wrap_datum(self, datum_module, args, uuid):
+        datum = self.get_datum_obj()
+        datum.set_uuid(uuid)
+        datum.set_cache_info(args)
+        datum.set_content(datum_module)
+        return datum
+
+class CacheSaverCommand(SaverCommand):
+    """
+    指定されているstoreに出力するコマンド（テスト用）
+    キャッシュ作成用で、Cache型で返すので別クラスで作った
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame'), Port('store', 'store')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        # 1. storeにsaveする(runはしない)
+        datum_module, uuid = inputs['store'].save(args, inputs['i'])
+        return {'o': self.wrap_datum(datum_module, args, uuid)}
+
+    def get_datum_obj(self):
+        # 書いて気づいたけどコンストラクタで決め打ちで設定でいいのかな。。。？
+        return Cache()
+
+class LoaderCommand(Command):
+    """
+    指定したstoreからデータを取ってくる（テスト用）
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('store', 'store')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        return {'o': inputs['store'].load(args['uuid'])}
