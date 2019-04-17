@@ -1,158 +1,10 @@
-from kskp.store import Command
 from kskp.engine import Flow, Step, Point, Port, Tube, NysolModule, Frame, Datum, Store, Folder, Cache
 import functools
 import json
 import uuid
 from pathlib import Path
 
-class TestCommand(Command):
-    """
-    inputとoutputが1つずつの擬似的なコマンド
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'int')]
-        self.o_ports = [Port('o', 'int')]
-
-    def run(self, args, inputs):
-        return {'o': inputs['i'] + 200}
-
-class Square(Command):
-    """
-    与えられた数値を2乗する
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'int')]
-        self.o_ports = [Port('o_sq', 'int')]
-
-    def run(self, args, inputs):
-        # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
-        # ラップするのはなんでもいいかなと思いframeにした。
-        frame = Frame()
-        frame.set_content([[inputs['i'][0][0] ** 2]])
-        return {self.o_ports[0].name: frame}
-
-class McutCommand(Command):
-    """
-    mcutコマンド（きちんとコマンドをstoreに置いたら消そう）
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame')]
-        self.o_ports = [Port('o', 'mcmd')]
-
-    def run(self, args, inputs):
-        import nysol.mcmd as nm
-        args['i'] = inputs['i']
-        nysol_module = NysolModule()
-        nysol_module.set_content(nm.mcut(args))
-        return {'o': nysol_module}
-
-class MselstrCommand(Command):
-    """
-    mselstrコマンド（きちんとコマンドをstoreに置いたら消そう）
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame')]
-        self.o_ports = [Port('o', 'mcmd'), Port('u', 'mcmd')]
-
-    def run(self, args, inputs):
-        import nysol.mcmd as nm
-        args['i'] = inputs['i']
-        cmd_o = nm.mselstr(args)
-
-        nysol_module_o = NysolModule()
-        nysol_module_u = NysolModule()
-
-        nysol_module_o.set_content(cmd_o)
-        nysol_module_u.set_content(cmd_o.redirect('u'))
-        return {'o': nysol_module_o, 'u': nysol_module_u}
-
-class MjoinCommand(Command):
-    """
-    mjoinコマンド（きちんとコマンドをstoreに置いたら消そう）
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame'), Port('m', 'frame')]
-        self.o_ports = [Port('o', 'mcmd')]
-
-    def run(self, args, inputs):
-        import nysol.mcmd as nm
-        args['i'] = inputs['i']
-        args['m'] = inputs['m']
-        nysol_module = NysolModule()
-        nysol_module.set_content(nm.mjoin(args))
-        return {'o': nysol_module}
-
-class MteeCommand(Command):
-    """
-    Mteeコマンド
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame')]
-        self.o_ports = [Port('o', 'mcmd')]
-
-    def run(self, args, inputs):
-        import nysol.mcmd as nm
-        args['i'] = inputs['i']
-        args['m'] = inputs['m']
-        cmd_o = nm.mjoin(args)
-        return {'o': cmd_o}
-
-class SaverCommand(Command):
-    """
-    指定されているstoreに出力するコマンド（テスト用）
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame'), Port('store', 'store')]
-        self.o_ports = [Port('o', 'mcmd')]
-
-    def run(self, args, inputs):
-        datum_module, uuid = inputs['store'].save(args, inputs['i'])
-        return {'o': self.wrap_datum(datum_module, args, uuid)}
-
-    def wrap_datum(self, datum_module, args, uuid):
-        datum = Frame()
-        datum.set_uuid(uuid)
-        datum.set_cache_info(args)
-        datum.set_content(datum_module)
-        return datum
-
-class CacheSaverCommand(SaverCommand):
-    """
-    指定されているstoreに出力するコマンド（テスト用）
-    キャッシュ作成用なので、Cache型で返す
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'frame'), Port('store', 'store')]
-        self.o_ports = [Port('o', 'mcmd')]
-
-    def wrap_datum(self, datum_module, args, uuid):
-        datum = Cache()
-        datum.set_uuid(uuid)
-        datum.set_cache_info(args)
-        datum.set_content(datum_module)
-        return datum
-
-class LoaderCommand(Command):
-    """
-    指定したstoreからデータを取ってくる（テスト用）
-    """
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('store', 'store')]
-        self.o_ports = [Port('o', 'mcmd')]
-
-    def run(self, args, inputs):
-        return {'o': inputs['store'].load(args['uuid'])}
+from .tmp_command import CacheSaverCommand, SaverCommand, LoaderCommand, McutCommand, MjoinCommand, MselstrCommand, MteeCommand, Square, TestCommand
 
 class CommandLink:
     """
@@ -191,6 +43,7 @@ class FlowJsonLink:
     def __init__(self, json_str, last_ids=[]):
         self.json_str = json_str
         self.last_ids = last_ids
+        self.is_root = False
 
     def node2link(self, node):
         if 'link' in node:
@@ -417,7 +270,7 @@ class FlowJsonLink:
         # そうなると、その新しいpointがresultとして{point.id: uuid}の様な形でfrontに返される。
         # その際に、resultで不都合が起きない様に、新たに生成されるpointのidを保存対象のpoint.idにしている。
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        point.id = point.id + '_'
+        point.id = str(uuid.uuid4())
 
         # pointの向き先を変更する
         if not point.is_last:
@@ -438,22 +291,19 @@ class FlowJsonLink:
         if len(self.last_ids) > 0:
             f.points = self.pick_necessary_points(f, self.last_ids)
 
-        # lasts出力処理
-        last_point = [point for point in f.points if point.is_last]
-        for point in last_point:
-            # lastsがキャッシュ出力対象の場合、あとでsaverやpointをくっつけるので
-            # ここではスルーする
-            if point.cache:
-                continue
-            store = Folder(Path('kskp/data/result'))
-            self.put_saver(point, f, store)
-
         # キャッシュ作成処理
         cache_point = [point for point in f.points if point.cache]
         for point in cache_point:
             # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
             store = Folder(Path('kskp/data/cache_frames'))
             self.put_saver(point, f, store, CacheSaverCommand())
+
+        # lasts出力処理（is_root=Trueの場合のみ）
+        if self.is_root:
+            last_point = [point for point in f.points if point.is_last]
+            for point in last_point:
+                store = Folder(Path('kskp/data/result'))
+                self.put_saver(point, f, store)
 
         print(f.points)
         return f
@@ -463,7 +313,7 @@ class FlowUuidLink(FlowJsonLink):
     UUIDを元にFlowを返却するリンク
     """
 
-    def __init__(self, source, flow_uuid):
+    def __init__(self, source, flow_uuid, last_ids=[]):
         self.source = source
         self.flow_uuid = flow_uuid
         if source is None:
@@ -473,7 +323,7 @@ class FlowUuidLink(FlowJsonLink):
             }''')
         else:
             p = self.source.joinpath(f'{flow_uuid}.json')
-            super().__init__(p.read_text())
+            super().__init__(p.read_text(), last_ids)
 
     def node2link(self, node):
         if node['type'] == 'command':

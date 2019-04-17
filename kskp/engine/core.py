@@ -302,15 +302,6 @@ class Flow(Datum):
 
             # print('invokable_steps3', invokable_steps, self.points)
 
-        # FIXME: mcmd専用なので外に出す予定
-        for k, last in self.lasts.items():
-            from nysol.mcmd.nysollib.core import NysolMOD_CORE
-            # サブフローの最後はまだrun()する必要はないので、len(self.o_ports) == 0を条件に追記
-            if isinstance(last.content, NysolMOD_CORE) and len(self.o_ports) == 0:
-                last.run(msg=True)
-                # target_point = [point for point in self.points if point.id == k][0]
-                # target_point.datum = frame
-
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
 
@@ -516,7 +507,7 @@ class Point:
         """
         指定したポイントが終端のものかどうかを調べる
         """
-        return self.target[0].port is None and self.target[0].runnable is None
+        return self.target[0].runnable is None
 
     @property
     def is_first(self):

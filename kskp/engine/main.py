@@ -35,6 +35,9 @@ def execute(link, args, inputs, job_complete_handler=None):
     # exs = []
 
     try:
+        # ここで実行するlinkは一番上の親であることを定義する
+        link.is_root = True
+
         # jobを作成する
         job = make_job(link, args, inputs)
 
@@ -67,7 +70,7 @@ def make_job(link, args, inputs):
     # points = domains(step, inputs)
 
     # jobを作成する
-    job = Job(step, {})
+    job = Job(step, inputs)
 
     return job
 

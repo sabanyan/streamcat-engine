@@ -2239,7 +2239,7 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
-        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/cache_frames/')
+        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
         self.assertEqual(result, correct['d3'])
 
         # uuidが書き換わっているかのテスト
@@ -2250,6 +2250,7 @@ class ExecuteTestCase(unittest.TestCase):
             Path('kskp/data/cache_frames/' + node['uuid'] + '.csv').unlink()
 
         # 後片付け
+        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
         path.unlink()
 
     @unittest.skip
@@ -2374,7 +2375,7 @@ class ExecuteTestCase(unittest.TestCase):
         lasts = execute(flow_link, {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
         result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, 'kskp/data/result/')
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, 'kskp/data/cache_frames/')
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, 'kskp/data/result/')
         self.assertEqual(result_dd4, correct['dd4'])
         self.assertEqual(result_dd5, correct['dd5'])
 
@@ -2387,9 +2388,10 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 後片付け
         Path('kskp/data/result/' + lasts['dd4'].uuid + '.csv').unlink()
+        Path('kskp/data/result/' + lasts['dd5'].uuid + '.csv').unlink()
         path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
         サブフローが１つのフローを実行する
@@ -2451,10 +2453,10 @@ class ExecuteTestCase(unittest.TestCase):
         Path('kskp/data/result/' + lasts['dd3'].uuid + '.csv').unlink()
 
     @unittest.skip
-    def test_simple_flow_data_source_from_csv(self):
+    def test_simple_flow_execute_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
-        valueで指定したデータで始まるのではなく、csvから始める（loaderのテスト）
+        フローの先頭のdatumのuuidが既に入っている
         """
         flow_link = FlowJsonLink(json.dumps(self.flow_data_use_by_csv))
         lasts = execute(flow_link, {}, {})
@@ -2464,6 +2466,158 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 後片付け
         Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
+
+    # @unittest.skip
+    def test_simple_flow_execute_data_source_from_cache(self):
+        """
+        mコマンド３個のフロー実行
+        フローの途中（d2）のdatumのuuidが既に入っている
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1']]}
+        result = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+        self.assertEqual(result, correct['d3'])
+
+        # 後片付け
+        Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+
+
+    @unittest.skip
+    def test_simple_flow_preview_data_source_from_cache_(self):
+        """
+        1つのmコマンドを持つフローを実行する
+        uuidがNoneではないdatumをプレビュー
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_use_by_csv))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        result = get_frame_by_uuid(lasts['d1'].uuid, 'kskp/data/result/')
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Path('kskp/data/result/' + lasts['d1'].uuid + '.csv').unlink()
+
+    @unittest.skip
+    def test_simple_subflow_execute_by_append_inputs(self):
+        """
+        1つのサブフローを実行する
+        外部からframeを与えて実行する
+        args指定はなし
+        """
+        with open('kskp/flows/b.json') as f:
+            flow_link = FlowJsonLink(json.dumps(json.load(f)))
+            inputs = {
+                'd1': [["顧客", "数量", "金額"],
+                    ["A", 1, 10],
+                    ["A", 2, 20],
+                    ["B", 1, 30],
+                    ["B", 3, 40],
+                    ["B", 1, 50]]
+            }
+            lasts = execute(flow_link, {}, inputs)
+            correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+            result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+            result_d4 = get_frame_by_uuid(lasts['d4'].uuid, 'kskp/data/result/')
+            self.assertEqual(result_d3, correct['d3'])
+            self.assertEqual(result_d4, correct['d4'])
+
+            # 後片付け
+            Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+            Path('kskp/data/result/' + lasts['d4'].uuid + '.csv').unlink()
+
+    @unittest.skip
+    def test_simple_subflow_execute_by_append_inputs_and_args(self):
+        """
+        1つのサブフローを実行する
+        外部からframeを与えて実行する
+        args指定する
+        """
+        with open('kskp/flows/b_param.json') as f:
+            flow_link = FlowJsonLink(json.dumps(json.load(f)))
+
+            inputs = {
+                'd1': [["顧客", "数量", "金額"],
+                    ["A", 1, 10],
+                    ["A", 2, 20],
+                    ["B", 1, 30],
+                    ["B", 3, 40],
+                    ["B", 1, 50]]
+            }
+
+            args = {
+                "sensor": "0,1",
+                "customer": "顧客"
+            }
+
+            lasts = execute(flow_link, args, inputs)
+            correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+            result_d3 = get_frame_by_uuid(lasts['d3'].uuid, 'kskp/data/result/')
+            result_d4 = get_frame_by_uuid(lasts['d4'].uuid, 'kskp/data/result/')
+            self.assertEqual(result_d3, correct['d3'])
+            self.assertEqual(result_d4, correct['d4'])
+
+            # 後片付け
+            Path('kskp/data/result/' + lasts['d3'].uuid + '.csv').unlink()
+            Path('kskp/data/result/' + lasts['d4'].uuid + '.csv').unlink()
 
 # Helpler
 def get_frame_by_uuid(uuid, dir_path, header=True):
