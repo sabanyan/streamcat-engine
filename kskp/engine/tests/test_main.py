@@ -773,6 +773,61 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
+    # inputが2つあるシンプルなフロー（mcat）
+    flow_data_inputs_mcat = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "id": "i2",
+          "type": "frame",
+          "label": "テストデータ2",
+          "value": [["顧客", "数量", "金額"],
+              ["C", 3, 10],
+              ["C", 4, 20]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "*1": "i",
+            "*2": "i2"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {},
+          "commandId": "mcat"
+        }
+      ]
+    }
+
     # outputが２つあるシンプルなフロー
     flow_data_outputs = {
       "label": "テストフロ",
@@ -822,7 +877,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute(self):
         """
         mコマンド１個のフロー実行
@@ -836,7 +891,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_two_commands_execute(self):
         """
         mコマンド２個のフロー実行
@@ -879,7 +934,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_two_commands_preview(self):
         """
         mコマンド２個のフロー実行
@@ -923,7 +978,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_preview(self):
         """
         mコマンド３個のフロー実行
@@ -994,7 +1049,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -1067,7 +1122,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_preview_d2(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -1138,7 +1193,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -1156,7 +1211,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -1174,7 +1229,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_d2_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -1190,7 +1245,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_d3_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -1206,7 +1261,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_execute_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロー実行
@@ -1264,7 +1319,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_preview_d2_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロープレビュー
@@ -1320,7 +1375,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_preview_d3_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロープレビュー
@@ -1375,7 +1430,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_include_subflow(self):
         """
         サブフローを１個をもつフローを実行する
@@ -1433,7 +1488,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
@@ -1491,7 +1546,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
@@ -1550,7 +1605,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1610,7 +1665,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_dd2_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1669,7 +1724,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_dd3_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1728,7 +1783,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1845,7 +1900,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['dd4'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_preview_include_branch_output_subflowss(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1960,7 +2015,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_two_preview_include_branch_output_subflowss(self):
         """
         おまけ（プレビューを２つしてみた。）
@@ -2078,7 +2133,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_generate_one_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2167,7 +2222,7 @@ class ExecuteTestCase(unittest.TestCase):
         path.unlink()
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2256,7 +2311,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
         path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -2394,7 +2449,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['dd5'].uuid + '.csv').unlink()
         path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
         サブフローが１つのフローを実行する
@@ -2455,7 +2510,7 @@ class ExecuteTestCase(unittest.TestCase):
         Path(self.RESULT_DIR + lasts['dd2'].uuid + '.csv').unlink()
         Path(self.RESULT_DIR + lasts['dd3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
@@ -2470,7 +2525,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_data_source_from_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2541,7 +2596,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_subflow_execute_by_append_inputs(self):
         """
         1つのサブフローを実行する
@@ -2570,7 +2625,7 @@ class ExecuteTestCase(unittest.TestCase):
             Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
             Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_subflow_execute_by_append_inputs_and_args(self):
         """
         1つのサブフローを実行する
@@ -2605,6 +2660,106 @@ class ExecuteTestCase(unittest.TestCase):
             # 後片付け
             Path(self.RESULT_DIR + lasts['d3'].uuid + '.csv').unlink()
             Path(self.RESULT_DIR + lasts['d4'].uuid + '.csv').unlink()
+
+    @unittest.skip
+    def test_simple_flow_execute_use_mcat(self):
+        """
+        mコマンド１個（２つのinputを持つ）のフロー実行
+        mcatの実行テスト
+        ※結合順不定なので、失敗することもある。（きちんと結合されてはいる）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs_mcat))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1', '10'],
+                          ['A', '2', '20'],
+                          ['B', '1', '30'],
+                          ['B', '3', '40'],
+                          ['B', '1', '50'],
+                          ["C", '3', '10'],
+                          ["C", '4', '20']]}
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
+
+class ExecuteSampleFlowTestCase(unittest.TestCase):
+    """
+    実際の実行のテスト
+    βにあったflowを実行する
+    """
+    import json
+
+    RESULT_DIR = 'kskp/data/result/'
+    CACHE_DIR = 'kskp/data/cache_frames/'
+
+    @unittest.skip
+    def test_ni_flow_execute(self):
+        """
+        NI様のフローの実行テスト
+        """
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'ni_flow')
+        lasts = execute(flow_link, {}, {})
+        uuid = [value for value in lasts.values()][0].uuid
+        frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+        self.assertTrue(frame_path.exists())
+
+        # 後片付け
+        frame_path.unlink()
+
+    @unittest.skip
+    def test_ni_flow_preview(self):
+        """
+        NI様のフローのプレビュー実行テスト
+        """
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'ni_flow', ['new e9c09a48-901a-45d7-8bf3-91a323801277'])
+        lasts = execute(flow_link, {}, {})
+        uuid = [value for value in lasts.values()][0].uuid
+        frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+        self.assertTrue(frame_path.exists())
+
+        # 後片付け
+        frame_path.unlink()
+
+    # @unittest.skip
+    def test_ni_flow_execute_generate_four_caches(self):
+        """
+        NI様のフローの実行テスト
+        5つのキャッシュを作成する
+        """
+        # キャッシュを設定する
+        path = Path('kskp/flows/' +  'ni_flow' + '.json')
+        flow_json = None
+        with open(path.as_posix(), 'r') as f:
+            flow_json = json.load(f)
+            for node in flow_json['nodes']:
+                if node['type'] == 'frame':
+                    if node['uuid'] is None:
+                        node['makeCache'] = True
+                        node['cacheCreatedAt'] = ""
+
+        # テスト用のフローを作成
+        path = Path('kskp/flows/test.json')
+        write_data_to_json(path, flow_json)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
+        lasts = execute(flow_link, {}, {})
+        uuid = [value for value in lasts.values()][0].uuid
+        frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+        self.assertTrue(frame_path.exists())
+
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != '2500']
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
+
+        # 後片付け
+        frame_path.unlink()
 
 # Helpler
 def get_frame_by_uuid(uuid, dir_path, header=True):
