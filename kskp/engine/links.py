@@ -4,7 +4,7 @@ import json
 import uuid
 from pathlib import Path
 
-from .tmp_command import CacheSaverCommand, SaverCommand, LoaderCommand, McutCommand, MjoinCommand, MselstrCommand, MteeCommand, Square, TestCommand
+from .tmp_command import *
 
 class CommandLink:
     """
@@ -28,7 +28,16 @@ class CommandLink:
             'mselstr': MselstrCommand(),
             "mjoin": MjoinCommand(),
             "store": SaverCommand(),
-            "mtee": MteeCommand()
+            "mtee": MteeCommand(),
+            "mcat": McatCommand(),
+            "msetstr": MsetstrCommand(),
+            "msummary": MsummaryCommand(),
+            "msortf": MsortfCommand(),
+            "msel": MselCommand(),
+            "mnumber": MnumberCommand(),
+            "mcross": McrossCommand(),
+            "m2cross": M2crossCommand(),
+            "mcal": McalCommand()
         }
 
         if runnable_id not in table:
@@ -116,6 +125,11 @@ class FlowJsonLink:
 
                 point_ids = [point.id for point in flow.points]
 
+                for src_port in step.runnable.i_ports:
+                    srcs = node['srcs']
+                    if src_port.name == '*':
+                        step.runnable.i_ports = [Port(p, 'frame') for p in node['srcs'].keys()]
+
                 # srcとdstからpointを作る
                 for src_port in step.runnable.i_ports:
                     srcs = node['srcs']
@@ -168,6 +182,39 @@ class FlowJsonLink:
                                     if o_port.name == dst_point.id:
                                         dst_point.update_target(Tube(o_port, None))
 
+    def resolve(self):
+        f = self.make_flow(self.json_str)
+
+        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
+
+        # self.last_idsには
+        # メインフローの場合 ： プレビューするdatumのid群
+        # サブフローの場合　 ： 親の実行に必要なlastのid群
+        # が入っている。（はず）
+        # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
+
+        # フローメソッドを結構使い倒しているので、
+        # FlowJsonLinkではなく、Flowの振る舞いにしたほうがいいのかな。。。？
+        lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
+        f.points = self.pick_necessary_points(f, lasts)
+
+        # キャッシュ作成処理
+        cache_point = [point for point in f.points if point.cache]
+        for point in cache_point:
+            # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
+            store = Folder(Path('kskp/data/cache_frames'))
+            self.put_saver(point, f, store, CacheSaverCommand())
+
+        # lasts出力処理（メインフローの場合のみ）
+        if self.is_root:
+            last_point = [point for point in f.points if point.is_last]
+            for point in last_point:
+                store = Folder(Path('kskp/data/result'))
+                self.put_saver(point, f, store)
+
+        print(f.points)
+        return f
+        
     def update_flow_by_other_than_runnable(self, nodes, flow):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
@@ -210,11 +257,14 @@ class FlowJsonLink:
         necessary_points = []
         for id in last_ids:
             for point in flow.points:
-                if point.id == id:
-                    if not len(flow.o_ports) > 0:
-                        point.target = [Tube(None, None)]
-                    last_point = point
-                    break
+                if not point.id == id:
+                    continue
+
+                if not len(flow.o_ports) > 0:
+                    point.target = [Tube(None, None)]
+                last_point = point
+
+                break
 
             necessary_points = necessary_points + self.search_necessary_point(flow, last_point)
             necessary_points.append(last_point)
@@ -276,39 +326,6 @@ class FlowJsonLink:
         flow.substeps.append(saver_step)
         flow.points.append(saver_point)
         flow.points.append(store_point)
-
-    def resolve(self):
-        f = self.make_flow(self.json_str)
-
-        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
-
-        # self.last_idsには
-        # メインフローの場合 ： プレビューするdatumのid群
-        # サブフローの場合　 ： 親の実行に必要なlastのid群
-        # が入っている。（はず）
-        # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
-
-        # フローメソッドを結構使い倒しているので、
-        # FlowJsonLinkではなく、Flowの振る舞いにしたほうがいいのかな。。。？
-        lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
-        f.points = self.pick_necessary_points(f, lasts)
-
-        # キャッシュ作成処理
-        cache_point = [point for point in f.points if point.cache]
-        for point in cache_point:
-            # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
-            store = Folder(Path('kskp/data/cache_frames'))
-            self.put_saver(point, f, store, CacheSaverCommand())
-
-        # lasts出力処理（メインフローの場合のみ）
-        if self.is_root:
-            last_point = [point for point in f.points if point.is_last]
-            for point in last_point:
-                store = Folder(Path('kskp/data/result'))
-                self.put_saver(point, f, store)
-
-        print(f.points)
-        return f
 
 class FlowUuidLink(FlowJsonLink):
     """
