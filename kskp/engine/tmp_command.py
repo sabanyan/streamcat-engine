@@ -242,9 +242,143 @@ class MteeCommand(Command):
     def run(self, args, inputs):
         import nysol.mcmd as nm
         args['i'] = inputs['i']
-        args['m'] = inputs['m']
-        cmd_o = nm.mjoin(args)
-        return {'o': cmd_o}
+        nysol_module = NysolModule()
+        nysol_module.set_content(nm.m2tee(args))
+        return {'o': nysol_module}
+
+class MchkcsvCommand(Command):
+    """
+    Mchkcsvコマンド
+    nysol_pythonにはないので、nm.cmdでNYSOLのmchkcsvを動かしている
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        f = None
+        f <<= inputs['i']
+
+        args_string = 'mchkcsv'
+        for key,value in args.items():
+            if isinstance(value, bool):
+                if value == True:
+                    args_string +=  ' -' + key
+            else:
+                args_string += ' %s=%s' % (key, value)
+
+        f <<= nm.cmd(args_string)
+        nysol_module = NysolModule()
+        nysol_module.set_content(f)
+        return {'o': nysol_module}
+
+class ColumnlistCommand(Command):
+    """
+    独自コマンドのColumnlistコマンド
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        f = None
+        f <<= inputs['i']
+
+        args_string = 'kskp/engine/tmp_script_store/column_list.sh'
+        for key,value in args.items():
+            if isinstance(value, bool):
+                if value == True:
+                    args_string +=  ' -' + key
+            else:
+                args_string += ' %s=%s' % (key, value)
+
+        f <<= nm.cmd(args_string)
+        nysol_module = NysolModule()
+        nysol_module.set_content(f)
+        return {'o': nysol_module}
+
+class GroupbyCommand(Command):
+    """
+    独自コマンドのColumnlistコマンド
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'mcmd')]
+
+    def run(self, args, inputs):
+        import nysol.mcmd as nm
+        f = None
+        f <<= inputs['i']
+
+        args_string = 'kskp/engine/tmp_script_store/groupby.sh'
+        for key,value in args.items():
+            if isinstance(value, bool):
+                if value == True:
+                    args_string +=  ' -' + key
+            else:
+                args_string += ' %s=%s' % (key, value)
+
+        f <<= nm.cmd(args_string)
+        nysol_module = NysolModule()
+        nysol_module.set_content(f)
+        return {'o': nysol_module}
+
+class MfldnameCommand(Command):
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'frame')]
+
+    def run(self, args, inputs):
+        args['i'] = inputs['i']
+        cmd_o = nm.mfldname(args)
+        nysol_module_o= NysolModule()
+        nysol_module_o.set_content(cmd_o)
+        return {'o': nysol_module_o}
+
+class MdformatCommand(Command):
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'frame')]
+
+    def run(self, args, inputs):
+        args['i'] = inputs['i']
+        cmd_o = nm.mdformat(args)
+        nysol_module_o= NysolModule()
+        nysol_module_o.set_content(cmd_o)
+        return {'o': nysol_module_o}
+
+class MshareCommand(Command):
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'frame')]
+
+    def run(self, args, inputs):
+        args['i'] = inputs['i']
+        cmd_o = nm.mshare(args)
+        nysol_module_o= NysolModule()
+        nysol_module_o.set_content(cmd_o)
+        return {'o': nysol_module_o}
+
+class MchgnumCommand(Command):
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'frame')]
+        self.o_ports = [Port('o', 'frame')]
+
+    def run(self, args, inputs):
+        args['i'] = inputs['i']
+        cmd_o = nm.mchgnum(args)
+        nysol_module_o= NysolModule()
+        nysol_module_o.set_content(cmd_o)
+        return {'o': nysol_module_o}
 
 class SaverCommand(Command):
     """

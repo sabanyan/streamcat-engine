@@ -37,7 +37,14 @@ class CommandLink:
             "mnumber": MnumberCommand(),
             "mcross": McrossCommand(),
             "m2cross": M2crossCommand(),
-            "mcal": McalCommand()
+            "mcal": McalCommand(),
+            "mchkcsv": MchkcsvCommand(),
+            "column_list": ColumnlistCommand(),
+            "mdformat": MdformatCommand(),
+            "mshare": MshareCommand(),
+            "mchgnum": MchgnumCommand(),
+            "groupby": GroupbyCommand(),
+            "mfldname": MfldnameCommand()
         }
 
         if runnable_id not in table:
@@ -92,6 +99,39 @@ class FlowJsonLink:
     def is_node_runnable(self, node):
         """ 指定されたnodeがrunnableかどうかを判断する """
         return node['type'] == 'command' or node['type'] == 'flow'
+
+    def resolve(self):
+        f = self.make_flow(self.json_str)
+
+        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
+
+        # self.last_idsには
+        # メインフローの場合 ： プレビューするdatumのid群
+        # サブフローの場合　 ： 親の実行に必要なlastのid群
+        # が入っている。（はず）
+        # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
+
+        # フローメソッドを結構使い倒しているので、
+        # FlowJsonLinkではなく、Flowの振る舞いにしたほうがいいのかな。。。？
+        lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
+        f.points = self.pick_necessary_points(f, lasts)
+
+        # キャッシュ作成処理
+        cache_point = [point for point in f.points if point.cache]
+        for point in cache_point:
+            # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
+            store = Folder(Path('kskp/data/cache_frames'))
+            self.put_saver(point, f, store, CacheSaverCommand())
+
+        # lasts出力処理（メインフローの場合のみ）
+        if self.is_root:
+            last_point = [point for point in f.points if point.is_last]
+            for point in last_point:
+                store = Folder(Path('kskp/data/result'))
+                self.put_saver(point, f, store)
+
+        print(f.points)
+        return f
 
     def make_flow(self, json_str):
 
@@ -182,54 +222,25 @@ class FlowJsonLink:
                                     if o_port.name == dst_point.id:
                                         dst_point.update_target(Tube(o_port, None))
 
-    def resolve(self):
-        f = self.make_flow(self.json_str)
-
-        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
-
-        # self.last_idsには
-        # メインフローの場合 ： プレビューするdatumのid群
-        # サブフローの場合　 ： 親の実行に必要なlastのid群
-        # が入っている。（はず）
-        # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
-
-        # フローメソッドを結構使い倒しているので、
-        # FlowJsonLinkではなく、Flowの振る舞いにしたほうがいいのかな。。。？
-        lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
-        f.points = self.pick_necessary_points(f, lasts)
-
-        # キャッシュ作成処理
-        cache_point = [point for point in f.points if point.cache]
-        for point in cache_point:
-            # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
-            store = Folder(Path('kskp/data/cache_frames'))
-            self.put_saver(point, f, store, CacheSaverCommand())
-
-        # lasts出力処理（メインフローの場合のみ）
-        if self.is_root:
-            last_point = [point for point in f.points if point.is_last]
-            for point in last_point:
-                store = Folder(Path('kskp/data/result'))
-                self.put_saver(point, f, store)
-
-        print(f.points)
-        return f
-        
     def update_flow_by_other_than_runnable(self, nodes, flow):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
         for node in nodes:
             # pointにdatumを入れていく
-            if not self.is_node_runnable(node):
+            if not self.is_node_runnable(node) and node['type'] == 'frame':
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
-                if 'value' in node and node['value'] is not None and node.get('uuid') is None:
-                    target_point.datum = node['value']
-                # uuidが既に振られている場合は、loaderから取ってくるようにする
-                elif node.get('uuid') is not None:
-                    store = Folder(Path('kskp/data'))
-                    self.put_loader(node.get('uuid'), target_point, flow, store)
+
+                # データの取得先の設定
+                # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
+                if not (len(flow.i_ports) > 0 and target_point.is_first):
+                    if 'value' in node and node['value'] is not None and node.get('uuid') is None:
+                        target_point.datum = node['value']
+                    # uuidが既に振られている場合は、loaderから取ってくるようにする
+                    elif node.get('uuid') is not None:
+                        store = Folder(Path('kskp/data'))
+                        self.put_loader(node.get('uuid'), target_point, flow, store)
 
         return flow
 

@@ -2683,6 +2683,48 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
 
+    @unittest.skip
+    def test_simple_flow_execute_use_nmcmd(self):
+        """
+        mコマンド２個のフロー実行
+        確認したいことはnm.cmdの動作（mchkcsvを実行している）
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {},
+          "commandId": "mchkcsv"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d2'])
+
+        # 後片付け
+        Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
+
+
 class ExecuteSampleFlowTestCase(unittest.TestCase):
     """
     実際の実行のテスト
@@ -2723,11 +2765,11 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         # 後片付け
         frame_path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_ni_flow_execute_generate_four_caches(self):
         """
         NI様のフローの実行テスト
-        5つのキャッシュを作成する
+        とりあえず全部キャッシュを作成する
         """
         # キャッシュを設定する
         path = Path('kskp/flows/' +  'ni_flow' + '.json')
@@ -2756,8 +2798,84 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != '2500']
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(node['cacheCreatedAt'])
             Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
 
+        # 後片付け
+        frame_path.unlink()
+        path.unlink()
+
+    @unittest.skip
+    def test_ryudo_flow_execute(self):
+        """
+        デモ用のフロー実行（粒度分布計）
+        lastsは8個ある
+        """
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'ryudo_demo1')
+        lasts = execute(flow_link, {}, {})
+        self.assertEqual(len(lasts), 8)
+        for datum in lasts.values():
+            uuid = datum.uuid
+            frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+            self.assertTrue(frame_path.exists())
+            # 後片付け
+            frame_path.unlink()
+
+    @unittest.skip
+    def test_ryudo_flow_cache(self):
+        """
+        デモ用のフロー実行（粒度分布計）
+        キャッシュをとりあえず全部作成する
+        """
+        # キャッシュを設定する
+        path = Path('kskp/flows/' +  'ryudo_demo1' + '.json')
+        flow_json = None
+        with open(path.as_posix(), 'r') as f:
+            flow_json = json.load(f)
+            for node in flow_json['nodes']:
+                if node['type'] == 'frame':
+                    if node['uuid'] is None:
+                        node['makeCache'] = True
+                        node['cacheCreatedAt'] = ""
+
+        # テスト用のフローを作成
+        path = Path('kskp/flows/test.json')
+        write_data_to_json(path, flow_json)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'test')
+        lasts = execute(flow_link, {}, {})
+        self.assertEqual(len(lasts), 8)
+        for datum in lasts.values():
+            uuid = datum.uuid
+            frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+            self.assertTrue(frame_path.exists())
+            # 後片付け
+            frame_path.unlink()
+
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != 'ryudo_demo']
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(node['cacheCreatedAt'])
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
+
+        path.unlink()
+
+    # @unittest.skip
+    def test_ryudo_flow_preview(self):
+        """
+        デモ用のフロープレビュー（粒度分布計）
+        プレビューデータは適当
+        """
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'ryudo_demo1', ['d14'])
+        lasts = execute(flow_link, {}, {})
+        self.assertIsNotNone(lasts['d14'])
+        frame_path = Path(self.RESULT_DIR + lasts['d14'].uuid + '.csv')
+        self.assertTrue(frame_path.exists())
         # 後片付け
         frame_path.unlink()
 
