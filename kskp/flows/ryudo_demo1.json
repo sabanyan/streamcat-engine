@@ -1,0 +1,1090 @@
+{
+  "projectId": 12,
+  "label": "デモ用フロー",
+  "ports": [
+    [],
+    []
+  ],
+  "params": [],
+  "description": "",
+  "creator": "開発用",
+  "createdAt": "2019-03-30 21:08:29",
+  "nodes": [
+    {
+      "position": {
+        "x": 281,
+        "y": 237
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "compdata20190319.csv",
+      "type": "frame",
+      "label": "測定データ",
+      "uuid": "ryudo_demo",
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 530,
+        "y": 192
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d1",
+      "type": "frame",
+      "label": "d1",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 434,
+        "y": 190
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c1",
+      "type": "command",
+      "label": "csvチェック",
+      "srcs": {
+        "i": "compdata20190319.csv"
+      },
+      "dsts": {
+        "o": "d1"
+      },
+      "args": {
+        "a": "",
+        "diag": true,
+        "r": false,
+        "assert_nullout": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "q": false,
+        "tmpPath": ""
+      },
+      "commandId": "mchkcsv"
+    },
+    {
+      "position": {
+        "x": 532,
+        "y": 252
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d2",
+      "type": "frame",
+      "label": "d2",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 433,
+        "y": 249
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c2",
+      "type": "command",
+      "label": "項目確認",
+      "srcs": {
+        "i": "compdata20190319.csv"
+      },
+      "dsts": {
+        "o": "d2"
+      },
+      "args": {
+        "n": "2",
+        "no": false,
+        "-nfno": false
+      },
+      "commandId": "column_list"
+    },
+    {
+      "position": {
+        "x": 400,
+        "y": 341
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d4",
+      "type": "frame",
+      "label": "時刻正規化",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 279,
+        "y": 339
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c4",
+      "type": "command",
+      "label": "撮像時間のフォーマット変換",
+      "srcs": {
+        "i": "compdata20190319.csv"
+      },
+      "dsts": {
+        "o": "d4"
+      },
+      "args": {
+        "c": "%Y-%m-%d %H:%M:%s",
+        "f": "撮像時間",
+        "A": false,
+        "assert_diffSize": false,
+        "assert_nullin": false,
+        "assert_nullout": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "tmpPath": ""
+      },
+      "commandId": "mdformat"
+    },
+    {
+      "position": {
+        "x": 276,
+        "y": 470
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d5",
+      "type": "frame",
+      "label": "d5",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 278,
+        "y": 399
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c5",
+      "type": "command",
+      "label": "必要列選択",
+      "srcs": {
+        "i": "d4"
+      },
+      "dsts": {
+        "o": "d5"
+      },
+      "args": {
+        "f": "区切りNo,撮像単位No,撮像時間,粒No,直径,面積,周囲長,長径,短径",
+        "r": false,
+        "nfni": false,
+        "assert_diffSize": false,
+        "assert_nullin": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "tmpPath": ""
+      },
+      "commandId": "mcut"
+    },
+    {
+      "position": {
+        "x": 416,
+        "y": 731
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d12",
+      "type": "frame",
+      "label": "d12",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 273,
+        "y": 725
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c12",
+      "type": "command",
+      "label": "【Key付与】1分単位",
+      "srcs": {
+        "i": "d16"
+      },
+      "dsts": {
+        "o": "d12"
+      },
+      "args": {
+        "a": "撮像時間_min",
+        "c": "uxt2t(floor(uxt($t{撮像時間}),60))",
+        "assert_diffSize": false,
+        "assert_nullout": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "tmpPath": "",
+        "precision": ""
+      },
+      "commandId": "mcal"
+    },
+    {
+      "position": {
+        "x": 541,
+        "y": 470
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d8",
+      "type": "frame",
+      "label": "d8",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 430,
+        "y": 472
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c8",
+      "type": "command",
+      "label": "レコード数確認_撮像時間単位",
+      "srcs": {
+        "i": "d5"
+      },
+      "dsts": {
+        "o": "d8"
+      },
+      "args": {
+        "c": "count",
+        "f": "撮像時間",
+        "a": "",
+        "k": "撮像時間",
+        "n": false,
+        "assert_diffSize": false,
+        "assert_nullkey": false,
+        "assert_nullin": false,
+        "assert_nullout": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "q": false,
+        "tmpPath": "",
+        "precision": ""
+      },
+      "commandId": "msummary"
+    },
+    {
+      "position": {
+        "x": 811,
+        "y": 1060
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d14",
+      "type": "frame",
+      "label": "d14",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 811,
+        "y": 989
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c14",
+      "type": "command",
+      "label": "【key付与】5分単位集計key",
+      "srcs": {
+        "i": "d18"
+      },
+      "dsts": {
+        "o": "d14"
+      },
+      "args": {
+        "a": "撮像時間_5min",
+        "c": "uxt2t(floor(uxt($t{撮像時間}),5*60))"
+      },
+      "commandId": "mcal"
+    },
+    {
+      "position": {
+        "x": 276,
+        "y": 866
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d18",
+      "type": "frame",
+      "label": "d18",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 276,
+        "y": 791
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c18",
+      "type": "command",
+      "label": "【Key付与】1時間単位",
+      "srcs": {
+        "i": "d12"
+      },
+      "dsts": {
+        "o": "d18"
+      },
+      "args": {
+        "a": "撮像時間_hr",
+        "c": "uxt2t(floor(uxt($t{撮像時間}),60*60))",
+        "precision": ""
+      },
+      "commandId": "mcal"
+    },
+    {
+      "position": {
+        "x": 229,
+        "y": 615.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n11",
+      "type": "note",
+      "label": "n11",
+      "title": "集計キー付与",
+      "content": "新しいメモ"
+    },
+    {
+      "position": {
+        "x": 184,
+        "y": 1197
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d20",
+      "type": "frame",
+      "label": "d20",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 106,
+        "y": 1201
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c9",
+      "type": "command",
+      "label": "時刻指定選択",
+      "srcs": {
+        "i": "d7"
+      },
+      "dsts": {
+        "o": "d20"
+      },
+      "args": {
+        "c": "regexs($s{撮像時間},\"^[0-9]{8,8}[01][802]00{2,2}\")"
+      },
+      "commandId": "msel"
+    },
+    {
+      "position": {
+        "x": 107,
+        "y": 1499
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d21",
+      "type": "frame",
+      "label": "【グラフ用データ】ヒストグラム",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 105,
+        "y": 1269
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c13",
+      "type": "command",
+      "label": "必要列選択",
+      "srcs": {
+        "i": "d20"
+      },
+      "dsts": {
+        "o": "d21"
+      },
+      "args": {
+        "f": "撮像時間_min,直径"
+      },
+      "commandId": "mcut"
+    },
+    {
+      "position": {
+        "x": 458,
+        "y": 1204
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d3",
+      "type": "frame",
+      "label": "【グラフ用データ】1分単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 456,
+        "y": 1134
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f5",
+      "type": "flow",
+      "label": "1分単位集計",
+      "srcs": {
+        "ダミー.csv": "d18"
+      },
+      "dsts": {
+        "d7": "d3"
+      },
+      "args": {
+        "時系列集計key": "撮像時間_min"
+      },
+      "uuid": "ryudo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 814,
+        "y": 1205
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d6",
+      "type": "frame",
+      "label": "【グラフ用データ】5分単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 812,
+        "y": 1134
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f1",
+      "type": "flow",
+      "label": "5分単位集計",
+      "srcs": {
+        "ダミー.csv": "d14"
+      },
+      "dsts": {
+        "d7": "d6"
+      },
+      "args": {
+        "時系列集計key": "撮像時間_5min"
+      },
+      "uuid": "ryudo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 498,
+        "y": 1567.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n3",
+      "type": "note",
+      "label": "n3",
+      "title": "粒度分布推移（時系列グラフ）",
+      "content": "新しいメモ"
+    },
+    {
+      "position": {
+        "x": 186,
+        "y": 1138
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d7",
+      "type": "frame",
+      "label": "d7",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 107,
+        "y": 1138
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f2",
+      "type": "flow",
+      "label": "粒度特徴量追加",
+      "srcs": {
+        "ダミー.csv": "d18"
+      },
+      "dsts": {
+        "d6": "d7"
+      },
+      "args": {
+        "時系列集計key": "撮像時間_min"
+      },
+      "uuid": "ryudo_sub2_demo1"
+    },
+    {
+      "position": {
+        "x": 45,
+        "y": 1570.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n4",
+      "type": "note",
+      "label": "n4",
+      "title": "粒度分布（ヒストグラム）",
+      "content": "新しいメモ"
+    },
+    {
+      "position": {
+        "x": 734,
+        "y": 588.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n2",
+      "type": "note",
+      "label": "n2",
+      "title": "【特長】計算機能",
+      "content": "数値演算\n　論理演算、比較演算、三角関数、乱数など\n\n統計量計算\n　構成比計算\n　基準化（標準偏差、範囲）\n　移動平均\n　ウインドウ関数\n　\n日付時刻演算\n　経過時間、曜日など\n　　\n文字列操作\n　条件マッチ\n　ワイルドカード\n　正規表現\n　文字列併合、切り出し\n\n参照指定\n　同行指定、前後行指定、起点行指定\n　全行指定（キー項目指定可能）"
+    },
+    {
+      "position": {
+        "x": 602,
+        "y": 1206
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d9",
+      "type": "frame",
+      "label": "【グラフ用データ】1時間単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 601,
+        "y": 1132
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f3",
+      "type": "flow",
+      "label": "1時間単位集計",
+      "srcs": {
+        "ダミー.csv": "d18"
+      },
+      "dsts": {
+        "d7": "d9"
+      },
+      "args": {
+        "時系列集計key": "撮像時間_hr"
+      },
+      "uuid": "ryudo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 330.5,
+        "y": 988.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n5",
+      "type": "note",
+      "label": "n5",
+      "title": "適切な集約時間単位の検討",
+      "content": "新しいメモ"
+    },
+    {
+      "position": {
+        "x": 462,
+        "y": 1502
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d10",
+      "type": "frame",
+      "label": "【グラフ用データ】1分単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 458,
+        "y": 1275
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c3",
+      "type": "command",
+      "label": "必要列選択",
+      "srcs": {
+        "i": "d3"
+      },
+      "dsts": {
+        "o": "d10"
+      },
+      "args": {
+        "f": "総体積,総粒子数",
+        "r": true
+      },
+      "commandId": "mcut"
+    },
+    {
+      "position": {
+        "x": 602,
+        "y": 1499
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d11",
+      "type": "frame",
+      "label": "【グラフ用データ】1時間単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 601,
+        "y": 1274
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c6",
+      "type": "command",
+      "label": "必要列選択",
+      "srcs": {
+        "i": "d9"
+      },
+      "dsts": {
+        "o": "d11"
+      },
+      "args": {
+        "f": "総体積,総粒子数",
+        "r": true
+      },
+      "commandId": "mcut"
+    },
+    {
+      "position": {
+        "x": 814,
+        "y": 1502
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d13",
+      "type": "frame",
+      "label": "【グラフ用データ】5分単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 812,
+        "y": 1274
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c7",
+      "type": "command",
+      "label": "必要列選択",
+      "srcs": {
+        "i": "d6"
+      },
+      "dsts": {
+        "o": "d13"
+      },
+      "args": {
+        "f": "総体積,総粒子数",
+        "r": true
+      },
+      "commandId": "mcut"
+    },
+    {
+      "position": {
+        "x": 416,
+        "y": 658
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d16",
+      "type": "frame",
+      "label": "d16",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 274,
+        "y": 657
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c10",
+      "type": "command",
+      "label": "【Key付与】1秒単位",
+      "srcs": {
+        "i": "d5"
+      },
+      "dsts": {
+        "o": "d16"
+      },
+      "args": {
+        "a": "撮像時間_sec",
+        "c": "uxt2t(floor(uxt($t{撮像時間}),1))",
+        "precision": ""
+      },
+      "commandId": "mcal"
+    },
+    {
+      "position": {
+        "x": 325,
+        "y": 1206
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d17",
+      "type": "frame",
+      "label": "【グラフ用データ】1秒単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 326,
+        "y": 1136
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f6",
+      "type": "flow",
+      "label": "1秒単位集計",
+      "srcs": {
+        "ダミー.csv": "d18"
+      },
+      "dsts": {
+        "d7": "d17"
+      },
+      "args": {
+        "時系列集計key": "撮像時間_sec"
+      },
+      "uuid": "ryudo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 327,
+        "y": 1504
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d15",
+      "type": "frame",
+      "label": "【グラフ用データ】1秒単位",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 325,
+        "y": 1281
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c11",
+      "type": "command",
+      "label": "必要列選択",
+      "srcs": {
+        "i": "d17"
+      },
+      "dsts": {
+        "o": "d15"
+      },
+      "args": {
+        "f": "総体積,総粒子数",
+        "r": true
+      },
+      "commandId": "mcut"
+    },
+    {
+      "position": {
+        "x": 40.5,
+        "y": 98.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n1",
+      "type": "note",
+      "label": "n1",
+      "title": "【目的】特徴把握に適切な集約単位を知る",
+      "content": "・「集団」の特徴を「時系列」で把握する\n・ノイズが大きいため測定1回単位（0.25秒単位）で見ても特徴はわからない。\n\n・集約期間を変えて可視化し、特徴を見る"
+    },
+    {
+      "position": {
+        "x": 54.5,
+        "y": 208.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n6",
+      "type": "note",
+      "label": "n6",
+      "title": "データの特徴",
+      "content": "粒度分布計測定結果\n・1回の測定で複数の粒子の直径を測定\n　測定間隔：0.25秒、期間:　07:55~14:00\n\n・重要な特徴量の追加が必要\n　　体積分率（粒子体積／粒子体積合計）\n　　個数分率（粒子個数／粒子数合計）\n・体積分率、個数分率の計算には、集約単位ごとに体積、粒子それぞれの合計を求める必要がある。\n\n"
+    }
+  ]
+}
