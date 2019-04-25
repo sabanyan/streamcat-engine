@@ -1,0 +1,200 @@
+{
+  "projectId": 13,
+  "label": "【サブフロー】列数行数の確認",
+  "ports": [
+    [
+      {
+        "label": "sample",
+        "nodeId": "sample.csv",
+        "type": "frame"
+      }
+    ],
+    [
+      {
+        "label": "d3",
+        "nodeId": "d3",
+        "type": "frame"
+      }
+    ]
+  ],
+  "params": [],
+  "description": "",
+  "creator": "開発用",
+  "createdAt": "2019-03-24 23:28:05",
+  "nodes": [
+    {
+      "position": {
+        "x": 596,
+        "y": 216
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "sample.csv",
+      "type": "frame",
+      "label": "sample.csv",
+      "uuid": "fc5765a8-d778-4d50-bfac-7b267a635709",
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 697,
+        "y": 311
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d1",
+      "type": "frame",
+      "label": "d1",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 596,
+        "y": 311
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c1",
+      "type": "command",
+      "label": "行数",
+      "srcs": {
+        "i": "sample.csv"
+      },
+      "dsts": {
+        "o": "d1"
+      },
+      "args": {
+        "a": "行数",
+        "k": "",
+        "assert_diffSize": false,
+        "assert_nullkey": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "q": false,
+        "tmpPath": ""
+      },
+      "commandId": "mcount"
+    },
+    {
+      "position": {
+        "x": 695,
+        "y": 400
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d2",
+      "type": "frame",
+      "label": "d2",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 597,
+        "y": 398
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c2",
+      "type": "command",
+      "label": "列数",
+      "srcs": {
+        "i": "d1"
+      },
+      "dsts": {
+        "o": "d2"
+      },
+      "args": {
+        "a": "列数",
+        "c": "fldsize() - 1",
+        "assert_diffSize": false,
+        "assert_nullout": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "tmpPath": "",
+        "precision": ""
+      },
+      "commandId": "mcal"
+    },
+    {
+      "position": {
+        "x": 596,
+        "y": 586
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d3",
+      "type": "frame",
+      "label": "d3",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 594,
+        "y": 482
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c3",
+      "type": "command",
+      "srcs": {
+        "i": "d2"
+      },
+      "dsts": {
+        "o": "d3"
+      },
+      "args": {
+        "f": "列数,行数",
+        "r": false,
+        "nfni": false,
+        "assert_diffSize": false,
+        "assert_nullin": false,
+        "nfn": false,
+        "nfno": false,
+        "x": false,
+        "tmpPath": ""
+      },
+      "commandId": "mcut"
+    }
+  ]
+}
