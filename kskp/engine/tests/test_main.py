@@ -2,7 +2,7 @@ import unittest
 import json
 # import uuid
 
-from kskp.store import Command, Port
+from kskp.core import Command, Port
 from kskp.engine import execute, Flow, Step, Point, Job, Tube
 from pathlib import Path
 from kskp.engine.links import FlowJsonLink, Square, FlowUuidLink

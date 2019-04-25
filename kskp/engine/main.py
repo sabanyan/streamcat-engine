@@ -8,7 +8,7 @@ TODO: 外部からコマンド実行できるように
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-from kskp.store import Port
+from kskp.core import Port
 
 from .core import Step, Job, Point
 

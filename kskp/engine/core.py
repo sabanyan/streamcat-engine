@@ -1,7 +1,7 @@
 import uuid
 import json
 from pathlib import Path
-from kskp.store import Command, Datum
+from kskp.core import Command, Datum
 from datetime import datetime, timedelta, timezone
 
 class Job:
