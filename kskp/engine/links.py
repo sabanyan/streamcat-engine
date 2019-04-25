@@ -20,6 +20,7 @@ class CommandLink:
     def select_runnable(self, runnable_id):
         """
         idとなる文字列を受け取ってrunnableのインスタンスを返却する
+        TODO: 下記の対応表をなくす様に実装する
         """
         table = {
             'test': TestCommand(),
@@ -75,7 +76,7 @@ class FlowJsonLink:
             ret = FlowUuidLink(Path('kskp/flows'), node['uuid'])
 
             # かなりの力技・・・。
-            # プレビューを行う場合、サブフロー内で余分な処理が走らないように
+            # 実行を行う場合、サブフロー内で余分な処理が走らないように
             # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
 
             # メインフローでプレビュー時、どのdstsを通るかを求める
@@ -87,14 +88,23 @@ class FlowJsonLink:
         return ret
 
     def pick_necessary_dst_ids(self, nodes, datum_ids):
+        """
+        指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
+        """
         ids = []
         for datum_id in datum_ids:
             for node in nodes['nodes']:
-                if self.is_node_runnable(node) and datum_id in list(node['dsts'].values()):
+                if self.is_outputting_datum_node(node, datum_id):
                     # 対象のnode
-                    ids = ids + self.pick_necessary_dst_ids(nodes, list(node['srcs'].values()))
+                    ids.extend(self.pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
             ids.append(datum_id)
         return list(set(ids))
+
+    def is_outputting_datum_node(self, node, datum_id):
+        """
+        指定したdatumを出力するnodeかを調べる
+        """
+        return self.is_node_runnable(node) and datum_id in list(node['dsts'].values())
 
     def make_ports(self, port_dict_list):
         """ dictのリストからportインスタンスのリストを作る """
@@ -114,9 +124,6 @@ class FlowJsonLink:
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
         # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
-
-        # フローメソッドを結構使い倒しているので、
-        # FlowJsonLinkではなく、Flowの振る舞いにしたほうがいいのかな。。。？
         lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
         f.points = self.pick_necessary_points(f, lasts)
 
@@ -181,7 +188,7 @@ class FlowJsonLink:
                         raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
                     # 対象のpointがすでに存在すればそれを取得する
                     if srcs[src_port.name] in point_ids:
-                        src_point = flow.get_point_by_node_id(srcs[src_port.name])
+                        src_point = flow.select_point_by_node_id(srcs[src_port.name])
                         src_point.update_target(Tube(src_port, step))
                     else:
                         src_point = Point(srcs[src_port.name], [Tube(None, None)], None, [Tube(src_port, step)])
@@ -210,7 +217,7 @@ class FlowJsonLink:
 
                     # 対象のpointがすでに存在すればそれを取得する
                     if dsts[dst_port.name] in point_ids:
-                        dst_point = flow.get_point_by_node_id(dsts[dst_port.name])
+                        dst_point = flow.select_point_by_node_id(dsts[dst_port.name])
                         dst_point.update_origin(Tube(dst_port, step))
                     else:
                         dst_point = Point(dsts[dst_port.name], [Tube(dst_port, step)], None, [Tube(None, None)])
@@ -230,23 +237,33 @@ class FlowJsonLink:
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
+        # 実行に関係ないnodeのtype群
+        except_type_list = ['note']
+
         for node in nodes:
             # pointにdatumを入れていく
-            if not self.is_node_runnable(node) and node['type'] == 'frame':
+            if not self.is_node_runnable(node) and not node['type'] in except_type_list:
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
 
                 # データの取得先の設定
                 # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
                 if not (len(flow.i_ports) > 0 and target_point.is_first):
-                    if 'value' in node and node['value'] is not None and node.get('uuid') is None:
+                    if self.is_value_node(node):
                         target_point.datum = node['value']
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
                     elif node.get('uuid') is not None:
-                        store = Folder(Path('kskp/data'))
-                        self.put_loader(node.get('uuid'), target_point, flow, store)
-
+                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('kskp/data')))
+                        # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
+                        target_point.cache = False
         return flow
+
+    def is_value_node(self, node):
+        """
+        valueをもつnodeかどうか
+        uuidが入っていたらそっちを優先する
+        """
+        return node.get('value') is not None and node.get('uuid') is None
 
     def make_loader_step(self, node_uuid):
         """
@@ -254,39 +271,36 @@ class FlowJsonLink:
         """
         return Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
 
-    def put_loader(self, node_uuid, target_point, flow, store):
+    def put_loader(self, frame_uuid, target_point, flow, store):
         """
         target_point(uuidが既にあるdatumのpoint)の前に
         LoaderStepとStorePointをくっつける
         Loaderは指定したstoreからデータを取ってくる
         """
-        loader_step = self.make_loader_step(node_uuid)
-        store_point = Point(node_uuid + 'loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
+        loader_step = self.make_loader_step(frame_uuid)
+        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
         target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
         flow.points.append(store_point)
         flow.substeps.append(loader_step)
 
     def pick_necessary_points(self, flow, last_ids):
-        # プレビュー実行するのに必要なpointを取得する
-        # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+        """
+        実行するのに必要なpointを取得する
+        """
         necessary_points = []
         for id in last_ids:
-            for point in flow.points:
-                if not point.id == id:
-                    continue
+            lasts_point = flow.select_point_by_id(id)
+            if not len(flow.o_ports) > 0:
+                # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+                lasts_point.target = [Tube(None, None)]
 
-                if not len(flow.o_ports) > 0:
-                    point.target = [Tube(None, None)]
-                last_point = point
-
-                break
-
-            necessary_points = necessary_points + self.search_necessary_point(flow, last_point)
-            necessary_points.append(last_point)
+            # lasts_pointの上に繋がっているpointsを取得する
+            necessary_points.extend(self.search_necessary_point(flow.points, lasts_point))
+            necessary_points.append(lasts_point)
 
         return list(set(necessary_points))
 
-    def search_necessary_point(self, flow, current_point):
+    def search_necessary_point(self, points, current_point):
         """
         プレビューするdatumを作成するために必要なPointを絞り込む
         既にdatumを持つpointに当たるか、origin.runnableを持たないpointに当たるまで登る
@@ -295,21 +309,17 @@ class FlowJsonLink:
         2. 始点のorigin.runnableをtarget.runnableにもつpointを保持する（上に上がっていく）
         3. 保持対象のpointのidを新たな始点として再帰的に再びsearch_necessary_pointに潜る
         """
-        points = []
+        necessary_points = []
         # current_pointの上につながっているPointを探す
-        for point in flow.points:
+        for point in points:
             for p_target in point.target:
                 # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
-                # print('p_target:',id(p_target.runnable), 'current_point:',id(current_point.o_runnable))
                 if p_target.runnable is current_point.o_runnable:
-                    points.append(point)
-                    # どこまで登るかを判定している場所
-                    if point.datum is None:
-                        # 上にrunnableがある限りは登り続ける
-                        if not point.is_first:
-                            points = points + self.search_necessary_point(flow, point)
+                    necessary_points.append(point)
+                    if not (point.datum is not None or point.is_first):
+                        necessary_points.extend(self.search_necessary_point(points, point))
 
-        return points
+        return necessary_points
 
     def make_saver_step(self, args, saver):
         """
@@ -321,7 +331,6 @@ class FlowJsonLink:
         """
         指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
-        とりあえず隔離しただけなのできもい、ごちゃごちゃしてる
         """
         # 出力コマンドとそれが出すpointを追加
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
@@ -331,16 +340,14 @@ class FlowJsonLink:
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         point.id = str(uuid.uuid4())
 
-        # pointの向き先を変更する
+        # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:
-            # lastsじゃない場合は追加したpointを次のstepに繋げる
             saver_point.target = point.target
-
+        # pointの向き先を変更する
         point.target = [Tube(Port('i', 'frame'), saver_step)]
 
         flow.substeps.append(saver_step)
-        flow.points.append(saver_point)
-        flow.points.append(store_point)
+        flow.points.extend([saver_point, store_point])
 
 class FlowUuidLink(FlowJsonLink):
     """
@@ -366,51 +373,3 @@ class FlowUuidLink(FlowJsonLink):
             ret = FlowUuidLink(self.source, node['uuid'])
 
         return ret
-
-class SampleFlowJsonLink(FlowJsonLink):
-    """ temp """
-
-    def __init__(self):
-        json_subflow = '''{
-            "description": "サブフロー",
-            "label": "サブフロー",
-            "params": [],
-            "ports": [
-                [{"name": "ii", "type": "int"}],
-                [{"name": "oo", "type": "int"}]
-            ],
-            "nodes": [
-                {
-                    "id": "d1",
-                    "type": "int",
-                    "uuid": null
-                },
-                {
-                    "id": "s1",
-                    "type": "command",
-                    "commandId": "square",
-                    "args": {},
-                    "srcs": { "i": "d1" },
-                    "dsts": { "o_sq": "d2" }
-                },
-                {
-                    "id": "d2",
-                    "type": "int",
-                    "uuid": null
-                },
-                {
-                    "id": "s2",
-                    "type": "command",
-                    "commandId": "square",
-                    "args": {},
-                    "srcs": { "i": "d2" },
-                    "dsts": { "o_sq": "d3" }
-                },
-                {
-                    "id": "d3",
-                    "type": "int",
-                    "uuid": null
-                }
-            ]
-        }'''
-        super().__init__(json_subflow)
