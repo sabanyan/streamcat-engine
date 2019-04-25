@@ -876,7 +876,18 @@ class ExecuteTestCase(unittest.TestCase):
         }
       ]
     }
+    def setUp(self):
+        """
+        フォルダの準備
+        """
+        def mkdir(path_str):
+            result_path = Path(path_str)
+            if not result_path.exists():
+                result_path.mkdir()
 
+        mkdir(self.RESULT_DIR)
+        mkdir(self.CACHE_DIR)
+                    
     # @unittest.skip
     def test_simple_flow_execute(self):
         """
