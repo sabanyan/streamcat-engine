@@ -67,7 +67,6 @@ class Store(Datum):
     def load(self, uuid):
         """
         override用
-        引数uuidにしているけど、いいのか？
         """
         pass
 
@@ -81,9 +80,8 @@ class Folder(Store):
         super().__init__()
         self.dir_path = dir_path
 
-    def save(self, args, datum):
+    def save(self, args, datum, uuid):
         import nysol.mcmd as nm
-        uuid = self.issue_uuid()
         self.set_datum(datum, uuid)
 
         args['dir_path'] = (self.dir_path / (uuid + '.csv')) if args.get('file_name') is None else args.get('file_name')
@@ -91,13 +89,12 @@ class Folder(Store):
         command_args['i'] = datum
         command_args['o'] = args['dir_path'].as_posix()
 
-        return nm.m2tee(command_args), uuid
+        return nm.m2tee(command_args)
 
     def load(self, uuid):
         import nysol.mcmd as nm
 
         # TODO: 本当はuuidを使ってdbからcsvの場所を取ってくる
-
         # 今はとりあえず直接取ってくる(uuid==csvのファイル名)
         path = None
         for flow_path in self.dir_path.iterdir():
@@ -117,20 +114,23 @@ class Folder(Store):
 class FrameStore(Store):
     """
     Frameを置いておくStore
-    基本的には1Flow1つ持っている感じ？とりあえずそうしている。
     """
     def __init__(self):
         super().__init__()
-        self.cache_list = []
+        self.datum_list = []
 
     def save(self):
-        for cache in self.cache_list:
+        for cache in self.datum_list:
             cache.save()
 
     def append(self, cache_point):
-        self.cache_list.append(cache_point)
+        self.datum_list.append(cache_point)
 
-class NysolModule(Datum):
+class DatumWrapper(Datum):
+    """
+    pointのdatumをラップするためのクラス
+    とりあえずuuidとラップ対象をセットできる様にしている
+    """
     def __init__(self):
         super().__init__()
         self.uuid = None
@@ -142,6 +142,14 @@ class NysolModule(Datum):
     def set_content(self, module):
         self._content = module
 
+    @property
+    def content(self):
+        return self._content
+
+class NysolModule(DatumWrapper):
+    def __init__(self):
+        super().__init__()
+
     def run(self, msg=False):
         # NysolModuleなので実行できるdatum？と思ったのでrun()を追加した
         # NysolModule.content.run()するよりはいいかなと思ったのだがどうだろう？
@@ -150,11 +158,14 @@ class NysolModule(Datum):
         else:
             return self._content.run()
 
-    @property
-    def content(self):
-        return self._content
+class Frame(DatumWrapper):
+    """
+    実際の実行のrunではない時に作られ、DB保存の情報を持っている。
+    storeに一旦集められてから、jobのdtorのタイミングでDBへの保存処理が走る。
 
-class Frame(NysolModule):
+    storeのメソッド内で保存しようと思ったけど、わざわざFrame（または下記のCache）クラスの中身を見て
+    それを取り出して保存するのも手間が増えてるだけなので、今はstoreのsaveでこのクラスのsaveを呼び出すことにしている。
+    """
     def __init__(self):
         super().__init__()
         self.info = {}
@@ -173,11 +184,10 @@ class Frame(NysolModule):
 
     def save_to_db(self):
         # TODO: DBと連携するようになったら処理を記載する
+        # この2つがあれば最低限登録できる・・・と思っている。。。
+        # uuid・・・self.uuid
+        # path・・・self.info.get('dir_path')（saverで付与済み）
         pass
-
-    @property
-    def content(self):
-        return self._content
 
     @property
     def created_complete(self):
@@ -214,8 +224,7 @@ class Cache(Frame):
         for node in flow_json['nodes']:
             if node['id'] == self.info.get('datum_id'):
                 node['uuid'] = self.uuid
-                JST = timezone(timedelta(hours=+9), 'JST')
-                node['cacheCreatedAt'] = datetime.now(JST).strftime('%Y-%m-%d %H:%M:%S')
+                node['cacheCreatedAt'] = datetime.now(timezone(timedelta(hours=+9), 'JST')).strftime('%Y-%m-%d %H:%M:%S')
         flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
 
 class Step:
@@ -272,10 +281,6 @@ class Flow(Datum):
 
         # return {a.id: a.datum for a in self.points if a.target.runnable is None}
         return lasts
-
-    @property
-    def point_ids(self):
-        return [point.id for point in self.points]
 
     def run(self, args, inputs):
         """
@@ -375,7 +380,7 @@ class Flow(Datum):
             for p in self.points:
                 for t_tube in p.target:
                     if t_tube.runnable == step:
-                        # contentを渡すか、datumを渡すかで悩んでいる
+                        # content（datumのラップ対象、生nysol_moduleなど）を渡すか、datumを渡すかで悩んでいる
                         # datumを渡すと受け手側で必ずinputs['i'].contentみたいにとり出させるのが煩わしかったのでcontent渡している
                         # commandがpointのcontentを知っているのも気持ち悪いし。。。
                         inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
@@ -398,10 +403,7 @@ class Flow(Datum):
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result[output_point.o_port.name]
-                if isinstance(output_point.datum, Cache):
-                    self.cache_store.append(output_point.datum)
-                elif isinstance(output_point.datum, Frame):
-                    self.lasts_store.append(output_point.datum)
+                self.put_datum_in_store(output_point.datum)
                 # print('output_point:', output_point)
 
     def make_outputs(self):
@@ -413,6 +415,15 @@ class Flow(Datum):
         # result = {port.name: self.get_output_point(port).datum.run() for port in self.o_ports}
         # print('make_outputs result:', result)
         # return result
+
+    def put_datum_in_store(self, datum):
+        """
+        Cacheなどを後で保存処理を行うためにstoreに入れておく
+        """
+        if isinstance(datum, Cache):
+            self.cache_store.append(datum)
+        elif isinstance(datum, Frame):
+            self.lasts_store.append(datum)
 
     def get_output_point(self, o_port):
         """
@@ -430,18 +441,20 @@ class Flow(Datum):
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
         # return points[0]
 
-    def get_point_by_node_id(self, node_id):
+    def select_point_by_node_id(self, node_id):
         """
         指定したnode_idをもつpointを１つ返す
         """
         return [point for point in self.points if point.id == node_id][0]
 
-    def get_cache_datum_by_point_id(self, point_id):
+    def select_point_by_id(self, id):
         """
-        指定したpointの、キャッシュとなっているpointのdatumを取得する
+        self.pointsの中から
+        指定したidのpointを取得する
         """
-        cache_point = [point for point in self.points if point.id == point_id + '_cache'][0]
-        return cache_point.datum
+        for point in self.points:
+            if point.id == id:
+                return point
 
     def dtor(self):
         self.cache_store.save()

@@ -3,8 +3,12 @@ import nysol.mcmd as nm
 from kskp.engine import Port, NysolModule, Frame, Cache
 from kskp.store import Command
 
+# TODO: Storeに移動させる
 # とりあえずコマンドだけ避難しておく
 # kskp-data-storeに移動させたら消してください
+
+# ※ sml_modelingコマンドはKコマンドを使う関係上、importで場所を指定している
+#   今はテストで動かしている部分があるため、ローカルで動く様なパス設定をしてある
 class TestCommand(Command):
     """
     inputとoutputが1つずつの擬似的なコマンド
@@ -490,11 +494,12 @@ class SaverCommand(Command):
 
     def run(self, args, inputs):
         # 1. storeにsaveする
-        datum_module, uuid = inputs['store'].save(args, inputs['i'])
+        uuid = inputs['store'].issue_uuid()
+        datum_module= inputs['store'].save(args, inputs['i'], uuid)
         # 2. lasts用なのでコマンド実行のrunをする（繋げる必要はない）
-        self.wrap_datum(datum_module, args, uuid).run(msg=True)
+        result = datum_module.run(msg='on')
 
-        return {'o': self.wrap_datum(datum_module, args, uuid)}
+        return {'o': self.wrap_datum(result, args, uuid)}
 
     def get_datum_obj(self):
         return Frame()
@@ -518,7 +523,8 @@ class CacheSaverCommand(SaverCommand):
 
     def run(self, args, inputs):
         # 1. storeにsaveする(runはしない)
-        datum_module, uuid = inputs['store'].save(args, inputs['i'])
+        uuid = inputs['store'].issue_uuid()
+        datum_module = inputs['store'].save(args, inputs['i'], uuid)
         return {'o': self.wrap_datum(datum_module, args, uuid)}
 
     def get_datum_obj(self):
