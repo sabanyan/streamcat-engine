@@ -2864,7 +2864,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_ryudo_flow_preview(self):
         """
         デモ用のフロープレビュー（粒度分布計）
@@ -2875,6 +2875,80 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         lasts = execute(flow_link, {}, {})
         self.assertIsNotNone(lasts['d14'])
         frame_path = Path(self.RESULT_DIR + lasts['d14'].uuid + '.csv')
+        self.assertTrue(frame_path.exists())
+        # 後片付け
+        frame_path.unlink()
+
+    @unittest.skip
+    def test_shindo_flow_execute(self):
+        """
+        デモ用のフロー実行（振動データ）
+        lasts11個ある
+        """
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'shindo_demo1')
+        lasts = execute(flow_link, {}, {})
+        self.assertEqual(len(lasts), 11)
+        for datum in lasts.values():
+            uuid = datum.uuid
+            frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+            self.assertTrue(frame_path.exists())
+            # 後片付け
+            frame_path.unlink()
+
+    @unittest.skip
+    def test_shindo_flow_cache(self):
+        """
+        デモ用のフロー実行（振動データ）
+        キャッシュをとりあえず全部作成する
+        """
+        # キャッシュを設定する
+        path = Path('kskp/flows/' +  'shindo_demo1' + '.json')
+        flow_json = None
+        with open(path.as_posix(), 'r') as f:
+            flow_json = json.load(f)
+            for node in flow_json['nodes']:
+                if node['type'] == 'frame':
+                    if node['uuid'] is None:
+                        node['makeCache'] = True
+                        node['cacheCreatedAt'] = ""
+
+        # テスト用のフローを作成
+        path = Path('kskp/flows/test.json')
+        write_data_to_json(path, flow_json)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'test', ['d1'])
+        lasts = execute(flow_link, {}, {})
+        # self.assertEqual(len(lasts), 11)
+        for datum in lasts.values():
+            uuid = datum.uuid
+            frame_path = Path(self.RESULT_DIR + uuid + '.csv')
+            self.assertTrue(frame_path.exists())
+            # 後片付け
+            frame_path.unlink()
+
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != '2500' and node['id'] == 'd1']
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(node['cacheCreatedAt'])
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
+
+        # path.unlink()
+
+    @unittest.skip
+    def test_shindo_flow_preview(self):
+        """
+        デモ用のフロープレビュー（振動データ）
+        プレビューデータは適当
+        """
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'shindo_demo1', ['d12'])
+        lasts = execute(flow_link, {}, {})
+        self.assertIsNotNone(lasts['d12'])
+        frame_path = Path(self.RESULT_DIR + lasts['d12'].uuid + '.csv')
         self.assertTrue(frame_path.exists())
         # 後片付け
         frame_path.unlink()

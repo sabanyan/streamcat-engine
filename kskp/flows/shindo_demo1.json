@@ -1,0 +1,1134 @@
+{
+  "projectId": 13,
+  "label": "振動データデモ",
+  "ports": [
+    [],
+    []
+  ],
+  "params": [],
+  "description": "●モータへ、4箇所 加速度計 設置\n●正常、故障モード4種類 を観測\n   25.6万件\n\n【課題設定 例】\n●5つの状態の 分類モデルを作成する\n●比較ケースを設定しデータセットを作成\n    目的1：観測間隔の適正化\n    目的2：診断時間の適正化\n",
+  "creator": "開発用",
+  "createdAt": "2019-03-30 17:10:43",
+  "nodes": [
+    {
+      "position": {
+        "x": 351,
+        "y": 192
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "180127_1535_4sensor_5sec.csv",
+      "type": "frame",
+      "label": "4sensor_5sec.csv",
+      "uuid": "2500",
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 352.8333333333333,
+        "y": 369
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d1",
+      "type": "frame",
+      "label": "【取込】振動データ",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 352,
+        "y": 254
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c1",
+      "type": "command",
+      "label": "CSV検査",
+      "srcs": {
+        "i": "180127_1535_4sensor_5sec.csv"
+      },
+      "dsts": {
+        "o": "d1"
+      },
+      "args": {
+        "diag": false,
+        "a": ""
+      },
+      "commandId": "mchkcsv"
+    },
+    {
+      "position": {
+        "x": 58.5,
+        "y": 717
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n1",
+      "type": "note",
+      "label": "n1",
+      "title": "【集約】データ形式を正規化",
+      "content": "5つの状態（正常、異常モード）が、\n列方向へ並ぶ形式から、\n行方向へと変換"
+    },
+    {
+      "position": {
+        "x": 729.6666666666666,
+        "y": 624.8333333333333
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d2",
+      "type": "frame",
+      "label": "列数行数",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 567.1666666666666,
+        "y": 622.6666666666666
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f1",
+      "type": "flow",
+      "label": "列数行数",
+      "srcs": {
+        "sample.csv": "d3"
+      },
+      "dsts": {
+        "d3": "d2"
+      },
+      "args": {},
+      "uuid": "shindo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 352.8333333333333,
+        "y": 559
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d3",
+      "type": "frame",
+      "label": "d3",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 144.83333333333331,
+        "y": 560
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c2",
+      "type": "command",
+      "label": "行抽出",
+      "srcs": {
+        "i": "d4"
+      },
+      "dsts": {
+        "o": "d3"
+      },
+      "args": {
+        "c": "1 == 1",
+        "x": false
+      },
+      "commandId": "msel"
+    },
+    {
+      "position": {
+        "x": 34,
+        "y": 522
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n2",
+      "type": "note",
+      "label": "n2",
+      "title": "【設定】対象データ限定",
+      "content": "行抽出 の絞り込み条件\n\n■ 本番用（全件   25万件）\n     1  == 1\n\n■動作テスト用 （Top 指定件数）\n      line() < 100\n\n"
+    },
+    {
+      "position": {
+        "x": 352.8333333333333,
+        "y": 495
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d4",
+      "type": "frame",
+      "label": "d4",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 353.83333333333326,
+        "y": 434
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c3",
+      "type": "command",
+      "label": "列名ユニーク化",
+      "srcs": {
+        "i": "d1"
+      },
+      "dsts": {
+        "o": "d4"
+      },
+      "args": {
+        "d": "_"
+      },
+      "commandId": "column_unique_name"
+    },
+    {
+      "position": {
+        "x": 731,
+        "y": 195
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d5",
+      "type": "frame",
+      "label": "検査結果",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 569,
+        "y": 193
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c4",
+      "type": "command",
+      "label": "CSV検査",
+      "srcs": {
+        "i": "180127_1535_4sensor_5sec.csv"
+      },
+      "dsts": {
+        "o": "d5"
+      },
+      "args": {
+        "diag": true
+      },
+      "commandId": "mchkcsv"
+    },
+    {
+      "position": {
+        "x": 728.8333333333333,
+        "y": 564
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d6",
+      "type": "frame",
+      "label": "列名リスト",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 566.8333333333333,
+        "y": 561
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c5",
+      "type": "command",
+      "label": "列名リスト",
+      "srcs": {
+        "i": "d3"
+      },
+      "dsts": {
+        "o": "d6"
+      },
+      "args": {
+        "n": "2",
+        "no": true
+      },
+      "commandId": "column_list"
+    },
+    {
+      "position": {
+        "x": 352.8333333333333,
+        "y": 909
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d7",
+      "type": "frame",
+      "label": "【集約】データ",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "2019-04-19 14:40:27",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 353.8333333333333,
+        "y": 743
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f2",
+      "type": "flow",
+      "label": "列を行へ展開",
+      "srcs": {
+        "d.csv": "d3"
+      },
+      "dsts": {
+        "d11": "d7"
+      },
+      "args": {},
+      "uuid": "shindo_sub2_demo1"
+    },
+    {
+      "position": {
+        "x": 53,
+        "y": 986.75
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n3",
+      "type": "note",
+      "label": "n3",
+      "title": "【集約】観測間隔 ケース作成",
+      "content": "元の観測データに対して、\n間引きによる 異なる観測データを作成し、\n行方向に連結する"
+    },
+    {
+      "position": {
+        "x": 354.8333333333333,
+        "y": 1092
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d8",
+      "type": "frame",
+      "label": "元間隔",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 352.8333333333333,
+        "y": 1027
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c6",
+      "type": "command",
+      "label": "列追加",
+      "srcs": {
+        "i": "d7"
+      },
+      "dsts": {
+        "o": "d8"
+      },
+      "args": {
+        "v": "51.2kHz",
+        "a": "DATA_SOURCE"
+      },
+      "commandId": "msetstr"
+    },
+    {
+      "position": {
+        "x": 505.83333333333326,
+        "y": 1089
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d9",
+      "type": "frame",
+      "label": "d9",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 504.83333333333326,
+        "y": 1025
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f3",
+      "type": "flow",
+      "label": "【間引き】1/2",
+      "srcs": {
+        "d.csv": "d7"
+      },
+      "dsts": {
+        "d4": "d9"
+      },
+      "args": {
+        "num": "2",
+        "name": "DATA_SOURCE",
+        "value": "25.6kHz"
+      },
+      "uuid": "shindo_sub3_demo1"
+    },
+    {
+      "position": {
+        "x": 655.8333333333333,
+        "y": 1095
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d10",
+      "type": "frame",
+      "label": "d10",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 656.8333333333333,
+        "y": 1030
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f4",
+      "type": "flow",
+      "label": "【間引き】1/3",
+      "srcs": {
+        "d.csv": "d7"
+      },
+      "dsts": {
+        "d4": "d10"
+      },
+      "args": {
+        "num": "3",
+        "name": "DATA_SOURCE",
+        "value": "17.1kHz"
+      },
+      "uuid": "shindo_sub3_demo1"
+    },
+    {
+      "position": {
+        "x": 352.8333333333333,
+        "y": 1262
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d11",
+      "type": "frame",
+      "label": "観測間隔別データ",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 352.83333333333326,
+        "y": 1188
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c7",
+      "type": "command",
+      "label": "行の連結",
+      "srcs": {
+        "*1": "d8",
+        "*2": "d9",
+        "*3": "d10"
+      },
+      "dsts": {
+        "o": "d11"
+      },
+      "args": {},
+      "commandId": "mcat"
+    },
+    {
+      "position": {
+        "x": 59,
+        "y": 1349.75
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n4",
+      "type": "note",
+      "label": "n4",
+      "title": "【集約】診断時間ケース作成",
+      "content": "■ ID列 の追加\n波形を 診断時間 の間隔ごとに、\nグループ分けするために、\n診断時間 間隔ごとに、連番を付与する\n\n\n"
+    },
+    {
+      "position": {
+        "x": 351.8333333333333,
+        "y": 1454
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d12",
+      "type": "frame",
+      "label": "診断時間ID付与済データ",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "2019-04-19 14:40:27",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 350.8333333333333,
+        "y": 1382
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f5",
+      "type": "flow",
+      "label": "診断時間ケース設定",
+      "srcs": {
+        "d.csv": "d11"
+      },
+      "dsts": {
+        "d4": "d12"
+      },
+      "args": {},
+      "uuid": "shindo_sub4_demo1"
+    },
+    {
+      "position": {
+        "x": 743.8333333333333,
+        "y": 1498
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d13",
+      "type": "frame",
+      "label": "行数列数",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 584.8333333333333,
+        "y": 1499
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f6",
+      "type": "flow",
+      "label": "行数列数確認",
+      "srcs": {
+        "sample.csv": "d12"
+      },
+      "dsts": {
+        "d3": "d13"
+      },
+      "args": {},
+      "uuid": "shindo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 743.8333333333333,
+        "y": 1441
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d14",
+      "type": "frame",
+      "label": "列名リスト",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 584.8333333333333,
+        "y": 1439
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c8",
+      "type": "command",
+      "label": "列名リスト",
+      "srcs": {
+        "i": "d12"
+      },
+      "dsts": {
+        "o": "d14"
+      },
+      "args": {
+        "n": "2",
+        "no": true
+      },
+      "commandId": "column_list"
+    },
+    {
+      "position": {
+        "x": 254,
+        "y": 1892.5
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n5",
+      "type": "note",
+      "label": "n5",
+      "title": "【統合】機械学習用データセット",
+      "content": "新しいメモ"
+    },
+    {
+      "position": {
+        "x": 30,
+        "y": 1548.25
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n6",
+      "type": "note",
+      "label": "n6",
+      "title": "【変形】特徴量の作成",
+      "content": "観測間隔のケース設定      別、\n診断時間のケース設定      別、\n特徴量算出対象のセンサ  別、\n特徴量とする定量化方法  別 \nの値を計算する\n\n\n■ 指定可能な統計量\ncount          件数\nucount        種類数\nsum             合計\nmin              最小値\nmax             最大値\nmean           算術平均\nmedian        中央値\nmode           最頻値\n\nvar               分散（標本分散   1/n）\nuvar             分散（不偏分散   1/(n-1) ）\nsd                標準偏差\nusd              標準偏差（不偏推定値）\ndevsq          偏差平方和\ncv                変動係数\n\nrange           範囲\nqrange         四分位範囲\nqtile1            第1四分位点\nqtile3           第3四分位点\n\nskew            歪度\nuskew          歪度（不偏推定値）\nkurt              尖度\nukurt            尖度（不偏推定値）\n"
+    },
+    {
+      "position": {
+        "x": 727.8333333333333,
+        "y": 466
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d15",
+      "type": "frame",
+      "label": "列数行数",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 567.8333333333333,
+        "y": 467
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f7",
+      "type": "flow",
+      "label": "列数行数",
+      "srcs": {
+        "sample.csv": "d4"
+      },
+      "dsts": {
+        "d3": "d15"
+      },
+      "args": {},
+      "uuid": "shindo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 348.8333333333333,
+        "y": 1596
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d16",
+      "type": "frame",
+      "label": "d16",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 148.83333333333326,
+        "y": 1593
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f8",
+      "type": "flow",
+      "label": "【列＆行追加】特徴量",
+      "srcs": {
+        "d.csv": "d12"
+      },
+      "dsts": {
+        "d7": "d16"
+      },
+      "args": {
+        "key_list": "DATA_SOURCE,状態",
+        "sensor_list": "3H,3V,4H,4V",
+        "feature_list": "count:件数,min:最小,max:最大,mean:平均,sd:標準偏差,range:値域,cv:変動係数"
+      },
+      "uuid": "shindo_sub5_demo1"
+    },
+    {
+      "position": {
+        "x": 345.8333333333333,
+        "y": 1834
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d17",
+      "type": "frame",
+      "label": "分類学習用データ",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 348.8333333333333,
+        "y": 1655
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c9",
+      "type": "command",
+      "label": "列順変更",
+      "srcs": {
+        "i": "d16"
+      },
+      "dsts": {
+        "o": "d17"
+      },
+      "args": {
+        "f": "DATA_SOURCE,状態,波形間隔,波形ID,*"
+      },
+      "commandId": "column_name"
+    },
+    {
+      "position": {
+        "x": 740.8333333333333,
+        "y": 1801
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d18",
+      "type": "frame",
+      "label": "列名リスト",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 573.8333333333333,
+        "y": 1801
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c10",
+      "type": "command",
+      "label": "列名リスト",
+      "srcs": {
+        "i": "d17"
+      },
+      "dsts": {
+        "o": "d18"
+      },
+      "args": {
+        "n": "2",
+        "no": true
+      },
+      "commandId": "column_list"
+    },
+    {
+      "position": {
+        "x": 741.8333333333333,
+        "y": 1859
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d19",
+      "type": "frame",
+      "label": "行数列数",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 574.8333333333333,
+        "y": 1858
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f9",
+      "type": "flow",
+      "label": "行数列数確認",
+      "srcs": {
+        "sample.csv": "d17"
+      },
+      "dsts": {
+        "d3": "d19"
+      },
+      "args": {},
+      "uuid": "shindo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 30,
+        "y": 1999
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n7",
+      "type": "note",
+      "label": "n7",
+      "title": "【学習】機械学習モデル",
+      "content": "＜現在、機械学習機能は、封印＞"
+    },
+    {
+      "position": {
+        "x": 726.8333333333333,
+        "y": 825
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d21",
+      "type": "frame",
+      "label": "行数列数",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 567.8333333333333,
+        "y": 826
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f10",
+      "type": "flow",
+      "label": "行数列数",
+      "srcs": {
+        "sample.csv": "d7"
+      },
+      "dsts": {
+        "d3": "d21"
+      },
+      "args": {},
+      "uuid": "shindo_sub1_demo1"
+    },
+    {
+      "position": {
+        "x": 725.8333333333333,
+        "y": 763
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d20",
+      "type": "frame",
+      "label": "列名リスト",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 565.8333333333333,
+        "y": 761
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c11",
+      "type": "command",
+      "label": "列名リスト",
+      "srcs": {
+        "i": "d7"
+      },
+      "dsts": {
+        "o": "d20"
+      },
+      "args": {
+        "n": "2",
+        "no": true
+      },
+      "commandId": "column_list"
+    },
+    {
+      "position": {
+        "x": 344.8333333333333,
+        "y": 2116
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d23",
+      "type": "frame",
+      "label": "d23",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "2019-04-19 14:40:28",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 343.8333333333333,
+        "y": 2029
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "f11",
+      "type": "flow",
+      "label": "機械学習",
+      "srcs": {
+        "d.csv": "d17"
+      },
+      "dsts": {
+        "d1": "d23"
+      },
+      "args": {},
+      "uuid": "shindo_sub6_demo1"
+    },
+    {
+      "position": {
+        "x": 40,
+        "y": 184
+      },
+      "size": {
+        "width": 215,
+        "height": 25
+      },
+      "invalid": {},
+      "error": {},
+      "id": "n8",
+      "type": "note",
+      "label": "n8",
+      "title": "【取込】ロード",
+      "content": "CSVフォーマット異常あるため、\n形式を修正する\n\n[異常なポイント]\n ● 列名に重複あり\n \n"
+    }
+  ]
+}

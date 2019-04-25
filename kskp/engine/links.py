@@ -44,7 +44,11 @@ class CommandLink:
             "mshare": MshareCommand(),
             "mchgnum": MchgnumCommand(),
             "groupby": GroupbyCommand(),
-            "mfldname": MfldnameCommand()
+            "mfldname": MfldnameCommand(),
+            "mcount": McountCommand(),
+            "column_unique_name": ColumnUniqueNameCommand(),
+            "column_name": ColumnNameCommand(),
+            "sml_modeling": SmlModelingCommand()
         }
 
         if runnable_id not in table:
