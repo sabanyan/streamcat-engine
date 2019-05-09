@@ -84,10 +84,11 @@ class Folder(Store):
         import nysol.mcmd as nm
         self.set_datum(datum, uuid)
 
-        args['dir_path'] = (self.dir_path / (uuid + '.csv')) if args.get('file_name') is None else args.get('file_name')
+        args['frame_path'] = (self.dir_path / (uuid + '.csv'))
+
         command_args = {}
         command_args['i'] = datum
-        command_args['o'] = args['dir_path'].as_posix()
+        command_args['o'] = args['frame_path'].as_posix()
 
         return nm.m2tee(command_args)
 
@@ -102,10 +103,10 @@ class Folder(Store):
                 path = flow_path
                 break
 
-        datum = NysolModule()
-        datum.set_content(nm.m2tee({'i':path.as_posix()}))
+        nysol_module = NysolModule()
+        nysol_module.set_content(nm.m2tee({'i':path.as_posix()}))
 
-        return datum
+        return nysol_module
 
     @property
     def content(self):
@@ -126,14 +127,12 @@ class FrameStore(Store):
     def append(self, cache_point):
         self.datum_list.append(cache_point)
 
-class DatumWrapper(Datum):
+class NysolModule(Datum):
     """
-    pointのdatumをラップするためのクラス
-    とりあえずuuidとラップ対象をセットできる様にしている
+    NysolModule1をラップするクラス
     """
     def __init__(self):
         super().__init__()
-        self.uuid = None
         self._content = None
 
     def set_uuid(self, uuid):
@@ -146,19 +145,7 @@ class DatumWrapper(Datum):
     def content(self):
         return self._content
 
-class NysolModule(DatumWrapper):
-    def __init__(self):
-        super().__init__()
-
-    def run(self, msg=False):
-        # NysolModuleなので実行できるdatum？と思ったのでrun()を追加した
-        # NysolModule.content.run()するよりはいいかなと思ったのだがどうだろう？
-        if msg:
-            return self._content.run(msg='on')
-        else:
-            return self._content.run()
-
-class Frame(DatumWrapper):
+class Frame(Datum):
     """
     実際の実行のrunではない時に作られ、DB保存の情報を持っている。
     storeに一旦集められてから、jobのdtorのタイミングでDBへの保存処理が走る。
@@ -170,12 +157,22 @@ class Frame(DatumWrapper):
         super().__init__()
         self.info = {}
 
+    def set_uuid(self, uuid):
+        self.uuid = uuid
+
+    def set_content(self, module):
+        self._content = module
+
+    @property
+    def content(self):
+        return self._content
+
     def set_cache_info(self, params):
         self.info = params
 
     def save(self):
         # キャッシュが作成されているか確認
-        if not self.created_complete:
+        if not self.created:
             # とりあえずfalseを返す
             return False
 
@@ -190,9 +187,11 @@ class Frame(DatumWrapper):
         pass
 
     @property
-    def created_complete(self):
-        if self.info.get('dir_path') is not None:
-            return self.info.get('dir_path').exists()
+    def created(self):
+        if self.info.get('frame_path') is not None:
+            return self.info.get('frame_path').exists()
+        else:
+            return False
 
 class Cache(Frame):
     """
@@ -205,7 +204,7 @@ class Cache(Frame):
 
     def save(self):
         # キャッシュが作成されているか確認
-        if not self.created_complete:
+        if not self.created:
             # とりあえずfalseを返す
             return False
 
@@ -229,20 +228,23 @@ class Cache(Frame):
 
 class Step:
     def __init__(self, id, runnable, args):
-        self.id = id
+        self.step_id = id
         self.runnable = runnable
         self.args = args
 
     def __repr__(self):
-        return self.id
+        return self.step_id
 
-    def replace_args(self, raplace_args):
+    def replace_args(self, flow_args):
         """
-        自身のargsにフロー変数を使っている箇所があれば、raplace_argsの値で置き換える
+        自身のargsにフロー変数を使っている箇所があれば、argsの値で置き換える
+
+        FIXME?: フロー変数を書き換えるのはStep以外でもいいが、
+        早めに書き換えたかったので、とりあえずStepに記載してある
         """
         import re
         # TODO: 正規表現やreplace対象を外に出す。
-        for param, value in raplace_args.items():
+        for param, value in flow_args.items():
             for step_param, step_value in self.args.items():
                 # ネスト深くなるので、continueを利用してネストを浅くした
                 if not isinstance(step_value, str):
@@ -268,6 +270,8 @@ class Flow(Datum):
         self.points = []
         self.substeps = []
 
+        # TODO: cacheやlastsができる場所は固定のuuidを持っているとのことなので、
+        # それを使う様にする
         self.cache_store = FrameStore()
         self.lasts_store = FrameStore()
 
@@ -277,7 +281,7 @@ class Flow(Datum):
         for p in self.points:
             for t_tube in p.target:
                 if t_tube.runnable is None:
-                    lasts[p.id] = p.datum
+                    lasts[p.point_id] = p.datum
 
         # return {a.id: a.datum for a in self.points if a.target.runnable is None}
         return lasts
@@ -315,7 +319,7 @@ class Flow(Datum):
         inputsを必要な部分に配置する
         """
 
-        input_points = [a for a in self.points if a.is_for_input]
+        input_points = [p for p in self.points if p.is_for_input]
         # print('aaa', input_points, inputs)
         for input_point in input_points:
             input_point.datum = inputs[input_point.o_port.name]
@@ -386,7 +390,7 @@ class Flow(Datum):
                         inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
-            step.runnable.context['step_id'] = step.id
+            step.runnable.context['step_id'] = step.step_id
             # print('context in run_invokable_steps:', step.runnable.context)
 
             # jobを作る
@@ -435,7 +439,16 @@ class Flow(Datum):
                 if target.port == o_port:
                     return point
         # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
-        # TODO: いつかちゃんとする
+        # 何かの間違いがあった。
+
+        # 例：
+        # サブフローのo_portsが
+        # [{"label": "出力1", "nodeId": "d3", "type": "frame"}, {"label": "出力2", "nodeId": "d4", "type": "frame"}]
+        # の様に2つあって、プレビューなどによって片方（例えばd3）だけ使う様な場合、
+        # d4をtarget.portとするpointは存在しない（使わないpointは切り捨てている）ので、ここを通ることになる。
+
+        # なので、ここで例外を出すと正常に最後まで実行できなくなる。
+        # とりあえずこのままにしておく
         return None
 
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
@@ -445,7 +458,7 @@ class Flow(Datum):
         """
         指定したnode_idをもつpointを１つ返す
         """
-        return [point for point in self.points if point.id == node_id][0]
+        return [point for point in self.points if point.point_id == node_id][0]
 
     def select_point_by_id(self, id):
         """
@@ -453,7 +466,7 @@ class Flow(Datum):
         指定したidのpointを取得する
         """
         for point in self.points:
-            if point.id == id:
+            if point.point_id == id:
                 return point
 
     def dtor(self):
@@ -470,7 +483,7 @@ class Point:
     """
 
     def __init__(self, id, origin_tubes, datum, target_tubes, cache=False):
-        self.id = id
+        self.point_id = id
 
         self.origin = origin_tubes
         self.datum = datum
@@ -499,9 +512,9 @@ class Point:
                 cod_i += f"({tube.runnable}.None)"
 
         if self.datum is None:
-            return f"{self.id}<{dom_o} -> {cod_i}>"
+            return f"{self.point_id}<{dom_o} -> {cod_i}>"
         else:
-            return f"{self.id}<{dom_o} -({self.datum})-> {cod_i}>"
+            return f"{self.point_id}<{dom_o} -({self.datum})-> {cod_i}>"
 
     @property
     def is_for_input(self):
@@ -518,18 +531,51 @@ class Point:
     @property
     def is_last(self):
         """
-        指定したポイントが終端のものかどうかを調べる
+        フローの終端のものかどうか（サブ、rootどちらでも良い）
         """
         return self.target[0].runnable is None
 
     @property
+    def is_root_last(self):
+        """
+        rootのフローの終端かどうか
+        """
+        return self.target[0].runnable is None and self.target[0].port is None
+
+    @property
+    def is_out(self):
+        """
+        サブフローの終端かどうか
+        """
+        return self.target[0].runnable is None and self.target[0].port is not None
+
+    @property
     def is_first(self):
         """
-        指定したポイントが始端かどうかを調べる
-        サブフローの場合は、始端のpointのportはNoneではないので
-        runnableだけで判断している
+        フローの始端のものかどうか（サブ、rootどちらでも良い）
         """
         return self.o_runnable is None
+
+    @property
+    def is_root_first(self):
+        """
+        rootのフローの始端かどうか
+        """
+        return self.o_runnable is None and self.o_port is None
+
+    @property
+    def is_in(self):
+        """
+        サブフローの始端かどうか
+        """
+        return self.o_runnable is None and self.o_port is not None
+
+    @property
+    def is_cache(self):
+        """
+        キャッシュを生成するかどうか
+        """
+        return self.cache
 
     def update_origin(self, tube):
         """

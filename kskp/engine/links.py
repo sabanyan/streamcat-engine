@@ -104,13 +104,9 @@ class FlowJsonLink:
         """
         指定したdatumを出力するnodeかを調べる
         """
-        return self.is_node_runnable(node) and datum_id in list(node['dsts'].values())
+        return self.is_runnable_node(node) and datum_id in list(node['dsts'].values())
 
-    def make_ports(self, port_dict_list):
-        """ dictのリストからportインスタンスのリストを作る """
-        return [Port(p['nodeId'], p['type']) for p in port_dict_list]
-
-    def is_node_runnable(self, node):
+    def is_runnable_node(self, node):
         """ 指定されたnodeがrunnableかどうかを判断する """
         return node['type'] == 'command' or node['type'] == 'flow'
 
@@ -128,18 +124,18 @@ class FlowJsonLink:
         f.points = self.pick_necessary_points(f, lasts)
 
         # キャッシュ作成処理
-        cache_point = [point for point in f.points if point.cache]
-        for point in cache_point:
+        cache_points = [point for point in f.points if point.is_cache]
+        for point in cache_points:
             # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
             store = Folder(Path('kskp/data/cache_frames'))
             self.put_saver(point, f, store, CacheSaverCommand())
 
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
-            last_point = [point for point in f.points if point.is_last]
-            for point in last_point:
+            last_points = [point for point in f.points if point.is_last]
+            for point in last_points:
                 store = Folder(Path('kskp/data/result'))
-                self.put_saver(point, f, store)
+                self.put_saver(point, f, store, SaverCommand())
 
         print(f.points)
         return f
@@ -153,28 +149,32 @@ class FlowJsonLink:
 
         # portを読む
         ports = json_obj['ports']
-        flow.i_ports = self.make_ports(ports[0])
-        flow.o_ports = self.make_ports(ports[1])
+        flow.i_ports = self.parse_ports(ports[0])
+        flow.o_ports = self.parse_ports(ports[1])
 
         # flowを更新する
-        self.update_flow_by_runnable(json_obj['nodes'], flow)
-        self.update_flow_by_other_than_runnable(json_obj['nodes'], flow)
+        self.update_flow_by_runnable(flow, json_obj['nodes'])
+        self.update_flow_by_other_than_runnable(flow, json_obj['nodes'])
         return flow
 
-    def update_flow_by_runnable(self, nodes, flow):
+    def parse_ports(self, port_dict_list):
+        """ dictのリストからportインスタンスのリストを作る """
+        return [Port(p['nodeId'], p['type']) for p in port_dict_list]
+
+    def update_flow_by_runnable(self, flow, nodes):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
         # まず、runnableを集める
         for node in nodes:
-            if self.is_node_runnable(node):
+            if self.is_runnable_node(node):
 
                 # runnableのインスタンス化を行う
                 step = Step(node['id'], self.node2link(node).resolve(), node['args'])
 
                 flow.substeps.append(step)
 
-                point_ids = [point.id for point in flow.points]
+                point_ids = [point.point_id for point in flow.points]
 
                 for src_port in step.runnable.i_ports:
                     srcs = node['srcs']
@@ -199,7 +199,7 @@ class FlowJsonLink:
                     if len(flow.i_ports) > 0 and src_point.is_first:
                         for i_port in flow.i_ports:
                             # 今は「フローのi_port名」＝「datum_id（pointのid）」なのでこの条件にしている
-                            if i_port.name == src_point.id:
+                            if i_port.name == src_point.point_id:
                                 src_point.update_origin(Tube(i_port, None))
 
                 for dst_port in step.runnable.o_ports:
@@ -230,10 +230,10 @@ class FlowJsonLink:
                             if target.port is None and target.runnable is None:
                                 for o_port in flow.o_ports:
                                     # 今は「フローのo_port名」＝「pointのid（datum_id）」なのでこの条件にしている
-                                    if o_port.name == dst_point.id:
+                                    if o_port.name == dst_point.point_id:
                                         dst_point.update_target(Tube(o_port, None))
 
-    def update_flow_by_other_than_runnable(self, nodes, flow):
+    def update_flow_by_other_than_runnable(self, flow, nodes):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -242,8 +242,8 @@ class FlowJsonLink:
 
         for node in nodes:
             # pointにdatumを入れていく
-            if not self.is_node_runnable(node) and not node['type'] in except_type_list:
-                target_point = [point for point in flow.points if point.id == node['id']][0]
+            if not self.is_runnable_node(node) and not node['type'] in except_type_list:
+                target_point = [point for point in flow.points if point.point_id == node['id']][0]
                 target_point.cache = node.get('makeCache')
 
                 # データの取得先の設定
@@ -327,18 +327,18 @@ class FlowJsonLink:
         """
         return Step(str(uuid.uuid4()), saver, args)
 
-    def put_saver(self, point, flow, store, saver=SaverCommand()):
+    def put_saver(self, point, flow, store, saver):
         """
         指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
         """
         # 出力コマンドとそれが出すpointを追加
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
-        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
+        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.point_id} if isinstance(self, FlowUuidLink) else {}
         saver_step = self.make_saver_step(args, saver)
-        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
-        saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        point.id = str(uuid.uuid4())
+        store_point = Point(point.point_id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+        saver_point = Point(point.point_id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        point.point_id = str(uuid.uuid4())
 
         # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:
