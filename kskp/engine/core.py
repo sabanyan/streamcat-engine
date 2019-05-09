@@ -270,21 +270,20 @@ class Flow(Datum):
         self.points = []
         self.substeps = []
 
-        # TODO: cacheやlastsができる場所は固定のuuidを持っているとのことなので、
-        # それを使う様にする
+        # TODO:Flowに持たせるのではなく、どこか共通の場所にする
         self.cache_store = FrameStore()
         self.lasts_store = FrameStore()
 
     @property
     def lasts(self):
-        lasts = {}
-        for p in self.points:
-            for t_tube in p.target:
-                if t_tube.runnable is None:
-                    lasts[p.point_id] = p.datum
+        # lasts = {}
+        # for p in self.points:
+        #     for t_tube in p.target:
+        #         if t_tube.runnable is None:
+        #             lasts[p.point_id] = p.datum
 
-        # return {a.id: a.datum for a in self.points if a.target.runnable is None}
-        return lasts
+        # return lasts
+        return {p.point_id: p.datum for p in self.points if any(t_tube.runnable is None for t_tube in p.target)}
 
     def run(self, args, inputs):
         """
@@ -332,12 +331,12 @@ class Flow(Datum):
         # まず、グラフ構造を解析する必要がある
 
         # 最初に「最後の矢印」を集める
-        last_steps = set()
-        for p in self.points:
-            for t_tube in p.target:
-                if t_tube.runnable is None and p.datum is None:
-                    last_steps.add(p.o_runnable)
-        # last_steps = {p.o_runnable for p in self.points if p.target.runnable is None and p.datum is None}
+        # last_steps = set()
+        # for p in self.points:
+        #     for t_tube in p.target:
+        #         if t_tube.runnable is None and p.datum is None:
+        #             last_steps.add(p.o_runnable)
+        last_steps = {p.o_runnable for p in self.points if any(t_tube.runnable is None and p.datum is None for t_tube in p.target)}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -351,12 +350,12 @@ class Flow(Datum):
         """
 
         # 該当stepの実行に必要なpointを取得する
-        prev_points = set()
-        for p in self.points:
-            for t_tube in p.target:
-                if t_tube.runnable == original_step:
-                    prev_points.add(p)
-        # prev_points = {a for a in self.points if a.target.runnable == original_step}
+        # prev_points = set()
+        # for p in self.points:
+        #     for t_tube in p.target:
+        #         if t_tube.runnable == original_step:
+        #             prev_points.add(p)
+        prev_points = {p for p in self.points if any(t_tube.runnable == original_step for t_tube in p.target)}
 
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
         if all([a.datum is not None for a in prev_points]):
@@ -589,8 +588,11 @@ class Point:
         指定したTubeでtargetを更新する
         既にtargetに有効なTubeがあった場合は追加、
         そうではなかったら上書きする
+
+        初期値が[Tube(None, None)]のため、appendするとTube(None, None)が残る
+        なので、上書きしている
         """
-        if self.is_last:
+        if self.is_root_last:
             self.target = [tube]
         else:
             self.target.append(tube)
