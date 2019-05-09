@@ -87,29 +87,6 @@ class FlowJsonLink:
 
         return ret
 
-    def pick_necessary_dst_ids(self, nodes, datum_ids):
-        """
-        指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
-        """
-        ids = []
-        for datum_id in datum_ids:
-            for node in nodes['nodes']:
-                if self.is_outputting_datum_node(node, datum_id):
-                    # 対象のnode
-                    ids.extend(self.pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
-            ids.append(datum_id)
-        return list(set(ids))
-
-    def is_outputting_datum_node(self, node, datum_id):
-        """
-        指定したdatumを出力するnodeかを調べる
-        """
-        return self.is_runnable_node(node) and datum_id in list(node['dsts'].values())
-
-    def is_runnable_node(self, node):
-        """ 指定されたnodeがrunnableかどうかを判断する """
-        return node['type'] == 'command' or node['type'] == 'flow'
-
     def resolve(self):
         f = self.make_flow(self.json_str)
 
@@ -265,23 +242,28 @@ class FlowJsonLink:
         """
         return node.get('value') is not None and node.get('uuid') is None
 
-    def make_loader_step(self, node_uuid):
-        """
-        指定したuuidのデータを取ってくるLoaderStepを作成する
-        """
-        return Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
+    def is_runnable_node(self, node):
+        """ 指定されたnodeがrunnableかどうかを判断する """
+        return node['type'] == 'command' or node['type'] == 'flow'
 
-    def put_loader(self, frame_uuid, target_point, flow, store):
+    def pick_necessary_dst_ids(self, nodes, datum_ids):
         """
-        target_point(uuidが既にあるdatumのpoint)の前に
-        LoaderStepとStorePointをくっつける
-        Loaderは指定したstoreからデータを取ってくる
+        指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
         """
-        loader_step = self.make_loader_step(frame_uuid)
-        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
-        target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
-        flow.points.append(store_point)
-        flow.substeps.append(loader_step)
+        ids = []
+        for datum_id in datum_ids:
+            for node in nodes['nodes']:
+                if self.is_outputting_datum_node(node, datum_id):
+                    # 対象のnode
+                    ids.extend(self.pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
+            ids.append(datum_id)
+        return list(set(ids))
+
+    def is_outputting_datum_node(self, node, datum_id):
+        """
+        指定したdatumを出力するnodeかを調べる
+        """
+        return self.is_runnable_node(node) and datum_id in list(node['dsts'].values())
 
     def pick_necessary_points(self, flow, last_ids):
         """
@@ -321,11 +303,23 @@ class FlowJsonLink:
 
         return necessary_points
 
-    def make_saver_step(self, args, saver):
+    def put_loader(self, frame_uuid, target_point, flow, store):
         """
-        saverコマンドのstepを作成する
+        target_point(uuidが既にあるdatumのpoint)の前に
+        LoaderStepとStorePointをくっつける
+        Loaderは指定したstoreからデータを取ってくる
         """
-        return Step(str(uuid.uuid4()), saver, args)
+        loader_step = self.make_loader_step(frame_uuid)
+        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
+        target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
+        flow.points.append(store_point)
+        flow.substeps.append(loader_step)
+        
+    def make_loader_step(self, node_uuid):
+        """
+        指定したuuidのデータを取ってくるLoaderStepを作成する
+        """
+        return Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
 
     def put_saver(self, point, flow, store, saver):
         """
@@ -348,6 +342,12 @@ class FlowJsonLink:
 
         flow.substeps.append(saver_step)
         flow.points.extend([saver_point, store_point])
+
+    def make_saver_step(self, args, saver):
+        """
+        saverコマンドのstepを作成する
+        """
+        return Step(str(uuid.uuid4()), saver, args)
 
 class FlowUuidLink(FlowJsonLink):
     """
