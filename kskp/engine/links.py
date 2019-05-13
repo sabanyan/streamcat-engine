@@ -83,7 +83,7 @@ class FlowJsonLink:
             dst_ids = self.pick_necessary_dst_ids(json.loads(self.json_str), self.last_ids)
             # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
             if len(dst_ids) > 0:
-                ret.last_ids = [port for port, datum_id in node['dsts'].items() for id in dst_ids if datum_id == id]
+                ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
 
         return ret
 
