@@ -98,9 +98,9 @@ class Folder(Store):
         # TODO: 本当はuuidを使ってdbからcsvの場所を取ってくる
         # 今はとりあえず直接取ってくる(uuid==csvのファイル名)
         path = None
-        for flow_path in self.dir_path.iterdir():
-            if flow_path.stem == uuid:
-                path = flow_path
+        for frame_path in self.dir_path.iterdir():
+            if frame_path.stem == uuid:
+                path = frame_path
                 break
 
         nysol_module = NysolModule()
@@ -283,7 +283,7 @@ class Flow(Datum):
         #             lasts[p.point_id] = p.datum
 
         # return lasts
-        return {p.point_id: p.datum for p in self.points if any(t_tube.runnable is None for t_tube in p.target)}
+        return {p.point_id: p.datum for p in self.points if p.is_last}
 
     def run(self, args, inputs):
         """
@@ -336,7 +336,7 @@ class Flow(Datum):
         #     for t_tube in p.target:
         #         if t_tube.runnable is None and p.datum is None:
         #             last_steps.add(p.o_runnable)
-        last_steps = {p.o_runnable for p in self.points if any(t_tube.runnable is None and p.datum is None for t_tube in p.target)}
+        last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -531,22 +531,23 @@ class Point:
     def is_last(self):
         """
         フローの終端のものかどうか（サブ、rootどちらでも良い）
+        targetのrunnableにNoneがある場合は終端となっている
         """
-        return self.target[0].runnable is None
+        return any(t_tube.runnable is None for t_tube in self.target)
 
     @property
     def is_root_last(self):
         """
         rootのフローの終端かどうか
         """
-        return self.target[0].runnable is None and self.target[0].port is None
+        return any(t_tube.runnable is None and t_tube.port is None for t_tube in self.target)
 
     @property
     def is_out(self):
         """
         サブフローの終端かどうか
         """
-        return self.target[0].runnable is None and self.target[0].port is not None
+        return any(t_tube.runnable is None and t_tube.port is not None for t_tube in self.target)
 
     @property
     def is_first(self):
