@@ -715,6 +715,50 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
+    # シンプルなmコマンド１つのフロー（csvから読み取り）
+    # mchkcsv単体の実行テスト用
+    flow_data_use_mchkcsv = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": None,
+          "dataSource": "csv",
+          "uuid": "test_data"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv",
+          "makeCache": True,
+          "cacheCreatedAt": ""
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {},
+          "commandId": "mchkcsv"
+        }
+      ]
+    }
+
     # inputが2つあるシンプルなフロー
     flow_data_inputs = {
       "label": "テストフロ",
@@ -887,7 +931,7 @@ class ExecuteTestCase(unittest.TestCase):
 
         mkdir(self.RESULT_DIR)
         mkdir(self.CACHE_DIR)
-                    
+
     # @unittest.skip
     def test_simple_flow_execute(self):
         """
@@ -2776,6 +2820,36 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 後片付け
         Path(self.RESULT_DIR + lasts['d2'].uuid + '.csv').unlink()
+
+    # @unittest.skip
+    def test_simple_flow_execute_use_mchkcsv_create_cache(self):
+        """
+        mコマンド1個のフロー実行
+        確認したいことはmchkcsvの動作（nm.cmdより実行している）
+
+        ベータ版のengineではキャッシュの生成時の実行で失敗したので
+        """
+        # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
+        flow_json_path = Path('kskp/flows/mchkcsv_flow.json')
+        with open(flow_json_path.as_posix(), 'w') as f:
+            json.dump(json.loads(json.dumps(self.flow_data_use_mchkcsv)), f, ensure_ascii=False)
+
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'mchkcsv_flow')
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d1'])
+
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(flow_json_path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d1']]
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            Path(self.CACHE_DIR + node['uuid'] + '.csv').unlink()
+
+        # 後片付け
+        Path(self.RESULT_DIR + lasts['d1'].uuid + '.csv').unlink()
+        flow_json_path.unlink()
 
 class ExecuteSampleFlowTestCase(unittest.TestCase):
     """
