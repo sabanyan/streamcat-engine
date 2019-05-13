@@ -227,13 +227,13 @@ class Cache(Frame):
         flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
 
 class Step:
-    def __init__(self, id, runnable, args):
-        self.step_id = id
+    def __init__(self, step_id, runnable, args):
+        self.id = step_id
         self.runnable = runnable
         self.args = args
 
     def __repr__(self):
-        return self.step_id
+        return self.id
 
     def replace_args(self, flow_args):
         """
@@ -283,7 +283,7 @@ class Flow(Datum):
         #             lasts[p.point_id] = p.datum
 
         # return lasts
-        return {p.point_id: p.datum for p in self.points if p.is_last}
+        return {p.id: p.datum for p in self.points if p.is_last}
 
     def run(self, args, inputs):
         """
@@ -389,7 +389,7 @@ class Flow(Datum):
                         inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
-            step.runnable.context['step_id'] = step.step_id
+            step.runnable.context['step_id'] = step.id
             # print('context in run_invokable_steps:', step.runnable.context)
 
             # jobを作る
@@ -457,15 +457,15 @@ class Flow(Datum):
         """
         指定したnode_idをもつpointを１つ返す
         """
-        return [point for point in self.points if point.point_id == node_id][0]
+        return [point for point in self.points if point.id == node_id][0]
 
-    def select_point_by_id(self, id):
+    def select_point_by_id(self, point_id):
         """
         self.pointsの中から
         指定したidのpointを取得する
         """
         for point in self.points:
-            if point.point_id == id:
+            if point.id == point_id:
                 return point
 
     def dtor(self):
@@ -481,8 +481,8 @@ class Point:
     o->iの順番なので注意
     """
 
-    def __init__(self, id, origin_tubes, datum, target_tubes, cache=False):
-        self.point_id = id
+    def __init__(self, point_id, origin_tubes, datum, target_tubes, cache=False):
+        self.id = point_id
 
         self.origin = origin_tubes
         self.datum = datum
@@ -511,9 +511,9 @@ class Point:
                 cod_i += f"({tube.runnable}.None)"
 
         if self.datum is None:
-            return f"{self.point_id}<{dom_o} -> {cod_i}>"
+            return f"{self.id}<{dom_o} -> {cod_i}>"
         else:
-            return f"{self.point_id}<{dom_o} -({self.datum})-> {cod_i}>"
+            return f"{self.id}<{dom_o} -({self.datum})-> {cod_i}>"
 
     @property
     def is_for_input(self):
