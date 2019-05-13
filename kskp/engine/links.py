@@ -151,7 +151,7 @@ class FlowJsonLink:
 
                 flow.substeps.append(step)
 
-                point_ids = [point.point_id for point in flow.points]
+                point_ids = [point.id for point in flow.points]
 
                 for src_port in step.runnable.i_ports:
                     srcs = node['srcs']
@@ -176,7 +176,7 @@ class FlowJsonLink:
                     if len(flow.i_ports) > 0 and src_point.is_first:
                         for i_port in flow.i_ports:
                             # 今は「フローのi_port名」＝「datum_id（pointのid）」なのでこの条件にしている
-                            if i_port.name == src_point.point_id:
+                            if i_port.name == src_point.id:
                                 src_point.update_origin(Tube(i_port, None))
 
                 for dst_port in step.runnable.o_ports:
@@ -207,7 +207,7 @@ class FlowJsonLink:
                             if target.port is None and target.runnable is None:
                                 for o_port in flow.o_ports:
                                     # 今は「フローのo_port名」＝「pointのid（datum_id）」なのでこの条件にしている
-                                    if o_port.name == dst_point.point_id:
+                                    if o_port.name == dst_point.id:
                                         dst_point.update_target(Tube(o_port, None))
 
     def update_flow_by_other_than_runnable(self, flow, nodes):
@@ -220,7 +220,7 @@ class FlowJsonLink:
         for node in nodes:
             # pointにdatumを入れていく
             if not self.is_runnable_node(node) and not node['type'] in except_type_list:
-                target_point = [point for point in flow.points if point.point_id == node['id']][0]
+                target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
 
                 # データの取得先の設定
@@ -314,7 +314,7 @@ class FlowJsonLink:
         target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
         flow.points.append(store_point)
         flow.substeps.append(loader_step)
-        
+
     def make_loader_step(self, node_uuid):
         """
         指定したuuidのデータを取ってくるLoaderStepを作成する
@@ -328,11 +328,11 @@ class FlowJsonLink:
         """
         # 出力コマンドとそれが出すpointを追加
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
-        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.point_id} if isinstance(self, FlowUuidLink) else {}
+        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         saver_step = self.make_saver_step(args, saver)
-        store_point = Point(point.point_id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
-        saver_point = Point(point.point_id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        point.point_id = str(uuid.uuid4())
+        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+        saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        point.id = str(uuid.uuid4())
 
         # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:
