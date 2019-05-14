@@ -103,10 +103,7 @@ class Folder(Store):
                 path = frame_path
                 break
 
-        nysol_module = NysolModule()
-        nysol_module.set_content(nm.m2tee({'i':path.as_posix()}))
-
-        return nysol_module
+        return nm.m2tee({'i':path.as_posix()})
 
     @property
     def content(self):
@@ -183,7 +180,7 @@ class Frame(Datum):
         # TODO: DBと連携するようになったら処理を記載する
         # この2つがあれば最低限登録できる・・・と思っている。。。
         # uuid・・・self.uuid
-        # path・・・self.info.get('dir_path')（saverで付与済み）
+        # path・・・self.info.get('frame_path')（saverで付与済み）
         pass
 
     @property
@@ -224,6 +221,7 @@ class Cache(Frame):
             if node['id'] == self.info.get('datum_id'):
                 node['uuid'] = self.uuid
                 node['cacheCreatedAt'] = datetime.now(timezone(timedelta(hours=+9), 'JST')).strftime('%Y-%m-%d %H:%M:%S')
+                break
         flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
 
 class Step:
@@ -605,6 +603,10 @@ class Tube:
     def __init__(self, port, runnable):
         self.port = port
         self.runnable = runnable
+
+    @property
+    def is_None(self):
+        return self.port is None and self.runnable is None
 
 def union(sets):
     """

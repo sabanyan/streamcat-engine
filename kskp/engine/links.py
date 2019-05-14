@@ -103,7 +103,6 @@ class FlowJsonLink:
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            # cacheの保存先を生成、pointのfor文の中で生成しているのでpoint毎に保存先は変えられるが、使う機会ある？？
             store = Folder(Path('kskp/data/cache_frames'))
             self.put_saver(point, f, store, CacheSaverCommand())
 
@@ -144,71 +143,83 @@ class FlowJsonLink:
         """
         # まず、runnableを集める
         for node in nodes:
-            if self.is_runnable_node(node):
+            if not self.is_runnable_node(node):
+                continue
 
-                # runnableのインスタンス化を行う
-                step = Step(node['id'], self.node2link(node).resolve(), node['args'])
+            # runnableのインスタンス化を行う
+            step = Step(node['id'], self.node2link(node).resolve(), node['args'])
+            flow.substeps.append(step)
 
-                flow.substeps.append(step)
+            srcs = node['srcs']
+            dsts = node['dsts']
 
-                point_ids = [point.id for point in flow.points]
+            self.replace_multi_inputs(step, srcs)
 
-                for src_port in step.runnable.i_ports:
-                    srcs = node['srcs']
-                    if src_port.name == '*':
-                        step.runnable.i_ports = [Port(p, 'frame') for p in node['srcs'].keys()]
+            # srcとdstからpointを作る
+            for src_port in step.runnable.i_ports:
+                if src_port.name not in srcs:
+                    raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
+                # 対象のpointがすでに存在すればそれを取得する
+                src_point = self.upsert_point(flow=flow, node_id=srcs[src_port.name],
+                                              origin=Tube(None, None), target=Tube(src_port, step))
+                # 一行でまとめたかったのでリスト内包表記にしてみたが、リストで返す必要もないし、
+                # 一行が長くなってしまったので折り返した。。。
+                [self.update_point(point=src_point, origin=Tube(i_port, None))
+                 for i_port in flow.i_ports if i_port.name == src_point.id]
 
-                # srcとdstからpointを作る
-                for src_port in step.runnable.i_ports:
-                    srcs = node['srcs']
-                    if src_port.name not in srcs:
-                        raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
-                    # 対象のpointがすでに存在すればそれを取得する
-                    if srcs[src_port.name] in point_ids:
-                        src_point = flow.select_point_by_node_id(srcs[src_port.name])
-                        src_point.update_target(Tube(src_port, step))
-                    else:
-                        src_point = Point(srcs[src_port.name], [Tube(None, None)], None, [Tube(src_port, step)])
-                        flow.points.append(src_point)
+            for dst_port in step.runnable.o_ports:
+                if dst_port.name not in dsts and len(step.runnable.o_ports) == 1:
+                    raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
 
-                    # inを外に出しているサブフローの場合は、
-                    # てっぺんのPointのorigin.portを、外に出しているポート名にする
-                    if len(flow.i_ports) > 0 and src_point.is_first:
-                        for i_port in flow.i_ports:
-                            # 今は「フローのi_port名」＝「datum_id（pointのid）」なのでこの条件にしている
-                            if i_port.name == src_point.id:
-                                src_point.update_origin(Tube(i_port, None))
+                if dsts.get(dst_port.name) is None:
+                    continue
 
-                for dst_port in step.runnable.o_ports:
-                    dsts = node['dsts']
-                    # ２つのo_portsを持つコマンドで、片方のoutputしか使わない（片方しかフローに配置しない）ということもあるかもしれないので
-                    # len(step.runnable.o_ports) == 1（runnableの元々の出力ポートが１つの場合）　と
-                    # if dsts.get(dst_port.name) is None:
-                    # 　　continue
-                    # を追記
-                    if dst_port.name not in dsts and len(step.runnable.o_ports) == 1:
-                        raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
+                # 対象のpointがすでに存在すればそれを取得する
+                dst_point = self.upsert_point(flow=flow, node_id=dsts[dst_port.name],
+                                              origin=Tube(dst_port, step), target=Tube(None, None))
 
-                    if dsts.get(dst_port.name) is None:
-                        continue
+                [self.update_point(point=dst_point, target=Tube(o_port, None))
+                 for o_port in flow.o_ports if o_port.name == dst_point.id]
 
-                    # 対象のpointがすでに存在すればそれを取得する
-                    if dsts[dst_port.name] in point_ids:
-                        dst_point = flow.select_point_by_node_id(dsts[dst_port.name])
-                        dst_point.update_origin(Tube(dst_port, step))
-                    else:
-                        dst_point = Point(dsts[dst_port.name], [Tube(dst_port, step)], None, [Tube(None, None)])
-                        flow.points.append(dst_point)
+    def replace_multi_inputs(self, step, srcs):
+        """
+        *のportをsrcsを元に変換する
+        """
+        for src_port in step.runnable.i_ports:
+            if src_port.name == '*':
+                step.runnable.i_ports = [Port(p, 'frame') for p in srcs.keys()]
 
-                    # outを外に出しているサブフローの場合は、末端のPointのtarget.portを
-                    # 外に出しているポート名にする
-                    if len(flow.o_ports) > 0:
-                        for target in dst_point.target:
-                            if target.port is None and target.runnable is None:
-                                for o_port in flow.o_ports:
-                                    # 今は「フローのo_port名」＝「pointのid（datum_id）」なのでこの条件にしている
-                                    if o_port.name == dst_point.id:
-                                        dst_point.update_target(Tube(o_port, None))
+    def upsert_point(self, flow, node_id, target, origin):
+        """
+        node_idをもとにpointを作成し、
+        対象のpointがすでに存在していればそのpointを更新する
+        """
+        point_ids = [point.id for point in flow.points]
+        if node_id in point_ids:
+            point = self.update_point(point=flow.select_point_by_node_id(node_id), origin=origin, target=target)
+        else:
+            point = self.insert_point(flow=flow, node_id=node_id, origin=[origin], target=[target])
+        return point
+
+    def insert_point(self, flow, node_id, origin, target):
+        """
+        pointを新規作成し、flowのpointsに追加する
+        """
+        point = Point(node_id, origin, None, target)
+        flow.points.append(point)
+        return point
+
+    def update_point(self, point, origin=Tube(None, None), target=Tube(None, None)):
+        """
+        既存のpointを更新する
+        """
+        if not origin.is_None:
+            point.update_origin(origin)
+
+        if not target.is_None:
+            point.update_target(target)
+
+        return point
 
     def update_flow_by_other_than_runnable(self, flow, nodes):
         """
@@ -327,8 +338,11 @@ class FlowJsonLink:
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
         """
         # 出力コマンドとそれが出すpointを追加
+
+        # saverのargs設定
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
+
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
