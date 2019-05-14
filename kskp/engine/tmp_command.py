@@ -495,7 +495,7 @@ class SaverCommand(Command):
     def run(self, args, inputs):
         # 1. storeにsaveする
         uuid = inputs['store'].issue_uuid()
-        datum_module= inputs['store'].save(args, inputs['i'], uuid)
+        datum_module = inputs['store'].save(args, inputs['i'], uuid)
         # 2. lasts用なのでコマンド実行のrunをする（繋げる必要はない）
         result = datum_module.run(msg='on')
 
@@ -541,4 +541,6 @@ class LoaderCommand(Command):
         self.o_ports = [Port('o', 'mcmd')]
 
     def run(self, args, inputs):
-        return {'o': inputs['store'].load(args['uuid'])}
+        nysol_module = NysolModule()
+        nysol_module.set_content(inputs['store'].load(args['uuid']))
+        return {'o': nysol_module}
