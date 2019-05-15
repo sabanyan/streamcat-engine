@@ -156,56 +156,73 @@ class FlowJsonLink:
             self.replace_multi_inputs(step, srcs)
 
             # srcとdstからpointを作る
-            for src_port in step.runnable.i_ports:
-                if src_port.name not in srcs:
-                    raise Exception(f"指定しているport名({src_port.name})がrunnable {node['id']}のsrcs({srcs})のキー中に存在しません")
-                # 対象のpointがすでに存在すればそれを取得する
-                src_point = self.upsert_point(flow=flow, node_id=srcs[src_port.name],
+            for s_port_name, s_node_id in srcs.items():
+                # 定義上に存在しないポート名がsrcsに存在していないかの確認
+                src_port = self.get_port_by_name(step.runnable.i_ports, s_port_name)
+                if src_port is None:
+                    raise Exception(f"指定しているport名({s_port_name})がrunnable {node['id']}の定義しているポート群({step.runnable.i_ports})に存在しません")
+
+                # pointを作成する（作成対象がすでにあれば更新する）
+                src_point = self.upsert_point(flow=flow, point_id=s_node_id,
                                               origin=Tube(None, None), target=Tube(src_port, step))
-                # 一行でまとめたかったのでリスト内包表記にしてみたが、リストで返す必要もないし、
-                # 一行が長くなってしまったので折り返した。。。
+
+                # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
+                # 繋げるためにoriginを置き換える
                 [self.update_point(point=src_point, origin=Tube(i_port, None))
                  for i_port in flow.i_ports if i_port.name == src_point.id]
 
-            for dst_port in step.runnable.o_ports:
-                if dst_port.name not in dsts and len(step.runnable.o_ports) == 1:
-                    raise Exception(f"指定しているport名({dst_port.name})がrunnable {node['id']}のdsts({dsts})のキー中に存在しません")
+            for d_port_name, d_node_id in dsts.items():
+                # 定義上に存在しないポート名がdstsに存在していないかの確認
+                dst_port = self.get_port_by_name(step.runnable.o_ports, d_port_name)
+                if dst_port is None:
+                    raise Exception(f"指定しているport名({d_port_name})がrunnable {node['id']}の定義しているポート群({step.runnable.o_ports})に存在しません")
 
-                if dsts.get(dst_port.name) is None:
-                    continue
-
-                # 対象のpointがすでに存在すればそれを取得する
-                dst_point = self.upsert_point(flow=flow, node_id=dsts[dst_port.name],
+                # pointを作成する（作成対象がすでにあれば更新する）
+                dst_point = self.upsert_point(flow=flow, point_id=d_node_id,
                                               origin=Tube(dst_port, step), target=Tube(None, None))
 
+                # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
+                # 繋げるためにtargetを置き換える
                 [self.update_point(point=dst_point, target=Tube(o_port, None))
                  for o_port in flow.o_ports if o_port.name == dst_point.id]
 
+    def get_port_by_name(self, runnable_ports, port_name):
+        """
+        指定したport_nameをもつportを取得する。
+        runnableというクラスがあったらそこにあるべきなのだろうけど
+        今はないし、作るの面倒なのでとりあえずここに。
+        絶対必要になった時に作ろう。。。
+        """
+        for runnable_port in runnable_ports:
+            if runnable_port.name == port_name:
+                return runnable_port
+        return None
+
     def replace_multi_inputs(self, step, srcs):
         """
-        *のportをsrcsを元に変換する
+        *のportをport群に変換する
         """
         for src_port in step.runnable.i_ports:
             if src_port.name == '*':
                 step.runnable.i_ports = [Port(p, 'frame') for p in srcs.keys()]
 
-    def upsert_point(self, flow, node_id, target, origin):
+    def upsert_point(self, flow, point_id, target, origin):
         """
-        node_idをもとにpointを作成し、
+        指定したpoint_idのpointを作成する
         対象のpointがすでに存在していればそのpointを更新する
         """
         point_ids = [point.id for point in flow.points]
-        if node_id in point_ids:
-            point = self.update_point(point=flow.select_point_by_node_id(node_id), origin=origin, target=target)
+        if point_id in point_ids:
+            point = self.update_point(point=flow.select_point_by_node_id(point_id), origin=origin, target=target)
         else:
-            point = self.insert_point(flow=flow, node_id=node_id, origin=[origin], target=[target])
+            point = self.insert_point(flow=flow, point_id=point_id, origin=[origin], target=[target])
         return point
 
-    def insert_point(self, flow, node_id, origin, target):
+    def insert_point(self, flow, point_id, origin, target):
         """
         pointを新規作成し、flowのpointsに追加する
         """
-        point = Point(node_id, origin, None, target)
+        point = Point(point_id, origin, None, target)
         flow.points.append(point)
         return point
 
