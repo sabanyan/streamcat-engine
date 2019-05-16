@@ -103,14 +103,14 @@ class FlowJsonLink:
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Folder(Path('kskp/data/cache_frames'))
+            store = Folder(Path('kskp/data/library/フロー実行結果キャッシュ'))
             self.put_saver(point, f, store, CacheSaverCommand())
 
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Folder(Path('kskp/data/result'))
+                store = Folder(Path('kskp/data/library/フロー実行結果'))
                 self.put_saver(point, f, store, SaverCommand())
 
         print(f.points)
