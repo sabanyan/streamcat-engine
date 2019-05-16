@@ -103,13 +103,15 @@ class FlowJsonLink:
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Folder(Path('kskp/data/library/フロー実行結果キャッシュ'))
+            # TODO: パスで作成するのではなくuuidでFolderを取得したい
+            store = Folder(Path('kskp/data/library/フロー実行キャッシュ'))
             self.put_saver(point, f, store, CacheSaverCommand())
 
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
+                # TODO: パスで作成するのではなくuuidでFolderを取得したい
                 store = Folder(Path('kskp/data/library/フロー実行結果'))
                 self.put_saver(point, f, store, SaverCommand())
 
@@ -359,6 +361,8 @@ class FlowJsonLink:
         # saverのargs設定
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
+        # saverが作るframe及びcacheのlabelはここで設定できる
+        args['label'] = point.id
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
