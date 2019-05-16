@@ -494,19 +494,17 @@ class SaverCommand(Command):
 
     def run(self, args, inputs):
         # 1. storeにsaveする
-        uuid = inputs['store'].issue_uuid()
-        datum_module = inputs['store'].save(args, inputs['i'], uuid)
+        datum_module = inputs['store'].save(args, inputs['i'])
         # 2. lasts用なのでコマンド実行のrunをする（繋げる必要はない）
         result = datum_module.run(msg='on')
 
-        return {'o': self.wrap_datum(result, args, uuid)}
+        return {'o': self.wrap_datum(result, args)}
 
     def get_datum_obj(self):
         return Frame()
 
-    def wrap_datum(self, datum_module, args, uuid):
+    def wrap_datum(self, datum_module, args):
         datum = self.get_datum_obj()
-        datum.set_uuid(uuid)
         datum.set_cache_info(args)
         datum.set_content(datum_module)
         return datum
@@ -523,9 +521,8 @@ class CacheSaverCommand(SaverCommand):
 
     def run(self, args, inputs):
         # 1. storeにsaveする(runはしない)
-        uuid = inputs['store'].issue_uuid()
-        datum_module = inputs['store'].save(args, inputs['i'], uuid)
-        return {'o': self.wrap_datum(datum_module, args, uuid)}
+        datum_module = inputs['store'].save(args, inputs['i'])
+        return {'o': self.wrap_datum(datum_module, args)}
 
     def get_datum_obj(self):
         # 書いて気づいたけどコンストラクタで決め打ちで設定でいいのかな。。。？
