@@ -7,8 +7,7 @@ from kskp.core import Command, Port
 from kskp.engine import execute, Flow, Step, Point, Job, Tube
 from pathlib import Path
 from kskp.engine.links import FlowJsonLink, Square, FlowUuidLink
-from kskp.library import Library, db
-from kskp.library import FRAME_FOLDER_UUID, CACHE_FOLDER_UUID
+from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID
 
 class MjoinTestCommand(Command):
     """
