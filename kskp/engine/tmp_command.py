@@ -1,6 +1,7 @@
 import nysol.mcmd as nm
 
-from kskp.engine import Port, NysolModule, Frame, Cache
+from kskp.engine import Port, Frame, Cache
+from kskp.store import NysolModule
 from kskp.core import Command
 
 # TODO: Storeに移動させる
