@@ -7,39 +7,6 @@ from kskp.core import Command
 # TODO: Storeに移動させる
 # とりあえずコマンドだけ避難しておく
 # kskp-data-storeに移動させたら消してください
-
-# ※ sml_modelingコマンドはKコマンドを使う関係上、importで場所を指定している
-#   今はテストで動かしている部分があるため、ローカルで動く様なパス設定をしてある
-class TestCommand(Command):
-    """
-    inputとoutputが1つずつの擬似的なコマンド
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'int')]
-        self.o_ports = [Port('o', 'int')]
-
-    def run(self, args, inputs):
-        return {'o': inputs['i'] + 200}
-
-class Square(Command):
-    """
-    与えられた数値を2乗する
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.i_ports = [Port('i', 'int')]
-        self.o_ports = [Port('o_sq', 'int')]
-
-    def run(self, args, inputs):
-        # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
-        # ラップするのはなんでもいいかなと思いframeにした。
-        frame = Frame()
-        frame.set_content([[inputs['i'][0][0] ** 2]])
-        return {self.o_ports[0].name: frame}
-
 class MselstrCommand(Command):
     """
     mselstrコマンド（きちんとコマンドをstoreに置いたら消そう）
@@ -452,6 +419,8 @@ class ColumnNameCommand(Command):
         nysol_module.set_content(f)
         return {'o': nysol_module}
 
+# ※ sml_modelingコマンドはKコマンドを使う関係上、importで場所を指定している
+#   今はテストで動かしている部分があるため、ローカルで動く様なパス設定をしてある
 class SmlModelingCommand(Command):
     """
     独自コマンドのsml_modelingコマンド
