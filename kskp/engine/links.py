@@ -7,11 +7,6 @@ from pathlib import Path
 from kskp.engine import Flow, Step, Point, Port, Tube, Folder
 
 from kskp.store import CommandLink
-from kskp.store.commands import (
-    SaverCommand,
-    CacheSaverCommand,
-    LoaderCommand
-)
 
 class FlowJsonLink:
     """
@@ -61,7 +56,7 @@ class FlowJsonLink:
         for point in cache_points:
             # TODO: パスで作成するのではなくuuidでFolderを取得したい
             store = Folder(Path('kskp/data/library/フロー実行キャッシュ'))
-            self.put_saver(point, f, store, CacheSaverCommand())
+            self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
@@ -69,7 +64,7 @@ class FlowJsonLink:
             for point in last_points:
                 # TODO: パスで作成するのではなくuuidでFolderを取得したい
                 store = Folder(Path('kskp/data/library/フロー実行結果'))
-                self.put_saver(point, f, store, SaverCommand())
+                self.put_saver(point, f, store, CommandLink("saver").resolve())
 
         print(f.points)
         return f
@@ -305,7 +300,7 @@ class FlowJsonLink:
         """
         指定したuuidのデータを取ってくるLoaderStepを作成する
         """
-        return Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
+        return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
     def put_saver(self, point, flow, store, saver):
         """
