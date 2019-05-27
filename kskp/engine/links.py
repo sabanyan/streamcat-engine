@@ -7,7 +7,6 @@ from kskp.engine import Flow, Step, Point, Port, Tube, Folder
 
 from .tmp_command import *
 
-
 class CommandLink:
     """
     コマンド名を解決するリンク
@@ -24,8 +23,10 @@ class CommandLink:
         idとなる文字列を受け取ってrunnableのインスタンスを返却する
         TODO: 下記の対応表をなくす様に実装する
         """
+        # 循環import避けるためにここに書いている。。。
+        from .tests.test_main import Square
+
         table = {
-            'test': TestCommand(),
             'square': Square(),
             'mcut': McutCommand(),
             'mselstr': MselstrCommand(),
