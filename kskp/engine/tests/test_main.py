@@ -40,7 +40,7 @@ class ExecuteTestCase(unittest.TestCase):
     CACHE_DIR = 'kskp/data/library/フロー実行キャッシュ/'
     TESTDATA_DIR = 'kskp/data/'
 
-    # シンプルなmコマンド１つのフロー
+    # mコマンド１つのフロー
     flow_data = {
       "label": "テストフロ",
       "params": [],
@@ -88,7 +88,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # シンプルなmコマンド１つのフロー（csvから読み取り）
+    # mコマンド１つのフロー（csvから読み取り）
     flow_data_use_by_csv = {
       "label": "テストフロ",
       "params": [],
@@ -132,7 +132,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # シンプルなmコマンド１つのフロー（csvから読み取り）
+    # mコマンド１つのフロー（csvから読み取り）
     # mchkcsv単体の実行テスト用
     flow_data_use_mchkcsv = {
       "label": "テストフロ",
@@ -176,7 +176,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # inputが2つあるシンプルなフロー
+    # inputが2つあるフロー
     flow_data_inputs = {
       "label": "テストフロ",
       "params": [],
@@ -234,7 +234,7 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # inputが2つあるシンプルなフロー（mcat）
+    # inputが2つあるフロー（mcat）
     flow_data_inputs_mcat = {
       "label": "テストフロ",
       "params": [],
@@ -289,7 +289,42 @@ class ExecuteTestCase(unittest.TestCase):
       ]
     }
 
-    # outputが２つあるシンプルなフロー
+    # inputが0個のあるフロー（mnewnumber）
+    flow_data_inputs_mnewnumber = {
+      "label": "mnewnumber",
+      "ports": [
+        [],
+        []
+      ],
+      "params": [],
+      "description": "",
+      "nodes": [
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "makeCache": False,
+          "cacheCreatedAt": "",
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c",
+          "label": "c",
+          "srcs": {},
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+              "a": "No."
+          },
+          "commandId": "mnewnumber"
+        }
+      ]
+    }
+
+    # outputが２つあるフロー
     flow_data_outputs = {
       "label": "テストフロ",
       "params": [],
@@ -319,6 +354,13 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         },
         {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
           "type": "command",
           "id": "c1",
           "label": "c1",
@@ -337,6 +379,74 @@ class ExecuteTestCase(unittest.TestCase):
         }
       ]
     }
+
+    # inputとoutputが２つあるフロー
+    flow_data_outputs_and_inputs = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["日付", "金額"],
+              ["20080123", 10],
+              ["20080203", 10],
+              ["20080203", 20],
+              ["20080203", 45],
+              ["20080410", 50]],
+          "dataSource": "csv"
+        },
+        {
+          "id": "m",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["日付", "金額F", "金額T"],
+              ["20080203", 5, 15],
+              ["20080203", 40, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i",
+            "m": "m"
+          },
+          "dsts": {
+            "o": "d2",
+            "u": "d3"
+          },
+          "args": {
+            "k": "日付",
+            "R": "金額F,金額T",
+            "rf": "金額%n"
+          },
+          "commandId": "mnrcommon"
+        }
+      ]
+    }
+
     def setUp(self):
         """
         フォルダの準備
@@ -362,8 +472,6 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        frame = Library.load_frame(lasts['d1'].uuid)
-
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
@@ -748,6 +856,62 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
 
     # @unittest.skip
+    def test_simple_flow_execute_two_outputs_one_side_o(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロー実行
+        oだけ設置
+        """
+        # 出力uを消す
+        flow_json = json.loads(json.dumps(self.flow_data_outputs))
+        for node in flow_json['nodes']:
+            if node['id'] == 'c1':
+                node['dsts'] = {'o': 'd2'}
+                break
+        flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
+
+        flow_link = FlowJsonLink(json.dumps(flow_json))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        self.assertEqual(result_d3, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs_one_side_u(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロー実行
+        uだけ設置
+        """
+        # 出力oを消す
+        flow_json = json.loads(json.dumps(self.flow_data_outputs))
+        for node in flow_json['nodes']:
+            if node['id'] == 'c1':
+                node['dsts'] = {'u': 'd3'}
+                break
+        flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
+
+        flow_link = FlowJsonLink(json.dumps(flow_json))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        self.assertEqual(result_d3, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
     def test_simple_flow_preview_d2_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -972,6 +1136,60 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 後片付け
         Library.delete_frame(lasts['d4'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_no_inputs_command(self):
+        """
+        mコマンド１個（1つもinputを持たない）のフロー実行
+        mnewnumberの実行テスト
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs_mnewnumber))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['0'],
+                          ['1'],
+                          ['2'],
+                          ['3'],
+                          ['4'],
+                          ["5"],
+                          ["6"],
+                          ["7"],
+                          ["8"],
+                          ["9"]]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_use_mnrcommon(self):
+        """
+        mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
+        mnrcommonの実行テスト
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs_and_inputs))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['20080203', '10'], ['20080203', '45']],
+                   'd3': [['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d2'])
+        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+        Library.delete_frame(lasts['d3'].uuid)
 
     # @unittest.skip
     def test_simple_flow_execute_include_subflow(self):
@@ -2315,7 +2533,7 @@ class ExecuteTestCase(unittest.TestCase):
             Library.delete_frame(lasts['d3'].uuid)
             Library.delete_frame(lasts['d4'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_use_mcat(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
