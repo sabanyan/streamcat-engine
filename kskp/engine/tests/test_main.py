@@ -33,7 +33,7 @@ class Square(Command):
 
 class ExecuteTestCase(unittest.TestCase):
     """
-    実際の実行のテスト
+    実際のフロー実行のテスト
     """
 
     RESULT_DIR = 'kskp/data/library/フロー実行結果/'
@@ -2533,7 +2533,7 @@ class ExecuteTestCase(unittest.TestCase):
             Library.delete_frame(lasts['d3'].uuid)
             Library.delete_frame(lasts['d4'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_use_mcat(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -2711,7 +2711,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
     CACHE_DIR = 'kskp/data/library/フロー実行キャッシュ/'
     TESTDATA_DIR = 'kskp/data/'
 
-    @unittest.skip
+    # @unittest.skip
     def test_ni_flow_execute(self):
         """
         NI様のフローの実行テスト
