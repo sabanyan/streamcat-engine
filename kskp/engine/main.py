@@ -8,9 +8,7 @@ TODO: 外部からコマンド実行できるように
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-from kskp.core import Port
-
-from .core import Step, Job, Point
+from .core import Step, Job
 
 
 class DefaultHandler(PatternMatchingEventHandler):
@@ -74,25 +72,25 @@ def make_job(link, args, inputs):
 
     return job
 
-def domains(step, inputs):
-    """
-    port情報から、pointを作成する
-    1つのportにつき、1つのpointが作られる
-
-    注意：この部分は詳細なロジックを変更したので書換え予定
-    単純に、inputsを取り出せば良い（はず？）
-    """
-
-    # try:
-    #     return [Point(port.name, None, step, inputs[port.name]) for port
-    #                                                             in step.runnable.i_ports]
-    # except KeyError as e:
-    #     # inputsに必要な引数が与えられていない
-    #     raise Exception('inputsに必要な引数が与えられていません') from e
-    port_input = Port('*i*', '*')
-    port_output = Port('*o*', '*')
-    return [Point('input_point', None, None, None, port_input, step),
-            Point('output_point', Step, port_output, None, None, None)]
+# def domains(step, inputs):
+#     """
+#     port情報から、pointを作成する
+#     1つのportにつき、1つのpointが作られる
+#
+#     注意：この部分は詳細なロジックを変更したので書換え予定
+#     単純に、inputsを取り出せば良い（はず？）
+#     """
+#
+#     # try:
+#     #     return [Point(port.name, None, step, inputs[port.name]) for port
+#     #                                                             in step.runnable.i_ports]
+#     # except KeyError as e:
+#     #     # inputsに必要な引数が与えられていない
+#     #     raise Exception('inputsに必要な引数が与えられていません') from e
+#     port_input = Port('*i*', '*')
+#     port_output = Port('*o*', '*')
+#     return [Point('input_point', None, None, None, port_input, step),
+#             Point('output_point', Step, port_output, None, None, None)]
 
 # def translate_result_lasts(lasts):
 #     """
