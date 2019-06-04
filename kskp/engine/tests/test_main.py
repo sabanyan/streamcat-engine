@@ -9,7 +9,7 @@ from kskp.engine import execute, Flow, Step, Point, Job, Tube
 from kskp.engine.links import FlowJsonLink, FlowUuidLink
 
 from kskp.core import Command, Port
-from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID
+from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, Frame
 from kskp.web import app
 
 class Square(Command):
@@ -26,8 +26,6 @@ class Square(Command):
     def run(self, args, inputs):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
-        from kskp.engine import Frame
-
         frame = Frame()
         frame.set_content([[inputs['i'][0][0] ** 2]])
         return {self.o_ports[0].name: frame}
