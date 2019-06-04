@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
+from kskp.web import app
 from kskp.store import (
     Library,
     FRAME_FOLDER_UUID,
@@ -25,17 +26,12 @@ class Folder(Store):
         super().__init__()
         self.dir_path = dir_path
 
-    def save(self, args, datum):
+    def save(self, command, args, datum):
         import nysol.mcmd as nm
         # self.set_datum(datum, uuid)
 
         args['frame_path'] = (self.dir_path / (str(uuid.uuid4()) + '.csv'))
-
-        command_args = {}
-        command_args['i'] = datum
-        command_args['o'] = args['frame_path'].as_posix()
-
-        return nm.m2tee(command_args)
+        return command.module(args, datum)
 
     def load(self, uuid):
         import nysol.mcmd as nm
@@ -77,7 +73,7 @@ class Frame(Datum):
         self.info = params
 
     def save(self):
-        # キャッシュが作成されているか確認
+        # フレームが作成されているか確認(run後なので作成されているはず、作成されていないと作れない)
         if not self.created:
             # とりあえずfalseを返す
             return False

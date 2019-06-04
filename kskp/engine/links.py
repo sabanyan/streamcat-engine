@@ -6,7 +6,7 @@ from pathlib import Path
 
 from kskp.engine import Flow, Step, Point, Tube, Folder
 
-from kskp.store import CommandLink, Port
+from kskp.store import CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, Library
 
 class FlowJsonLink:
     """
@@ -51,20 +51,18 @@ class FlowJsonLink:
         lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
         f.points = self.pick_necessary_points(f, lasts)
 
-        # キャッシュ作成処理
-        cache_points = [point for point in f.points if point.is_cache]
-        for point in cache_points:
-            # TODO: パスで作成するのではなくuuidでFolderを取得したい
-            store = Folder(Path('kskp/data/library/フロー実行キャッシュ'))
-            self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
-
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                # TODO: パスで作成するのではなくuuidでFolderを取得したい
-                store = Folder(Path('kskp/data/library/フロー実行結果'))
+                store = Folder(Path(Library.load_folder(FRAME_FOLDER_UUID).path))
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
+
+        # キャッシュ作成処理
+        cache_points = [point for point in f.points if point.is_cache]
+        for point in cache_points:
+            store = Folder(Path(Library.load_folder(CACHE_FOLDER_UUID).path))
+            self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         print(f.points)
         return f
@@ -211,7 +209,9 @@ class FlowJsonLink:
                         target_point.datum = node['value']
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
                     elif node.get('uuid') is not None:
-                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('kskp/data')))
+                        # TODO? FolderクラスはコンストラクタにPathを指定するが、loadではuuidからframeを取ってきて
+                        # frameが持つpath属性から取得先を取得できるので使わなくなった。とりあえず空のpathを入れている。
+                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('')))
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                         target_point.cache = False
         return flow
@@ -318,7 +318,7 @@ class FlowJsonLink:
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        point.id = str(uuid.uuid4())
+        # point.id = str(uuid.uuid4())
 
         # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:
