@@ -100,6 +100,20 @@ class Flow(Datum):
         # return lasts
         return {p.id: p.datum for p in self.points if p.is_last}
 
+    @property
+    def results(self):
+        """
+        最後にできる結果
+        """
+        return self.lasts_store.data
+
+    @property
+    def caches(self):
+        """
+        作成したキャッシュ
+        """
+        return self.cache_store.data
+
     def run(self, args, inputs):
         """
         pointではなくstepを基軸にして書き直し
@@ -221,7 +235,7 @@ class Flow(Datum):
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result[output_point.o_port.name]
-                self.put_datum_in_store(output_point.datum)
+                self.put_datum_in_store(output_point.id, output_point.datum)
                 # print('output_point:', output_point)
 
     def make_outputs(self):
@@ -234,14 +248,14 @@ class Flow(Datum):
         # print('make_outputs result:', result)
         # return result
 
-    def put_datum_in_store(self, datum):
+    def put_datum_in_store(self, id, datum):
         """
         Cacheなどを後で保存処理を行うためにstoreに入れておく
         """
         if isinstance(datum, Cache):
-            self.cache_store.append(datum)
+            self.cache_store.append(id, datum)
         elif isinstance(datum, Frame):
-            self.lasts_store.append(datum)
+            self.lasts_store.append(id, datum)
 
     def get_output_point(self, o_port):
         """

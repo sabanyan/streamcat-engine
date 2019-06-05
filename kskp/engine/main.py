@@ -42,14 +42,12 @@ def execute(link, args, inputs, job_complete_handler=None):
         # jobを開始する
         job.start()
 
-        # 結果を取得する
-        lasts = job.step.runnable.lasts
-
         # 後始末をする
         job.dtor()
 
         # 結果を返却する
-        return lasts
+        # job.step.runnable.cachesでキャッシュの結果も取れる
+        return job.step.runnable.results
 
     except Exception as e:
         print('main:', e)
