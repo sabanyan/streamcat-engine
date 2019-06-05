@@ -1,9 +1,6 @@
 import json
 import uuid
 
-from pathlib import Path
-from datetime import datetime, timedelta, timezone
-
 from kskp.web import app
 from kskp.store import (
     Library,
@@ -13,121 +10,11 @@ from kskp.store import (
     NysolModule,
     FrameStore,
     Command,
-    Datum
+    Datum,
+    Cache,
+    Frame,
+    Folder
 )
-
-class Folder(Store):
-    """
-    ディレクトリに保存するStore
-    コンストラクタで指定したディレクトリに保存する
-    指定したディレクトリパスはpathlibのPathオブジェクト
-    """
-    def __init__(self, dir_path):
-        super().__init__()
-        self.dir_path = dir_path
-
-    def save(self, command, args, datum):
-        import nysol.mcmd as nm
-        # self.set_datum(datum, uuid)
-
-        args['frame_path'] = (self.dir_path / (str(uuid.uuid4()) + '.csv'))
-        return command.module(args, datum)
-
-    def load(self, uuid):
-        import nysol.mcmd as nm
-
-        frame = Library.load_frame(uuid)
-        if frame is None:
-            raise Exception('No frame(%s) is found !' % uuid)
-        path = frame.path_obj
-
-        return nm.m2tee({'i':path.as_posix()})
-
-    @property
-    def content(self):
-        return self
-
-class Frame(Datum):
-    """
-    実際の実行のrunではない時に作られ、DB保存の情報を持っている。
-    storeに一旦集められてから、jobのdtorのタイミングでDBへの保存処理が走る。
-
-    storeのメソッド内で保存しようと思ったけど、わざわざFrame（または下記のCache）クラスの中身を見て
-    それを取り出して保存するのも手間が増えてるだけなので、今はstoreのsaveでこのクラスのsaveを呼び出すことにしている。
-    """
-    def __init__(self):
-        super().__init__()
-        self.info = {}
-
-    def set_uuid(self, uuid):
-        self.uuid = uuid
-
-    def set_content(self, module):
-        self._content = module
-
-    @property
-    def content(self):
-        return self._content
-
-    def set_cache_info(self, params):
-        self.info = params
-
-    def save(self):
-        # フレームが作成されているか確認(run後なので作成されているはず、作成されていないと作れない)
-        if not self.created:
-            # とりあえずfalseを返す
-            return False
-
-        # dbに保存
-        self.save_to_db()
-
-    ##
-    def save_to_db(self):
-        frame_path = self.info.get('frame_path')
-        label = self.info.get('label')
-        frame = Library.save_frame(FRAME_FOLDER_UUID, label, frame_path)
-        self.uuid = frame.uuid
-    ##
-
-    @property
-    def created(self):
-        if self.info.get('frame_path') is not None:
-            return self.info.get('frame_path').exists()
-        else:
-            return False
-
-class Cache(Frame):
-    """
-    FrameもCacheもどちらも実ファイルを生成するdatumであり、
-    違いはflowのjsonを書き換えるか書き換えないか（今の所）
-    ということでFrameを継承したものにしてみた。
-    """
-    def __init__(self):
-        super().__init__()
-
-    def save(self):
-        # キャッシュが作成されているか確認
-        if not self.created:
-            # とりあえずfalseを返す
-            return False
-
-        # dbに保存
-        self.save_to_db()
-
-        # jsonのnodeのuuidを変更
-        self.update_json_node()
-
-    def update_json_node(self):
-        if self.info.get('flow_uuid') is None:
-            return
-
-        flow_path = [path for path in Path('kskp/flows').iterdir() if path.stem == self.info.get('flow_uuid')][0]
-        flow_json = json.loads(flow_path.read_text())
-        for node in flow_json['nodes']:
-            if node['id'] == self.info.get('datum_id'):
-                node['uuid'] = self.uuid
-                node['cacheCreatedAt'] = datetime.now(timezone(timedelta(hours=+9), 'JST')).strftime('%Y-%m-%d %H:%M:%S')
-        flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
 
 class Job:
     def __init__(self, step, inputs):

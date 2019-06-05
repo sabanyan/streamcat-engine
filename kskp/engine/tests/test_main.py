@@ -9,7 +9,7 @@ from kskp.engine import execute, Flow, Step, Point, Job, Tube
 from kskp.engine.links import FlowJsonLink, FlowUuidLink
 
 from kskp.core import Command, Port
-from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID
+from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, Frame
 from kskp.web import app
 
 class Square(Command):
@@ -26,8 +26,6 @@ class Square(Command):
     def run(self, args, inputs):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
-        from kskp.engine import Frame
-
         frame = Frame()
         frame.set_content([[inputs['i'][0][0] ** 2]])
         return {self.o_ports[0].name: frame}
@@ -2650,6 +2648,37 @@ class ExecuteTestCase(unittest.TestCase):
 
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
+
+    def test_simple_flow_execute_use_mchkcsv_create_cache(self):
+        """
+        mコマンド1個のフロー実行
+        確認したいことはmchkcsvの動作（nm.cmdより実行している）
+
+        ベータ版のengineではキャッシュの生成時の実行で失敗したので
+        """
+        flow_link = FlowUuidLink(Path('kskp/flows'), 'mchkcsv_flow')
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        self.assertEqual(result, correct['d1'])
+
+        # uuidが書き換わっているかのテスト
+        result_json = json.loads(flow_json_path.read_text())
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d1']]
+        for node in cache_nodes:
+            # キャッシュが生成されているか
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(Library.load_frame(node['uuid']))
+            Library.delete_frame(node['uuid'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+        Library.delete_frame(frame_uuid)
+        flow_json_path.unlink()
 
     # @unittest.skip
     def test_simple_flow_execute_sjis(self):
