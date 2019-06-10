@@ -1,20 +1,7 @@
 import json
 import uuid
 
-from kskp.web import app
-from kskp.store import (
-    Library,
-    FRAME_FOLDER_UUID,
-    CACHE_FOLDER_UUID,
-    Store,
-    NysolModule,
-    FrameStore,
-    Command,
-    Datum,
-    Cache,
-    Frame,
-    Folder
-)
+from kskp.store import Datum
 
 class Job:
     def __init__(self, step, inputs):
@@ -86,6 +73,7 @@ class Flow(Datum):
         self.substeps = []
 
         # TODO:Flowに持たせるのではなく、どこか共通の場所にする
+        from kskp.store import FrameStore
         self.cache_store = FrameStore()
         self.lasts_store = FrameStore()
 
@@ -252,6 +240,7 @@ class Flow(Datum):
         """
         Cacheなどを後で保存処理を行うためにstoreに入れておく
         """
+        from kskp.store import Cache, Frame
         if isinstance(datum, Cache):
             self.cache_store.append(id, datum)
         elif isinstance(datum, Frame):

@@ -1,3 +1,4 @@
+import os
 import json
 import uuid
 import unittest
@@ -5,12 +6,8 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.engine import execute, Flow, Step, Point, Job, Tube
-from kskp.engine.links import FlowJsonLink, FlowUuidLink
-
-from kskp.core import Command, Port
-from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, Frame
-from kskp.web import app
+from kskp.engine import execute, FlowJsonLink, FlowUuidLink
+from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port
 
 class Square(Command):
     """
@@ -469,7 +466,6 @@ class ExecuteTestCase(unittest.TestCase):
         lasts = execute(flow_link, {}, {})
 
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
-
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
@@ -2010,11 +2006,11 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        path = Path(app.config['FLOW_PATH']) / 'test.json'
+        path = Path(FLOW_PATH) / 'test.json'
         write_data_to_json(path, json_flow)
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'test')
+        flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
 
@@ -2105,11 +2101,11 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        path = Path(app.config['FLOW_PATH']) / 'test.json'
+        path = Path(FLOW_PATH) / 'test.json'
         write_data_to_json(path, json_flow)
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'test')
+        flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
 
@@ -2245,11 +2241,11 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        path = Path(app.config['FLOW_PATH']) / 'test.json'
+        path = Path(FLOW_PATH) / 'test.json'
         write_data_to_json(path, json_flow)
 
         # 単純なlastsのテスト
-        flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'test')
+        flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
         lasts = execute(flow_link, {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -2467,7 +2463,7 @@ class ExecuteTestCase(unittest.TestCase):
         外部からframeを与えて実行する
         args指定はなし
         """
-        with open(app.config['FLOW_PATH'] + '/b.json') as f:
+        with open(FLOW_PATH + '/b.json') as f:
             flow_link = FlowJsonLink(json.dumps(json.load(f)))
             inputs = {
                 'd1': [["顧客", "数量", "金額"],
@@ -2500,7 +2496,7 @@ class ExecuteTestCase(unittest.TestCase):
         外部からframeを与えて実行する
         args指定する
         """
-        with open(app.config['FLOW_PATH'] + '/b_param.json') as f:
+        with open(FLOW_PATH + '/b_param.json') as f:
             flow_link = FlowJsonLink(json.dumps(json.load(f)))
 
             inputs = {
@@ -2672,11 +2668,11 @@ class ExecuteTestCase(unittest.TestCase):
         update_flow_node_uuid(self.flow_data_use_mchkcsv, 'i', frame_uuid)
 
         # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
-        flow_json_path = Path(app.config['FLOW_PATH']) / 'mchkcsv_flow.json'
+        flow_json_path = Path(FLOW_PATH) / 'mchkcsv_flow.json'
         with open(flow_json_path.as_posix(), 'w') as f:
             json.dump(json.loads(json.dumps(self.flow_data_use_mchkcsv)), f, ensure_ascii=False)
 
-        flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'mchkcsv_flow')
+        flow_link = FlowUuidLink(Path(FLOW_PATH), 'mchkcsv_flow')
         lasts = execute(flow_link, {}, {})
         correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
 
@@ -2707,7 +2703,7 @@ class ExecuteTestCase(unittest.TestCase):
         sjis出力させる
         """
         import subprocess
-        app.config['FRAME_CHARACTER_CODE'] = 'shift-jis'
+        os.environ['FRAME_CHARACTER_CODE'] = 'shift-jis'
 
         try:
             flow_link = FlowJsonLink(json.dumps(self.flow_data))
@@ -2723,7 +2719,7 @@ class ExecuteTestCase(unittest.TestCase):
             # 後片付け
             Library.delete_frame(lasts['d1'].uuid)
         finally:
-            app.config['FRAME_CHARACTER_CODE'] = 'utf-8'
+            os.environ['FRAME_CHARACTER_CODE'] = 'utf-8'
 
     # @unittest.skip
     def test_simple_flow_execute_sjis_cache(self):
@@ -2732,7 +2728,7 @@ class ExecuteTestCase(unittest.TestCase):
         キャッシュがsjis形式で出力されるかのテスト
         """
         import subprocess
-        app.config['FRAME_CHARACTER_CODE'] = 'shift-jis'
+        os.environ['FRAME_CHARACTER_CODE'] = 'shift-jis'
         # テストデータ作成
         data = [
             ['顧客', '数量', '金額'],
@@ -2747,12 +2743,12 @@ class ExecuteTestCase(unittest.TestCase):
         update_flow_node_uuid(self.flow_data_use_mchkcsv, 'i', frame_uuid)
 
         # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
-        flow_json_path = Path(app.config['FLOW_PATH']) / 'mchkcsv_flow.json'
+        flow_json_path = Path(FLOW_PATH) / 'mchkcsv_flow.json'
         with open(flow_json_path.as_posix(), 'w') as f:
             json.dump(json.loads(json.dumps(self.flow_data_use_mchkcsv)), f, ensure_ascii=False)
 
         try:
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'mchkcsv_flow')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'mchkcsv_flow')
             lasts = execute(flow_link, {}, {})
 
             # テスト
@@ -2779,7 +2775,7 @@ class ExecuteTestCase(unittest.TestCase):
             Library.delete_frame(frame_uuid)
             flow_json_path.unlink()
         finally:
-            app.config['FRAME_CHARACTER_CODE'] = 'utf-8'
+            os.environ['FRAME_CHARACTER_CODE'] = 'utf-8'
 
 
 class ExecuteSampleFlowTestCase(unittest.TestCase):
@@ -2801,17 +2797,17 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
-        with open(app.config['FLOW_PATH'] + '/ni_flow.json') as fj:
+        with open(FLOW_PATH + '/ni_flow.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'ni_test.json'
+            flow_json_path = Path(FLOW_PATH) / 'ni_test.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'ni_test')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ni_test')
             lasts = execute(flow_link, {}, {})
             uuid = [value for value in lasts.values()][0].uuid
 
@@ -2833,17 +2829,17 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
-        with open(app.config['FLOW_PATH'] + '/ni_flow.json') as fj:
+        with open(FLOW_PATH + '/ni_flow.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'ni_test.json'
+            flow_json_path = Path(FLOW_PATH) / 'ni_test.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'ni_test', ['new e9c09a48-901a-45d7-8bf3-91a323801277'])
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ni_test', ['new e9c09a48-901a-45d7-8bf3-91a323801277'])
             lasts = execute(flow_link, {}, {})
             uuid = [value for value in lasts.values()][0].uuid
 
@@ -2866,7 +2862,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
-        with open(app.config['FLOW_PATH'] + '/ni_flow.json') as fj:
+        with open(FLOW_PATH + '/ni_flow.json') as fj:
             # キャッシュを設定する
             flow_json = json.load(fj)
             for node in flow_json['nodes']:
@@ -2878,12 +2874,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'ni_test.json'
+            flow_json_path = Path(FLOW_PATH) / 'ni_test.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'ni_test')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ni_test')
             lasts = execute(flow_link, {}, {})
             uuid = [value for value in lasts.values()][0].uuid
 
@@ -2915,17 +2911,17 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'ryudo_demo.csv')
-        with open(app.config['FLOW_PATH'] + '/ryudo_demo1.json') as fj:
+        with open(FLOW_PATH + '/ryudo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'compdata20190319.csv', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'ryudo_demo2.json'
+            flow_json_path = Path(FLOW_PATH) / 'ryudo_demo2.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'ryudo_demo2')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ryudo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -2947,7 +2943,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'ryudo_demo.csv')
-        with open(app.config['FLOW_PATH'] + '/ryudo_demo1.json') as fj:
+        with open(FLOW_PATH + '/ryudo_demo1.json') as fj:
             # キャッシュを設定する
             flow_json = json.load(fj)
             for node in flow_json['nodes']:
@@ -2959,12 +2955,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             update_flow_node_uuid(flow_json, 'compdata20190319.csv', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'ryudo_demo2.json'
+            flow_json_path = Path(FLOW_PATH) / 'ryudo_demo2.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'ryudo_demo2')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ryudo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -2995,17 +2991,17 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'ryudo_demo.csv')
-        with open(app.config['FLOW_PATH'] + '/ryudo_demo1.json') as fj:
+        with open(FLOW_PATH + '/ryudo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'compdata20190319.csv', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'ryudo_demo2.json'
+            flow_json_path = Path(FLOW_PATH) / 'ryudo_demo2.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'ryudo_demo2', ['d14'])
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ryudo_demo2', ['d14'])
             lasts = execute(flow_link, {}, {})
             self.assertIsNotNone(lasts['d14'])
             frame = Library.load_frame(lasts['d14'].uuid)
@@ -3025,17 +3021,17 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
-        with open(app.config['FLOW_PATH'] + '/shindo_demo1.json') as fj:
+        with open(FLOW_PATH + '/shindo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, '180127_1535_4sensor_5sec.csv', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'shindo_demo2.json'
+            flow_json_path = Path(FLOW_PATH) / 'shindo_demo2.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'shindo_demo2')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'shindo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -3057,7 +3053,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
-        with open(app.config['FLOW_PATH'] + '/shindo_demo1.json') as fj:
+        with open(FLOW_PATH + '/shindo_demo1.json') as fj:
             # キャッシュを設定する
             flow_json = json.load(fj)
             for node in flow_json['nodes']:
@@ -3069,12 +3065,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             update_flow_node_uuid(flow_json, '180127_1535_4sensor_5sec.csv', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'shindo_demo2.json'
+            flow_json_path = Path(FLOW_PATH) / 'shindo_demo2.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'shindo_demo2')
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'shindo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -3105,17 +3101,17 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
-        with open(app.config['FLOW_PATH'] + '/shindo_demo1.json') as fj:
+        with open(FLOW_PATH + '/shindo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, '180127_1535_4sensor_5sec.csv', frame_uuid)
 
             # uuidを更新したflowを作成する
-            flow_json_path = Path(app.config['FLOW_PATH']) / 'shindo_demo2.json'
+            flow_json_path = Path(FLOW_PATH) / 'shindo_demo2.json'
             with open(flow_json_path.as_posix(), 'w') as f:
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(app.config['FLOW_PATH']), 'shindo_demo2', ['d12'])
+            flow_link = FlowUuidLink(Path(FLOW_PATH), 'shindo_demo2', ['d12'])
             lasts = execute(flow_link, {}, {})
             self.assertIsNotNone(lasts['d12'])
             frame = Library.load_frame(lasts['d12'].uuid)

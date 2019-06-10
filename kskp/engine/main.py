@@ -136,13 +136,15 @@ def prepare_observer(job_complete_handler):
     observer = Observer()
 
     # 監視ディレクトリとハンドラの指定、本来はこの部分を外部から指定可能にしたい
-    if job_complete_handler is None:
-        job_complete_handler = DefaultHandler()
-    # print(job_complete_handler)
-    observer.schedule(job_complete_handler, 'kskp/messages/')
 
-    # 監視を開始する
-    observer.start()
+    # 今は使っていないのでコメントアウト化
+    # if job_complete_handler is None:
+    #     job_complete_handler = DefaultHandler()
+    # # print(job_complete_handler)
+    # observer.schedule(job_complete_handler, 'kskp/messages/')
+    #
+    # # 監視を開始する
+    # observer.start()
 
 
 # ストア
