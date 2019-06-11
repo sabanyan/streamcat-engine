@@ -9,6 +9,7 @@ from pathlib import Path
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink
 from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port
 
+
 class Square(Command):
     """
     与えられた数値を2乗する
