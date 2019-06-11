@@ -63,7 +63,7 @@ class FlowJsonLink:
             store = Folder(Path(Library.load_folder(CACHE_FOLDER_UUID).path))
             self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
-        print(f.points)
+        # print(f.points)
         return f
 
     def make_flow(self, json_str):
