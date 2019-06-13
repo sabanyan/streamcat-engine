@@ -4,8 +4,8 @@ import uuid
 
 from pathlib import Path
 
-from kskp.engine import Flow, Step, Point, Tube
-from kskp.store import CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Library, Folder
+from kskps.engine import Flow, Step, Point, Tube
+from kskps.store import CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Library, Folder
 
 class FlowJsonLink:
     """

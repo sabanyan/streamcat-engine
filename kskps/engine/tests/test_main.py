@@ -6,8 +6,8 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.engine import execute, FlowJsonLink, FlowUuidLink
-from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port
+from kskps.engine import execute, FlowJsonLink, FlowUuidLink
+from kskps.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port
 
 
 class Square(Command):

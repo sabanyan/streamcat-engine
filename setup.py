@@ -1,6 +1,6 @@
 from setuptools import setup
 
 setup(
-    name='kskp.engine',
-    packages=['kskp.engine']
+    name='kskps.engine',
+    packages=['kskps.engine']
 )

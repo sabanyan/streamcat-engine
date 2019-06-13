@@ -10,9 +10,9 @@ from watchdog.events import PatternMatchingEventHandler
 
 import nysol.mcmd as nm
 
-from kskp.store import Command, Port, Parameter
-import kskp.engine
-from kskp.engine import Flow, Step, Point, Job
+from kskps.store import Command, Port, Parameter
+import kskps.engine
+from kskps.engine import Flow, Step, Point, Job
 
 
 class RedirectStdStreams(object):
@@ -111,7 +111,7 @@ def try_to_execute():
         while True:
             message = ws.receive()
             ws.send(f'you send {message}. thanx.')
-            result = kskp.engine.execute(TestLink(), {}, {}, job_complete_handler=MyHandler(ws))            
+            result = kskps.engine.execute(TestLink(), {}, {}, job_complete_handler=MyHandler(ws))            
             print('result:', result)
 
 def interrupt(a):

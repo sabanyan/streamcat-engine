@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from kskp.store import Datum
+from kskps.store import Datum
 
 class Job:
     def __init__(self, step, inputs):
@@ -73,7 +73,7 @@ class Flow(Datum):
         self.substeps = []
 
         # TODO:Flowに持たせるのではなく、どこか共通の場所にする
-        from kskp.store import FrameStore
+        from kskps.store import FrameStore
         self.cache_store = FrameStore()
         self.lasts_store = FrameStore()
 
@@ -240,7 +240,7 @@ class Flow(Datum):
         """
         Cacheなどを後で保存処理を行うためにstoreに入れておく
         """
-        from kskp.store import Cache, Frame
+        from kskps.store import Cache, Frame
         if isinstance(datum, Cache):
             self.cache_store.append(id, datum)
         elif isinstance(datum, Frame):

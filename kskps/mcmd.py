@@ -82,8 +82,8 @@ class RedirectStdStreams(object):
 
 # import re # for MCMDError
 
-# from kskp.engine.core import Command, UnixCommand, Parameter, Port
-# from kskp.engine.data import UnixCommandSource
+# from kskps.engine.core import Command, UnixCommand, Parameter, Port
+# from kskps.engine.data import UnixCommandSource
 
 # class McmdLink:
 #     def __init__(self, id):
