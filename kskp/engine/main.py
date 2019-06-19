@@ -42,6 +42,14 @@ def execute(link, args, inputs, job_complete_handler=None):
         # jobを開始する
         job.start()
 
+        last_modules = []
+        for point_datum in job.step.runnable.results.values():
+            last_modules.append(point_datum.content)
+
+        # 実行
+        import nysol.mcmd as nm
+        nm.runs(last_modules, msg='on')
+
         # 後始末をする
         job.dtor()
 

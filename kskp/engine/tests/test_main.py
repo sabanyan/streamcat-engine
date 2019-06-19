@@ -7,24 +7,38 @@ import nysol.mcmd as nm
 from pathlib import Path
 
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink
-from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port
+from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port, Datum
 
+class Integer(Datum):
+    """
+    テスト用のクラス
+    下記のSquareCommandで使うdatumをラップするためのもの
+    """
+    def __init__(self):
+        super().__init__()
+        self._content = None
+
+    def set_content(self, module):
+        self._content = module
+
+    @property
+    def content(self):
+        return self._content
 
 class Square(Command):
     """
     与えられた数値を2乗する
     テストコード内でのみ使用のため、ここに置いておく
     """
-
     def __init__(self):
         super().__init__()
-        self.i_ports = [Port('i', 'int')]
-        self.o_ports = [Port('o_sq', 'int')]
+        self.i_ports = [Port('i', 'integer')]
+        self.o_ports = [Port('o_sq', 'integer')]
 
     def run(self, args, inputs):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
-        frame = Frame()
+        frame = Integer()
         frame.set_content([[inputs['i'][0][0] ** 2]])
         return {self.o_ports[0].name: frame}
 
@@ -1162,7 +1176,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_use_mnrcommon(self):
         """
         mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
@@ -3041,7 +3055,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 self.assertIsNotNone(frame)
                 self.assertTrue(Path(frame.path).exists())
                 # 後片付け
-                Library.delete_frame(datum.uuid)
+                # Library.delete_frame(datum.uuid)
 
             flow_json_path.unlink()
 
