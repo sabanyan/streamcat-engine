@@ -18,6 +18,22 @@ class Job:
             self.errors.append(e)
             raise
 
+    def runs(self):
+        """
+        runsを実行する
+        """
+        try:
+            last_modules = []
+            for point_datum in self.step.runnable.results.values():
+                last_modules.append(point_datum.content)
+            # 実行
+            import nysol.mcmd as nm
+            nm.runs(last_modules, msg='on')
+        except:
+            print(repr(e))
+            self.errors.append(e)
+            raise
+
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
