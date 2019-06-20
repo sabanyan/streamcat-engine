@@ -200,7 +200,7 @@ class FlowJsonLink:
             if not self.is_runnable_node(node) and not node['type'] in except_type_list:
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
-                target_point.labal = node.get('label')
+                target_point.label = node.get('label')
 
                 # データの取得先の設定
                 # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う

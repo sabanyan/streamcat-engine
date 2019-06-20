@@ -2868,7 +2868,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             Library.delete_frame(uuid)
             flow_json_path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_ni_flow_execute_generate_four_caches(self):
         """
         NI様のフローの実行テスト
@@ -2949,7 +2949,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
             flow_json_path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_ryudo_flow_cache(self):
         """
         デモ用のフロー実行（粒度分布計）
@@ -3059,7 +3059,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
             flow_json_path.unlink()
 
-    # @unittest.skip
+    @unittest.skip
     def test_shindo_flow_cache(self):
         """
         デモ用のフロー実行（振動データ）
