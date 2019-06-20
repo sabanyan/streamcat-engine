@@ -200,6 +200,7 @@ class FlowJsonLink:
             if not self.is_runnable_node(node) and not node['type'] in except_type_list:
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
+                target_point.labal = node.get('label')
 
                 # データの取得先の設定
                 # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
@@ -312,7 +313,7 @@ class FlowJsonLink:
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        args['label'] = point.id
+        args['label'] = point.label
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
