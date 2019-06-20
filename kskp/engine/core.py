@@ -317,7 +317,8 @@ class Point:
 
     def __init__(self, point_id, origin_tubes, datum, target_tubes, cache=False):
         self.id = point_id
-
+        self.label = ''
+        
         self.origin = origin_tubes
         self.datum = datum
         self.target = target_tubes
