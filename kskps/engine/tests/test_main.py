@@ -7,24 +7,38 @@ import nysol.mcmd as nm
 from pathlib import Path
 
 from kskps.engine import execute, FlowJsonLink, FlowUuidLink
-from kskps.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port
+from kskps.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port, Datum
 
+class Integer(Datum):
+    """
+    テスト用のクラス
+    下記のSquareCommandで使うdatumをラップするためのもの
+    """
+    def __init__(self):
+        super().__init__()
+        self._content = None
+
+    def set_content(self, module):
+        self._content = module
+
+    @property
+    def content(self):
+        return self._content
 
 class Square(Command):
     """
     与えられた数値を2乗する
     テストコード内でのみ使用のため、ここに置いておく
     """
-
     def __init__(self):
         super().__init__()
-        self.i_ports = [Port('i', 'int')]
-        self.o_ports = [Port('o_sq', 'int')]
+        self.i_ports = [Port('i', 'integer')]
+        self.o_ports = [Port('o_sq', 'integer')]
 
     def run(self, args, inputs):
         # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
         # ラップするのはなんでもいいかなと思いframeにした。
-        frame = Frame()
+        frame = Integer()
         frame.set_content([[inputs['i'][0][0] ** 2]])
         return {self.o_ports[0].name: frame}
 
@@ -2854,7 +2868,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             Library.delete_frame(uuid)
             flow_json_path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_ni_flow_execute_generate_four_caches(self):
         """
         NI様のフローの実行テスト
@@ -2935,7 +2949,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
             flow_json_path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_ryudo_flow_cache(self):
         """
         デモ用のフロー実行（粒度分布計）
@@ -3041,11 +3055,11 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 self.assertIsNotNone(frame)
                 self.assertTrue(Path(frame.path).exists())
                 # 後片付け
-                Library.delete_frame(datum.uuid)
+                # Library.delete_frame(datum.uuid)
 
             flow_json_path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_shindo_flow_cache(self):
         """
         デモ用のフロー実行（振動データ）
