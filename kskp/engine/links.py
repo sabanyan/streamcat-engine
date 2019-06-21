@@ -313,7 +313,7 @@ class FlowJsonLink:
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        args['label'] = point.label
+        args['label'] = point.label if point.label is not None else ''
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
