@@ -2352,6 +2352,73 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
+    # # @unittest.skip
+    def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
+        """
+        サブフローが１つのフローを実行する
+        1つの項目で2つのフローパラメータを使用する
+        """
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "b_param2",
+                    "args": {
+                        "sensor1": "顧客",
+                        "sensor2": "数量",
+                        "customer": "顧客"
+                    },
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
+        self.assertEqual(result_dd2, correct['dd2'])
+        self.assertEqual(result_dd3, correct['dd3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['dd2'].uuid)
+        Library.delete_frame(lasts['dd3'].uuid)
+
     # @unittest.skip
     def test_simple_flow_execute_data_source_from_csv(self):
         """
@@ -3055,7 +3122,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 self.assertIsNotNone(frame)
                 self.assertTrue(Path(frame.path).exists())
                 # 後片付け
-                # Library.delete_frame(datum.uuid)
+                Library.delete_frame(datum.uuid)
 
             flow_json_path.unlink()
 
