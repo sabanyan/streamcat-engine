@@ -29,7 +29,7 @@ class Job:
             # 実行
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
-        except:
+        except Exception as e:
             print(repr(e))
             self.errors.append(e)
             raise
