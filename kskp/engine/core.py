@@ -68,14 +68,14 @@ class Step:
                 if not isinstance(step_value, str):
                     continue
 
-                r = re.search(r'@\[(\S*?)\]', step_value)
 
-                if r is None:
-                    continue
+                for r in re.finditer(r'@\[(\S*?)\]', step_value):
+                    if r is None:
+                        continue
 
-                for g in r.groups():
-                    if param == g:
-                        self.args[step_param] = step_value.replace(f'@[{g}]', value)
+                    for g in r.groups():
+                        if param == g:
+                            self.args[step_param] = self.args[step_param].replace(f'@[{g}]', value)
 
 class Flow(Datum):
     def __init__(self):
@@ -318,7 +318,7 @@ class Point:
     def __init__(self, point_id, origin_tubes, datum, target_tubes, cache=False):
         self.id = point_id
         self.label = ''
-        
+
         self.origin = origin_tubes
         self.datum = datum
         self.target = target_tubes
