@@ -472,7 +472,7 @@ class ExecuteTestCase(unittest.TestCase):
         # mkdir(self.RESULT_DIR)
         # mkdir(self.CACHE_DIR)
 
-    # @unittest.skip
+    # # @unittest.skip
     def test_simple_flow_execute(self):
         """
         mコマンド１個のフロー実行
@@ -2352,7 +2352,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # # @unittest.skip
+    # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
         """
         サブフローが１つのフローを実行する
@@ -2778,87 +2778,6 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(frame_uuid)
         flow_json_path.unlink()
 
-    # @unittest.skip
-    def test_simple_flow_execute_sjis(self):
-        """
-        mコマンド１個のフロー実行
-        sjis出力させる
-        """
-        import subprocess
-        os.environ['FRAME_CHARACTER_CODE'] = 'shift-jis'
-
-        try:
-            flow_link = FlowJsonLink(json.dumps(self.flow_data))
-            lasts = execute(flow_link, {}, {})
-
-            # テスト
-            # DBにframeデータが生成されているか
-            frame = Library.load_frame(lasts['d1'].uuid)
-            self.assertIsNotNone(frame)
-            # SHIFT-JIS形式になっているかどうか
-            self.assertTrue(is_sjis_frame(frame))
-
-            # 後片付け
-            Library.delete_frame(lasts['d1'].uuid)
-        finally:
-            os.environ['FRAME_CHARACTER_CODE'] = 'utf-8'
-
-    # @unittest.skip
-    def test_simple_flow_execute_sjis_cache(self):
-        """
-        mコマンド2個のフロー実行
-        キャッシュがsjis形式で出力されるかのテスト
-        """
-        import subprocess
-        os.environ['FRAME_CHARACTER_CODE'] = 'shift-jis'
-        # テストデータ作成
-        data = [
-            ['顧客', '数量', '金額'],
-            ['A', 1, 10],
-            ['A', 2, 20],
-            ['B', 1, 30],
-            ['B', 3, 40],
-            ['B', 1, 50]
-        ]
-
-        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
-        update_flow_node_uuid(self.flow_data_use_mchkcsv, 'i', frame_uuid)
-
-        # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
-        flow_json_path = Path(FLOW_PATH) / 'mchkcsv_flow.json'
-        with open(flow_json_path.as_posix(), 'w') as f:
-            json.dump(json.loads(json.dumps(self.flow_data_use_mchkcsv)), f, ensure_ascii=False)
-
-        try:
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'mchkcsv_flow')
-            lasts = execute(flow_link, {}, {})
-
-            # テスト
-            # DBにframeデータが生成されているか
-            frame = Library.load_frame(lasts['d1'].uuid)
-            self.assertIsNotNone(frame)
-            # SHIFT-JIS形式になっているかどうか
-            self.assertTrue(is_sjis_frame(frame))
-
-            # uuidが書き換わっているかのテスト
-            result_json = json.loads(flow_json_path.read_text())
-            cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d1']]
-            for node in cache_nodes:
-                # キャッシュが生成されているか
-                self.assertIsNotNone(node['uuid'])
-                frame = Library.load_frame(node['uuid'])
-                self.assertIsNotNone(frame)
-                # SHIFT-JIS形式になっているかどうか
-                self.assertTrue(is_sjis_frame(frame))
-                Library.delete_frame(node['uuid'])
-
-            # 後片付け
-            Library.delete_frame(lasts['d1'].uuid)
-            Library.delete_frame(frame_uuid)
-            flow_json_path.unlink()
-        finally:
-            os.environ['FRAME_CHARACTER_CODE'] = 'utf-8'
-
 
 class ExecuteSampleFlowTestCase(unittest.TestCase):
     """
@@ -3203,13 +3122,6 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             flow_json_path.unlink()
             Library.delete_frame(frame.uuid)
 
-def is_sjis_frame(frame):
-    """
-    指定したframeオブジェクトがsjis形式かどうか
-    """
-    import subprocess
-    proc = subprocess.run(["nkf", "--guess", frame.path], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-    return proc.stdout.decode("utf8").strip() == 'Shift_JIS (CRLF)'
 
 # Helpler
 def get_frame_by_uuid(uuid, dir_path, header=True):
