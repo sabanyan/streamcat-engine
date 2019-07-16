@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<script>
+			function init() {
+				ws = new WebSocket('ws://localhost:8080/chat');
+				ws.onmessage = function(e) {
+					document.getElementById('holder').innerHTML += '<p>' + e.data + '</p>\n';
+				};
+				document.getElementById('send').onclick = function send(){
+					ws.send(document.getElementById('message').value);
+					document.getElementById('message').value = ''
+				};
+			}
+		</script>
+		<style>
+			#sender {
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				right: 0;
+				border-top: 1px solid black;
+			}
+		</style>
+	</head>
+
+	<body onload="init();">
+		<div id="holder"></div>
+		<div id="sender">
+			<input type="text" id="message" size=80 value="text">
+			<button id="send">send</button>
+		</div>
+	</body>
+</html>

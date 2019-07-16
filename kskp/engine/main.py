@@ -8,9 +8,7 @@ TODO: 外部からコマンド実行できるように
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-from kskp.store import Port
-
-from .core import Step, Job, Arrow
+from .core import Step, Job
 
 
 class DefaultHandler(PatternMatchingEventHandler):
@@ -28,27 +26,30 @@ def execute(link, args, inputs, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
-    
+
     # 進捗を取得する準備を行う
     prepare_observer(job_complete_handler)
 
     # exs = []
-    
-    try:        
+
+    try:
+        # ここで実行するlinkは一番上の親であることを定義する
+        link.is_root = True
+
         # jobを作成する
         job = make_job(link, args, inputs)
 
         # jobを開始する
         job.start()
+        job.runs()
 
-        # 結果を取得する
-        lasts = job.step.runnable.lasts
-        
         # 後始末をする
         job.dtor()
 
         # 結果を返却する
-        return lasts
+        # job.step.runnable.cachesでキャッシュの結果も取れる
+        # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
+        return job.step.runnable.lasts
 
     except Exception as e:
         print('main:', e)
@@ -58,44 +59,44 @@ def execute(link, args, inputs, job_complete_handler=None):
 
 def make_job(link, args, inputs):
     # linkからrunnableを生成する
-    runnable = link.resolve()    
+    runnable = link.resolve()
 
     # runnableからstepを作成する
     step = Step('', runnable, args)
 
-    # port情報から、arrowを作成する
-    # arrows = domains(step, inputs)
+    # port情報から、pointを作成する
+    # points = domains(step, inputs)
 
     # jobを作成する
-    job = Job(step, {})
+    job = Job(step, inputs)
 
     return job
 
-def domains(step, inputs):
-    """
-    port情報から、arrowを作成する
-    1つのportにつき、1つのarrowが作られる
-
-    注意：この部分は詳細なロジックを変更したので書換え予定
-    単純に、inputsを取り出せば良い（はず？）
-    """    
-
-    # try:    
-    #     return [Arrow(port.name, None, step, inputs[port.name]) for port 
-    #                                                             in step.runnable.i_ports]
-    # except KeyError as e:
-    #     # inputsに必要な引数が与えられていない
-    #     raise Exception('inputsに必要な引数が与えられていません') from e
-    port_input = Port('*i*', '*')
-    port_output = Port('*o*', '*')
-    return [Arrow('input_arrow', None, None, None, port_input, step),
-            Arrow('output_arrow', Step, port_output, None, None, None)]
+# def domains(step, inputs):
+#     """
+#     port情報から、pointを作成する
+#     1つのportにつき、1つのpointが作られる
+#
+#     注意：この部分は詳細なロジックを変更したので書換え予定
+#     単純に、inputsを取り出せば良い（はず？）
+#     """
+#
+#     # try:
+#     #     return [Point(port.name, None, step, inputs[port.name]) for port
+#     #                                                             in step.runnable.i_ports]
+#     # except KeyError as e:
+#     #     # inputsに必要な引数が与えられていない
+#     #     raise Exception('inputsに必要な引数が与えられていません') from e
+#     port_input = Port('*i*', '*')
+#     port_output = Port('*o*', '*')
+#     return [Point('input_point', None, None, None, port_input, step),
+#             Point('output_point', Step, port_output, None, None, None)]
 
 # def translate_result_lasts(lasts):
 #     """
 #     帰ってきた結果を変換する(主にdictのkey)
-#     """    
-#     root_arrows = domains()
+#     """
+#     root_points = domains()
 #     new_lasts = {: v for k, v in lasts.items()}
 
 class ExceptionManager:
@@ -118,7 +119,7 @@ class ExceptionManagerWebSocket:
     """
     def __call__(self, e):
         """
-        eは例外        
+        eは例外
         """
         print('ExceptionManagerWebSocket:', e)
         # そのままraiseしてしまうとそこでPython全体が終わってしまうので、
@@ -137,11 +138,13 @@ def prepare_observer(job_complete_handler):
     observer = Observer()
 
     # 監視ディレクトリとハンドラの指定、本来はこの部分を外部から指定可能にしたい
+
+    # 今は使っていないのでコメントアウト化
     if job_complete_handler is None:
         job_complete_handler = DefaultHandler()
     # print(job_complete_handler)
     observer.schedule(job_complete_handler, 'kskp/messages/')
-
+    
     # 監視を開始する
     observer.start()
 
