@@ -8,7 +8,9 @@ TODO: 外部からコマンド実行できるように
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-from .core import Step, Job
+from kskp.core import Port
+
+from .core import Step, Job, Point
 
 
 class DefaultHandler(PatternMatchingEventHandler):
@@ -41,15 +43,15 @@ def execute(link, args, inputs, job_complete_handler=None):
 
         # jobを開始する
         job.start()
-        job.runs()
+
+        # 結果を取得する
+        lasts = job.step.runnable.lasts
 
         # 後始末をする
         job.dtor()
 
         # 結果を返却する
-        # job.step.runnable.cachesでキャッシュの結果も取れる
-        # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
-        return job.step.runnable.lasts
+        return lasts
 
     except Exception as e:
         print('main:', e)
@@ -72,25 +74,25 @@ def make_job(link, args, inputs):
 
     return job
 
-# def domains(step, inputs):
-#     """
-#     port情報から、pointを作成する
-#     1つのportにつき、1つのpointが作られる
-#
-#     注意：この部分は詳細なロジックを変更したので書換え予定
-#     単純に、inputsを取り出せば良い（はず？）
-#     """
-#
-#     # try:
-#     #     return [Point(port.name, None, step, inputs[port.name]) for port
-#     #                                                             in step.runnable.i_ports]
-#     # except KeyError as e:
-#     #     # inputsに必要な引数が与えられていない
-#     #     raise Exception('inputsに必要な引数が与えられていません') from e
-#     port_input = Port('*i*', '*')
-#     port_output = Port('*o*', '*')
-#     return [Point('input_point', None, None, None, port_input, step),
-#             Point('output_point', Step, port_output, None, None, None)]
+def domains(step, inputs):
+    """
+    port情報から、pointを作成する
+    1つのportにつき、1つのpointが作られる
+
+    注意：この部分は詳細なロジックを変更したので書換え予定
+    単純に、inputsを取り出せば良い（はず？）
+    """
+
+    # try:
+    #     return [Point(port.name, None, step, inputs[port.name]) for port
+    #                                                             in step.runnable.i_ports]
+    # except KeyError as e:
+    #     # inputsに必要な引数が与えられていない
+    #     raise Exception('inputsに必要な引数が与えられていません') from e
+    port_input = Port('*i*', '*')
+    port_output = Port('*o*', '*')
+    return [Point('input_point', None, None, None, port_input, step),
+            Point('output_point', Step, port_output, None, None, None)]
 
 # def translate_result_lasts(lasts):
 #     """
@@ -138,13 +140,11 @@ def prepare_observer(job_complete_handler):
     observer = Observer()
 
     # 監視ディレクトリとハンドラの指定、本来はこの部分を外部から指定可能にしたい
-
-    # 今は使っていないのでコメントアウト化
     if job_complete_handler is None:
         job_complete_handler = DefaultHandler()
     # print(job_complete_handler)
     observer.schedule(job_complete_handler, 'kskp/messages/')
-    
+
     # 監視を開始する
     observer.start()
 
