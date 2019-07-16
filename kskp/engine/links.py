@@ -4,14 +4,8 @@ import uuid
 
 from pathlib import Path
 
-from kskp.engine import Flow, Step, Point, Port, Tube, Folder
-
-from kskp.store import CommandLink
-from kskp.store.commands import (
-    SaverCommand,
-    CacheSaverCommand,
-    LoaderCommand
-)
+from kskp.engine import Flow, Step, Point, Tube
+from kskp.store import CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Library, Folder
 
 class FlowJsonLink:
     """
@@ -29,7 +23,7 @@ class FlowJsonLink:
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(Path('kskp/flows'), node['uuid'])
+            ret = FlowUuidLink(Path(FLOW_PATH), node['uuid'])
 
             # かなりの力技・・・。
             # 実行を行う場合、サブフロー内で余分な処理が走らないように
@@ -56,22 +50,20 @@ class FlowJsonLink:
         lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
         f.points = self.pick_necessary_points(f, lasts)
 
-        # キャッシュ作成処理
-        cache_points = [point for point in f.points if point.is_cache]
-        for point in cache_points:
-            # TODO: パスで作成するのではなくuuidでFolderを取得したい
-            store = Folder(Path('kskp/data/library/フロー実行キャッシュ'))
-            self.put_saver(point, f, store, CacheSaverCommand())
-
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                # TODO: パスで作成するのではなくuuidでFolderを取得したい
-                store = Folder(Path('kskp/data/library/フロー実行結果'))
-                self.put_saver(point, f, store, SaverCommand())
+                store = Folder(Path(Library.load_folder(FRAME_FOLDER_UUID).path))
+                self.put_saver(point, f, store, CommandLink("saver").resolve())
 
-        print(f.points)
+        # キャッシュ作成処理
+        cache_points = [point for point in f.points if point.is_cache]
+        for point in cache_points:
+            store = Folder(Path(Library.load_folder(CACHE_FOLDER_UUID).path))
+            self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
+
+        # print(f.points)
         return f
 
     def make_flow(self, json_str):
@@ -208,6 +200,7 @@ class FlowJsonLink:
             if not self.is_runnable_node(node) and not node['type'] in except_type_list:
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
+                target_point.label = node.get('label')
 
                 # データの取得先の設定
                 # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
@@ -216,7 +209,9 @@ class FlowJsonLink:
                         target_point.datum = node['value']
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
                     elif node.get('uuid') is not None:
-                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('kskp/data')))
+                        # TODO? FolderクラスはコンストラクタにPathを指定するが、loadではuuidからframeを取ってきて
+                        # frameが持つpath属性から取得先を取得できるので使わなくなった。とりあえず空のpathを入れている。
+                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('')))
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                         target_point.cache = False
         return flow
@@ -305,7 +300,7 @@ class FlowJsonLink:
         """
         指定したuuidのデータを取ってくるLoaderStepを作成する
         """
-        return Step(str(uuid.uuid4()), LoaderCommand(), {'uuid':node_uuid})
+        return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
     def put_saver(self, point, flow, store, saver):
         """
@@ -318,12 +313,12 @@ class FlowJsonLink:
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        args['label'] = point.id
+        args['label'] = point.label if point.label is not None else point.id
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        point.id = str(uuid.uuid4())
+        # point.id = str(uuid.uuid4())
 
         # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:

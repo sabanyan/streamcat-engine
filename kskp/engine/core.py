@@ -1,136 +1,7 @@
 import json
 import uuid
 
-from pathlib import Path
-from datetime import datetime, timedelta, timezone
-
-from kskp.core import Command, Datum
-from kskp.store import (
-    Library,
-    FRAME_FOLDER_UUID,
-    CACHE_FOLDER_UUID,
-    Store,
-    NysolModule,
-    FrameStore
-)
-
-class Folder(Store):
-    """
-    ディレクトリに保存するStore
-    コンストラクタで指定したディレクトリに保存する
-    指定したディレクトリパスはpathlibのPathオブジェクト
-    """
-    def __init__(self, dir_path):
-        super().__init__()
-        self.dir_path = dir_path
-
-    def save(self, args, datum):
-        import nysol.mcmd as nm
-        # self.set_datum(datum, uuid)
-
-        args['frame_path'] = (self.dir_path / (str(uuid.uuid4()) + '.csv'))
-
-        command_args = {}
-        command_args['i'] = datum
-        command_args['o'] = args['frame_path'].as_posix()
-
-        return nm.m2tee(command_args)
-
-    def load(self, uuid):
-        import nysol.mcmd as nm
-
-        frame = Library.load_frame(uuid)
-        if frame is None:
-            raise Exception('No frame(%s) is found !' % uuid)
-        path = frame.path_obj
-
-        return nm.m2tee({'i':path.as_posix()})
-
-    @property
-    def content(self):
-        return self
-
-class Frame(Datum):
-    """
-    実際の実行のrunではない時に作られ、DB保存の情報を持っている。
-    storeに一旦集められてから、jobのdtorのタイミングでDBへの保存処理が走る。
-
-    storeのメソッド内で保存しようと思ったけど、わざわざFrame（または下記のCache）クラスの中身を見て
-    それを取り出して保存するのも手間が増えてるだけなので、今はstoreのsaveでこのクラスのsaveを呼び出すことにしている。
-    """
-    def __init__(self):
-        super().__init__()
-        self.info = {}
-
-    def set_uuid(self, uuid):
-        self.uuid = uuid
-
-    def set_content(self, module):
-        self._content = module
-
-    @property
-    def content(self):
-        return self._content
-
-    def set_cache_info(self, params):
-        self.info = params
-
-    def save(self):
-        # キャッシュが作成されているか確認
-        if not self.created:
-            # とりあえずfalseを返す
-            return False
-
-        # dbに保存
-        self.save_to_db()
-
-    ##
-    def save_to_db(self):
-        frame_path = self.info.get('frame_path')
-        label = self.info.get('label')
-        frame = Library.save_frame(FRAME_FOLDER_UUID, label, frame_path)
-        self.uuid = frame.uuid
-    ##
-
-    @property
-    def created(self):
-        if self.info.get('frame_path') is not None:
-            return self.info.get('frame_path').exists()
-        else:
-            return False
-
-class Cache(Frame):
-    """
-    FrameもCacheもどちらも実ファイルを生成するdatumであり、
-    違いはflowのjsonを書き換えるか書き換えないか（今の所）
-    ということでFrameを継承したものにしてみた。
-    """
-    def __init__(self):
-        super().__init__()
-
-    def save(self):
-        # キャッシュが作成されているか確認
-        if not self.created:
-            # とりあえずfalseを返す
-            return False
-
-        # dbに保存
-        self.save_to_db()
-
-        # jsonのnodeのuuidを変更
-        self.update_json_node()
-
-    def update_json_node(self):
-        if self.info.get('flow_uuid') is None:
-            return
-
-        flow_path = [path for path in Path('kskp/flows').iterdir() if path.stem == self.info.get('flow_uuid')][0]
-        flow_json = json.loads(flow_path.read_text())
-        for node in flow_json['nodes']:
-            if node['id'] == self.info.get('datum_id'):
-                node['uuid'] = self.uuid
-                node['cacheCreatedAt'] = datetime.now(timezone(timedelta(hours=+9), 'JST')).strftime('%Y-%m-%d %H:%M:%S')
-        flow_path.write_text(json.dumps(flow_json, ensure_ascii=False, indent=2), encoding='utf-8')
+from kskp.store import Datum
 
 class Job:
     def __init__(self, step, inputs):
@@ -142,6 +13,22 @@ class Job:
     def start(self):
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
+        except Exception as e:
+            print(repr(e))
+            self.errors.append(e)
+            raise
+
+    def runs(self):
+        """
+        runsを実行する
+        """
+        try:
+            last_modules = []
+            for point_datum in self.step.runnable.results.values():
+                last_modules.append(point_datum.content)
+            # 実行
+            import nysol.mcmd as nm
+            nm.runs(last_modules, msg='on')
         except Exception as e:
             print(repr(e))
             self.errors.append(e)
@@ -181,14 +68,14 @@ class Step:
                 if not isinstance(step_value, str):
                     continue
 
-                r = re.search(r'@\[(\S*?)\]', step_value)
 
-                if r is None:
-                    continue
+                for r in re.finditer(r'@\[(\S*?)\]', step_value):
+                    if r is None:
+                        continue
 
-                for g in r.groups():
-                    if param == g:
-                        self.args[step_param] = step_value.replace(f'@[{g}]', value)
+                    for g in r.groups():
+                        if param == g:
+                            self.args[step_param] = self.args[step_param].replace(f'@[{g}]', value)
 
 class Flow(Datum):
     def __init__(self):
@@ -202,6 +89,7 @@ class Flow(Datum):
         self.substeps = []
 
         # TODO:Flowに持たせるのではなく、どこか共通の場所にする
+        from kskp.store import FrameStore
         self.cache_store = FrameStore()
         self.lasts_store = FrameStore()
 
@@ -215,6 +103,20 @@ class Flow(Datum):
 
         # return lasts
         return {p.id: p.datum for p in self.points if p.is_last}
+
+    @property
+    def results(self):
+        """
+        最後にできる結果
+        """
+        return self.lasts_store.data
+
+    @property
+    def caches(self):
+        """
+        作成したキャッシュ
+        """
+        return self.cache_store.data
 
     def run(self, args, inputs):
         """
@@ -337,7 +239,7 @@ class Flow(Datum):
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result[output_point.o_port.name]
-                self.put_datum_in_store(output_point.datum)
+                self.put_datum_in_store(output_point.id, output_point.datum)
                 # print('output_point:', output_point)
 
     def make_outputs(self):
@@ -350,14 +252,15 @@ class Flow(Datum):
         # print('make_outputs result:', result)
         # return result
 
-    def put_datum_in_store(self, datum):
+    def put_datum_in_store(self, id, datum):
         """
         Cacheなどを後で保存処理を行うためにstoreに入れておく
         """
+        from kskp.store import Cache, Frame
         if isinstance(datum, Cache):
-            self.cache_store.append(datum)
+            self.cache_store.append(id, datum)
         elif isinstance(datum, Frame):
-            self.lasts_store.append(datum)
+            self.lasts_store.append(id, datum)
 
     def get_output_point(self, o_port):
         """
@@ -414,6 +317,7 @@ class Point:
 
     def __init__(self, point_id, origin_tubes, datum, target_tubes, cache=False):
         self.id = point_id
+        self.label = ''
 
         self.origin = origin_tubes
         self.datum = datum
