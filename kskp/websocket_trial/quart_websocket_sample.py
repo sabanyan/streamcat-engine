@@ -3,7 +3,7 @@ import time
 
 from kskp.store import Command
 import kskp.engine as engine
-from kskp.engine import Flow, Arrow, Step, Port
+from kskp.engine import Flow, Point, Step, Port
 
 # from flask import Flask
 from quart import Quart, websocket
@@ -47,7 +47,7 @@ async def execute_by_engine():
 
             flow.substeps = [step]
 
-            flow.arrows = [Arrow('out', step, step.runnable.o_ports[0], None, None, None)]
+            flow.points = [Point('out', step, step.runnable.o_ports[0], None, None, None)]
 
             return flow
 

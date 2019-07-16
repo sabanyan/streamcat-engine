@@ -1,0 +1,93 @@
+{
+  "projectId": 13,
+  "label": "【サブルーチン】分類モデル学習",
+  "ports": [
+    [
+      {
+        "label": "d",
+        "nodeId": "d.csv",
+        "type": "frame"
+      }
+    ],
+    [
+      {
+        "label": "d1",
+        "nodeId": "d1",
+        "type": "frame"
+      }
+    ]
+  ],
+  "params": [],
+  "description": "",
+  "creator": "開発用",
+  "createdAt": "2019-03-31 14:02:34",
+  "nodes": [
+    {
+      "position": {
+        "x": 494,
+        "y": 198
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d.csv",
+      "type": "frame",
+      "label": "d.csv",
+      "uuid": "f82feb99-e5f5-48cb-89f2-68148b2ba19c",
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 491,
+        "y": 417
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "d1",
+      "type": "frame",
+      "label": "d1",
+      "uuid": null,
+      "makeCache": false,
+      "cacheCreatedAt": "",
+      "dataSource": "csv"
+    },
+    {
+      "position": {
+        "x": 493,
+        "y": 304
+      },
+      "size": {
+        "width": 38,
+        "height": 38
+      },
+      "invalid": {},
+      "error": {},
+      "id": "c1",
+      "type": "command",
+      "label": "c1",
+      "srcs": {
+        "i": "d.csv"
+      },
+      "dsts": {
+        "o": "d1"
+      },
+      "args": {
+        "target_list": "状態",
+        "k": "DATA_SOURCE,波形間隔",
+        "command_list": "'python3 modeling/classification/kdt.py,python3 modeling/classification/ksvm.py,python3 modeling/classification/kab.py,python3 modeling/classification/kbag.py,python3 modeling/classification/kgaussian_nb.py,python3 modeling/classification/klogreg.py,python3 modeling/classification/krf.py,python3 modeling/classification/knearest_neighbors.py'",
+        "classification": true,
+        "feature_list": "3H_平均,3V_平均,4H_平均,4V_平均"
+      },
+      "commandId": "sml_modeling"
+    }
+  ]
+}
