@@ -7,7 +7,7 @@ import nysol.mcmd as nm
 from pathlib import Path
 
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink
-from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port, Datum
+from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR
 
 class Integer(Datum):
     """
@@ -47,9 +47,9 @@ class ExecuteTestCase(unittest.TestCase):
     実際のフロー実行のテスト
     """
 
-    RESULT_DIR = 'kskp/data/library/フロー実行結果/'
-    CACHE_DIR = 'kskp/data/library/フロー実行キャッシュ/'
-    TESTDATA_DIR = 'kskp/data/'
+    RESULT_DIR = STORE_DIR / 'frames/csv/フロー実行結果/'
+    CACHE_DIR = STORE_DIR / 'frames/csv/フロー実行キャッシュ/'
+    TESTDATA_DIR = STORE_DIR / 'frames/csv/'
 
     # mコマンド１つのフロー
     flow_data = {
