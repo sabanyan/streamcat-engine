@@ -2071,7 +2071,7 @@ class ExecuteTestCase(unittest.TestCase):
         write_data_to_json(path, json_flow)
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
+        flow_link = FlowUuidLink('test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
 
@@ -2166,7 +2166,7 @@ class ExecuteTestCase(unittest.TestCase):
         write_data_to_json(path, json_flow)
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
+        flow_link = FlowUuidLink('test')
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
 
@@ -2310,7 +2310,7 @@ class ExecuteTestCase(unittest.TestCase):
         create_flow('sub2', sub_uuid)
 
         # 単純なlastsのテスト
-        flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
+        flow_link = FlowUuidLink('test')
         lasts = execute(flow_link, {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -2825,7 +2825,7 @@ class ExecuteTestCase(unittest.TestCase):
         with open(flow_json_path.as_posix(), 'w') as f:
             json.dump(json.loads(json.dumps(self.flow_data_use_mchkcsv)), f, ensure_ascii=False)
 
-        flow_link = FlowUuidLink(Path(FLOW_PATH), 'mchkcsv_flow')
+        flow_link = FlowUuidLink('mchkcsv_flow')
         lasts = execute(flow_link, {}, {})
         correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
 
@@ -2884,7 +2884,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ni_test')
+            flow_link = FlowUuidLink('ni_test')
             lasts = execute(flow_link, {}, {})
             uuid = [value for value in lasts.values()][0].uuid
 
@@ -2922,7 +2922,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ni_test', ['new e9c09a48-901a-45d7-8bf3-91a323801277'])
+            flow_link = FlowUuidLink('ni_test', ['new e9c09a48-901a-45d7-8bf3-91a323801277'])
             lasts = execute(flow_link, {}, {})
             uuid = [value for value in lasts.values()][0].uuid
 
@@ -2937,7 +2937,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             Library.delete_frame(uuid)
             flow_json_path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_ni_flow_execute_generate_four_caches(self):
         """
         NI様のフローの実行テスト
@@ -2968,7 +2968,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ni_test')
+            flow_link = FlowUuidLink('ni_test')
             lasts = execute(flow_link, {}, {})
             uuid = [value for value in lasts.values()][0].uuid
 
@@ -3020,7 +3020,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ryudo_demo2')
+            flow_link = FlowUuidLink('ryudo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -3036,7 +3036,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             self.assertTrue(delete_flow(sub2_uuid))
             flow_json_path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_ryudo_flow_cache(self):
         """
         デモ用のフロー実行（粒度分布計）
@@ -3071,7 +3071,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ryudo_demo2')
+            flow_link = FlowUuidLink('ryudo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -3124,7 +3124,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'ryudo_demo2', ['d14'])
+            flow_link = FlowUuidLink('ryudo_demo2', ['d14'])
             lasts = execute(flow_link, {}, {})
             self.assertIsNotNone(lasts['d14'])
             frame = Library.load_frame(lasts['d14'].uuid)
@@ -3174,7 +3174,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'shindo_demo2')
+            flow_link = FlowUuidLink('shindo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -3194,7 +3194,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             self.assertTrue(delete_flow(sub6_uuid))
             flow_json_path.unlink()
 
-    @unittest.skip
+    # @unittest.skip
     def test_shindo_flow_cache(self):
         """
         デモ用のフロー実行（振動データ）
@@ -3237,7 +3237,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'shindo_demo2')
+            flow_link = FlowUuidLink('shindo_demo2')
             lasts = execute(flow_link, {}, {})
             for datum in lasts.values():
                 # テスト
@@ -3302,7 +3302,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 json.dump(flow_json, f, ensure_ascii=False)
 
             # 単純な実行結果のテスト
-            flow_link = FlowUuidLink(Path(FLOW_PATH), 'shindo_demo2', ['d12'])
+            flow_link = FlowUuidLink('shindo_demo2', ['d12'])
             lasts = execute(flow_link, {}, {})
             self.assertIsNotNone(lasts['d12'])
             frame = Library.load_frame(lasts['d12'].uuid)

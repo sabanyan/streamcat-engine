@@ -5,7 +5,7 @@ import uuid
 from pathlib import Path
 
 from kskp.engine import Flow, Step, Point, Tube
-from kskp.store import CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Library, Folder
+from kskp.store import FlowLink, CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, Library, Folder
 
 class FlowJsonLink:
     """
@@ -23,7 +23,7 @@ class FlowJsonLink:
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(Path(FLOW_PATH), node['uuid'])
+            ret = FlowUuidLink(node['uuid'])
 
             # かなりの力技・・・。
             # 実行を行う場合、サブフロー内で余分な処理が走らないように
@@ -340,22 +340,14 @@ class FlowUuidLink(FlowJsonLink):
     UUIDを元にFlowを返却するリンク
     """
 
-    def __init__(self, source, flow_uuid, last_ids=[]):
-        self.source = source
+    def __init__(self, flow_uuid, last_ids=[]):
         self.flow_uuid = flow_uuid
-        if source is None:
-            super().__init__('''{
-                "ports": [[], []],
-                "nodes": []
-            }''')
-        else:
-            p = self.source.joinpath(f'{flow_uuid}.json')
-            super().__init__(p.read_text(), last_ids)
+        super().__init__(json.dumps(FlowLink(flow_uuid).resolve()), last_ids)
 
     def node2link(self, node):
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(self.source, node['uuid'])
+            ret = FlowUuidLink(node['uuid'])
 
         return ret
