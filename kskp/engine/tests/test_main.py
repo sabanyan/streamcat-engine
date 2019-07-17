@@ -6,6 +6,8 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
+from .make_flow_json import create_flow, delete_flow
+
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink
 from kskp.store import Library, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR
 
@@ -472,7 +474,7 @@ class ExecuteTestCase(unittest.TestCase):
         # mkdir(self.RESULT_DIR)
         # mkdir(self.CACHE_DIR)
 
-    # # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute(self):
         """
         mコマンド１個のフロー実行
@@ -491,7 +493,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_two_commands_execute(self):
         """
         mコマンド２個のフロー実行
@@ -539,7 +541,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_two_commands_preview(self):
         """
         mコマンド２個のフロー実行
@@ -588,7 +590,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_preview(self):
         """
         mコマンド３個のフロー実行
@@ -664,7 +666,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -743,7 +745,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_three_commands_preview_d2(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
@@ -819,7 +821,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -842,7 +844,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -866,7 +868,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_one_side_o(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -894,7 +896,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_one_side_u(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -922,7 +924,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_d2_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -943,7 +945,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_preview_d3_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
@@ -964,7 +966,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_execute_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロー実行
@@ -1027,7 +1029,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(lasts['d4'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_preview_d2_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロープレビュー
@@ -1088,7 +1090,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_preview_d3_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロープレビュー
@@ -1148,7 +1150,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d4'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_no_inputs_command(self):
         """
         mコマンド１個（1つもinputを持たない）のフロー実行
@@ -1176,7 +1178,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_use_mnrcommon(self):
         """
         mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
@@ -1252,6 +1254,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'a'
+        create_flow('sub1', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd3': [['65536']]}
 
@@ -1263,6 +1269,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
     # @unittest.skip
@@ -1315,6 +1322,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'a'
+        create_flow('sub1', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd3': [['4294967296']]}
 
@@ -1326,6 +1337,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
     # @unittest.skip
@@ -1378,6 +1390,9 @@ class ExecuteTestCase(unittest.TestCase):
                 }
             ]
         }'''
+        # サブフローの作成
+        sub_uuid = 'a'
+        create_flow('sub1', sub_uuid)
 
         lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
         correct = {'dd2': [['256']]}
@@ -1390,6 +1405,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct['dd2'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd2'].uuid)
 
     # @unittest.skip
@@ -1441,6 +1457,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1455,6 +1475,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result_dd3, correct['dd3'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
@@ -1509,6 +1530,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
@@ -1520,6 +1545,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct['dd2'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd2'].uuid)
 
     # @unittest.skip
@@ -1573,6 +1599,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow, ['dd3']), {}, {})
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1584,6 +1614,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
     # @unittest.skip
@@ -1692,6 +1723,10 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         lasts = execute(FlowJsonLink(json.dumps(json_flow)), {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -1706,6 +1741,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result_dd5, correct['dd5'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd4'].uuid)
         Library.delete_frame(lasts['dd5'].uuid)
 
@@ -1816,6 +1852,10 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd5']), {}, {})
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
@@ -1827,6 +1867,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result, correct['dd5'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd5'].uuid)
 
     # @unittest.skip
@@ -1936,6 +1977,10 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd2', 'dd5']), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -1950,6 +1995,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result_dd5, correct['dd5'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd5'].uuid)
 
@@ -2259,6 +2305,10 @@ class ExecuteTestCase(unittest.TestCase):
         path = Path(FLOW_PATH) / 'test.json'
         write_data_to_json(path, json_flow)
 
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         # 単純なlastsのテスト
         flow_link = FlowUuidLink(Path(FLOW_PATH), 'test')
         lasts = execute(flow_link, {}, {})
@@ -2282,6 +2332,7 @@ class ExecuteTestCase(unittest.TestCase):
             Library.delete_frame(node['uuid'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd4'].uuid)
         Library.delete_frame(lasts['dd5'].uuid)
         path.unlink()
@@ -2336,6 +2387,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'b_param'
+        create_flow('sub3', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2349,6 +2404,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result_dd3, correct['dd3'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
@@ -2403,6 +2459,10 @@ class ExecuteTestCase(unittest.TestCase):
             ]
         }'''
 
+        # サブフローの作成
+        sub_uuid = 'b_param2'
+        create_flow('sub4', sub_uuid)
+
         lasts = execute(FlowJsonLink(json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2416,6 +2476,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(result_dd3, correct['dd3'])
 
         # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
@@ -2545,6 +2606,10 @@ class ExecuteTestCase(unittest.TestCase):
         外部からframeを与えて実行する
         args指定はなし
         """
+        # サブフローの作成
+        sub_uuid = 'b'
+        create_flow('sub2', sub_uuid)
+
         with open(FLOW_PATH + '/b.json') as f:
             flow_link = FlowJsonLink(json.dumps(json.load(f)))
             inputs = {
@@ -2568,6 +2633,7 @@ class ExecuteTestCase(unittest.TestCase):
             self.assertEqual(result_d4, correct['d4'])
 
             # 後片付け
+            self.assertTrue(delete_flow(sub_uuid))
             Library.delete_frame(lasts['d3'].uuid)
             Library.delete_frame(lasts['d4'].uuid)
 
@@ -2578,6 +2644,10 @@ class ExecuteTestCase(unittest.TestCase):
         外部からframeを与えて実行する
         args指定する
         """
+        # サブフローの作成
+        sub_uuid = 'b_param'
+        create_flow('sub3', sub_uuid)
+
         with open(FLOW_PATH + '/b_param.json') as f:
             flow_link = FlowJsonLink(json.dumps(json.load(f)))
 
@@ -2608,6 +2678,7 @@ class ExecuteTestCase(unittest.TestCase):
             self.assertEqual(result_d4, correct['d4'])
 
             # 後片付け
+            self.assertTrue(delete_flow(sub_uuid))
             Library.delete_frame(lasts['d3'].uuid)
             Library.delete_frame(lasts['d4'].uuid)
 
@@ -2798,6 +2869,11 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
+
+        # フローの作成
+        main_uuid = 'ni_flow'
+        create_flow('ni', main_uuid)
+
         with open(FLOW_PATH + '/ni_flow.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'i', frame_uuid)
@@ -2819,6 +2895,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             self.assertTrue(Path(frame.path).exists())
 
             # 後片付け
+            self.assertTrue(delete_flow(main_uuid))
             Library.delete_frame(uuid)
             flow_json_path.unlink()
 
@@ -2830,6 +2907,11 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
+
+        # フローの作成
+        main_uuid = 'ni_flow'
+        create_flow('ni', main_uuid)
+
         with open(FLOW_PATH + '/ni_flow.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'i', frame_uuid)
@@ -2851,6 +2933,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             self.assertTrue(Path(frame.path).exists())
 
             # 後片付け
+            self.assertTrue(delete_flow(main_uuid))
             Library.delete_frame(uuid)
             flow_json_path.unlink()
 
@@ -2863,6 +2946,11 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
+
+        # フローの作成
+        main_uuid = 'ni_flow'
+        create_flow('ni', main_uuid)
+
         with open(FLOW_PATH + '/ni_flow.json') as fj:
             # キャッシュを設定する
             flow_json = json.load(fj)
@@ -2900,6 +2988,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 Library.delete_frame(node['uuid'])
 
             # 後片付け
+            self.assertTrue(delete_flow(main_uuid))
             Library.delete_frame(uuid)
             flow_json_path.unlink()
 
@@ -2912,6 +3001,15 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'ryudo_demo.csv')
+
+        # フローの作成
+        main_uuid = 'ryudo_demo1'
+        sub1_uuid = 'ryudo_sub1_demo1'
+        sub2_uuid = 'ryudo_sub2_demo1'
+        create_flow('ryudo', main_uuid)
+        create_flow('ryudo_sub1', sub1_uuid)
+        create_flow('ryudo_sub2', sub2_uuid)
+
         with open(FLOW_PATH + '/ryudo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'compdata20190319.csv', frame_uuid)
@@ -2933,6 +3031,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 # 後片付け
                 Library.delete_frame(datum.uuid)
 
+            self.assertTrue(delete_flow(main_uuid))
+            self.assertTrue(delete_flow(sub1_uuid))
+            self.assertTrue(delete_flow(sub2_uuid))
             flow_json_path.unlink()
 
     @unittest.skip
@@ -2944,6 +3045,15 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'ryudo_demo.csv')
+
+        # フローの作成
+        main_uuid = 'ryudo_demo1'
+        sub1_uuid = 'ryudo_sub1_demo1'
+        sub2_uuid = 'ryudo_sub2_demo1'
+        create_flow('ryudo', main_uuid)
+        create_flow('ryudo_sub1', sub1_uuid)
+        create_flow('ryudo_sub2', sub2_uuid)
+
         with open(FLOW_PATH + '/ryudo_demo1.json') as fj:
             # キャッシュを設定する
             flow_json = json.load(fj)
@@ -2981,6 +3091,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 self.assertIsNotNone(node['cacheCreatedAt'])
                 Library.delete_frame(node['uuid'])
 
+            self.assertTrue(delete_flow(main_uuid))
+            self.assertTrue(delete_flow(sub1_uuid))
+            self.assertTrue(delete_flow(sub2_uuid))
             flow_json_path.unlink()
 
     @unittest.skip
@@ -2992,6 +3105,15 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'ryudo_demo.csv')
+
+        # フローの作成
+        main_uuid = 'ryudo_demo1'
+        sub1_uuid = 'ryudo_sub1_demo1'
+        sub2_uuid = 'ryudo_sub2_demo1'
+        create_flow('ryudo', main_uuid)
+        create_flow('ryudo_sub1', sub1_uuid)
+        create_flow('ryudo_sub2', sub2_uuid)
+
         with open(FLOW_PATH + '/ryudo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, 'compdata20190319.csv', frame_uuid)
@@ -3009,6 +3131,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             self.assertIsNotNone(frame)
             self.assertTrue(Path(frame.path).exists())
 
+            self.assertTrue(delete_flow(main_uuid))
+            self.assertTrue(delete_flow(sub1_uuid))
+            self.assertTrue(delete_flow(sub2_uuid))
             flow_json_path.unlink()
             Library.delete_frame(frame.uuid)
 
@@ -3022,6 +3147,23 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
+
+        # フローの作成
+        main_uuid = 'shindo_demo1'
+        sub1_uuid = 'shindo_sub1_demo1'
+        sub2_uuid = 'shindo_sub2_demo1'
+        sub3_uuid = 'shindo_sub3_demo1'
+        sub4_uuid = 'shindo_sub4_demo1'
+        sub5_uuid = 'shindo_sub5_demo1'
+        sub6_uuid = 'shindo_sub6_demo1'
+        create_flow('shindo', main_uuid)
+        create_flow('shindo_sub1', sub1_uuid)
+        create_flow('shindo_sub2', sub2_uuid)
+        create_flow('shindo_sub3', sub3_uuid)
+        create_flow('shindo_sub4', sub4_uuid)
+        create_flow('shindo_sub5', sub5_uuid)
+        create_flow('shindo_sub6', sub6_uuid)
+
         with open(FLOW_PATH + '/shindo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, '180127_1535_4sensor_5sec.csv', frame_uuid)
@@ -3043,6 +3185,13 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 # 後片付け
                 Library.delete_frame(datum.uuid)
 
+            self.assertTrue(delete_flow(main_uuid))
+            self.assertTrue(delete_flow(sub1_uuid))
+            self.assertTrue(delete_flow(sub2_uuid))
+            self.assertTrue(delete_flow(sub3_uuid))
+            self.assertTrue(delete_flow(sub4_uuid))
+            self.assertTrue(delete_flow(sub5_uuid))
+            self.assertTrue(delete_flow(sub6_uuid))
             flow_json_path.unlink()
 
     @unittest.skip
@@ -3054,6 +3203,23 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
+
+        # フローの作成
+        main_uuid = 'shindo_demo1'
+        sub1_uuid = 'shindo_sub1_demo1'
+        sub2_uuid = 'shindo_sub2_demo1'
+        sub3_uuid = 'shindo_sub3_demo1'
+        sub4_uuid = 'shindo_sub4_demo1'
+        sub5_uuid = 'shindo_sub5_demo1'
+        sub6_uuid = 'shindo_sub6_demo1'
+        create_flow('shindo', main_uuid)
+        create_flow('shindo_sub1', sub1_uuid)
+        create_flow('shindo_sub2', sub2_uuid)
+        create_flow('shindo_sub3', sub3_uuid)
+        create_flow('shindo_sub4', sub4_uuid)
+        create_flow('shindo_sub5', sub5_uuid)
+        create_flow('shindo_sub6', sub6_uuid)
+
         with open(FLOW_PATH + '/shindo_demo1.json') as fj:
             # キャッシュを設定する
             flow_json = json.load(fj)
@@ -3091,6 +3257,13 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                 self.assertIsNotNone(node['cacheCreatedAt'])
                 Library.delete_frame(node['uuid'])
 
+            self.assertTrue(delete_flow(main_uuid))
+            self.assertTrue(delete_flow(sub1_uuid))
+            self.assertTrue(delete_flow(sub2_uuid))
+            self.assertTrue(delete_flow(sub3_uuid))
+            self.assertTrue(delete_flow(sub4_uuid))
+            self.assertTrue(delete_flow(sub5_uuid))
+            self.assertTrue(delete_flow(sub6_uuid))
             flow_json_path.unlink()
 
     @unittest.skip
@@ -3102,6 +3275,23 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow_json = None
         # テストデータ登録
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / '2500.csv')
+
+        # フローの作成
+        main_uuid = 'shindo_demo1'
+        sub1_uuid = 'shindo_sub1_demo1'
+        sub2_uuid = 'shindo_sub2_demo1'
+        sub3_uuid = 'shindo_sub3_demo1'
+        sub4_uuid = 'shindo_sub4_demo1'
+        sub5_uuid = 'shindo_sub5_demo1'
+        sub6_uuid = 'shindo_sub6_demo1'
+        create_flow('shindo', main_uuid)
+        create_flow('shindo_sub1', sub1_uuid)
+        create_flow('shindo_sub2', sub2_uuid)
+        create_flow('shindo_sub3', sub3_uuid)
+        create_flow('shindo_sub4', sub4_uuid)
+        create_flow('shindo_sub5', sub5_uuid)
+        create_flow('shindo_sub6', sub6_uuid)
+
         with open(FLOW_PATH + '/shindo_demo1.json') as fj:
             flow_json = json.load(fj)
             update_flow_node_uuid(flow_json, '180127_1535_4sensor_5sec.csv', frame_uuid)
@@ -3119,6 +3309,13 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             self.assertIsNotNone(frame)
             self.assertTrue(Path(frame.path).exists())
 
+            self.assertTrue(delete_flow(main_uuid))
+            self.assertTrue(delete_flow(sub1_uuid))
+            self.assertTrue(delete_flow(sub2_uuid))
+            self.assertTrue(delete_flow(sub3_uuid))
+            self.assertTrue(delete_flow(sub4_uuid))
+            self.assertTrue(delete_flow(sub5_uuid))
+            self.assertTrue(delete_flow(sub6_uuid))
             flow_json_path.unlink()
             Library.delete_frame(frame.uuid)
 
