@@ -2786,9 +2786,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
     """
     import json
 
-    RESULT_DIR = 'kskp/data/library/フロー実行結果/'
-    CACHE_DIR = 'kskp/data/library/フロー実行キャッシュ/'
-    TESTDATA_DIR = 'kskp/data/'
+    RESULT_DIR = STORE_DIR / 'frames/csv/フロー実行結果/'
+    CACHE_DIR = STORE_DIR / 'frames/csv/フロー実行キャッシュ/'
+    TESTDATA_DIR = STORE_DIR / 'frames/csv/'
 
     @unittest.skip
     def test_ni_flow_execute(self):
