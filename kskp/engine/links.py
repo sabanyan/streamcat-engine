@@ -54,13 +54,13 @@ class FlowJsonLink:
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Folder(Path(Library.load_folder(FRAME_FOLDER_UUID).path))
+                store = Library.load_folder(FRAME_FOLDER_UUID)
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Folder(Path(Library.load_folder(CACHE_FOLDER_UUID).path))
+            store = Library.load_folder(CACHE_FOLDER_UUID)
             self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         # print(f.points)
@@ -209,9 +209,7 @@ class FlowJsonLink:
                         target_point.datum = node['value']
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
                     elif node.get('uuid') is not None:
-                        # TODO? FolderクラスはコンストラクタにPathを指定するが、loadではuuidからframeを取ってきて
-                        # frameが持つpath属性から取得先を取得できるので使わなくなった。とりあえず空のpathを入れている。
-                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('')))
+                        self.put_loader(node.get('uuid'), target_point, flow, Folder)
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                         target_point.cache = False
         return flow
