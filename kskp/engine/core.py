@@ -79,7 +79,7 @@ class Step:
 
 class Flow(Datum):
     def __init__(self):
-        super().__init__()
+        super().__init__(None, 'flow', None)
 
         self.i_ports = []
         self.o_ports = []
