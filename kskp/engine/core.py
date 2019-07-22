@@ -26,6 +26,10 @@ class Job:
             last_modules = []
             for point_datum in self.step.runnable.results.values():
                 last_modules.append(point_datum.content)
+
+            module_list = self.step.runnable.get_module_list()
+            last_modules.extend(module_list)
+
             # 実行
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
@@ -88,10 +92,14 @@ class Flow(Datum):
         self.points = []
         self.substeps = []
 
-        # TODO:Flowに持たせるのではなく、どこか共通の場所にする
-        from kskp.store import FrameStore
+        # TODO:FrameStoreは外部にあるべき？
+        # contextに'framestore'というキーを作ってそこに入れる？
+        # それともこのままでいい？
+        from kskp.store import FrameStore, ModuleStore
         self.cache_store = FrameStore()
         self.lasts_store = FrameStore()
+
+        self.module_store = ModuleStore()
 
     @property
     def lasts(self):
@@ -238,9 +246,17 @@ class Flow(Datum):
             # それぞれのpointに結果を格納する
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
-                output_point.datum = result[output_point.o_port.name]
+                output_point.datum = result.pop(output_point.o_port.name)
                 self.put_datum_in_store(output_point.id, output_point.datum)
                 # print('output_point:', output_point)
+
+            # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
+            # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
+            # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
+            from kskp.store import RunfuncCommand
+            if isinstance(step.runnable, RunfuncCommand):
+                for value in result.values():
+                    self.module_store.append(value.content)
 
     def make_outputs(self):
         """
@@ -301,6 +317,16 @@ class Flow(Datum):
         for point in self.points:
             if point.id == point_id:
                 return point
+
+    def get_module_list(self):
+        """
+        substepsのmoduleをextendして返す
+        """
+        for substep in self.substeps:
+            if isinstance(substep.runnable, Flow):
+                self.module_store.extend(substep.runnable.get_module_list())
+
+        return self.module_store.module_list
 
     def dtor(self):
         self.cache_store.save()
