@@ -5,7 +5,9 @@ import uuid
 from pathlib import Path
 
 from kskp.engine import Flow, Step, Point, Tube
-from kskp.store import FlowLink, CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, Library, Folder
+from kskp.store import FlowLink, CommandLink, Port, Library, Folder
+
+root = Library.load_root()
 
 class FlowJsonLink:
     """
@@ -54,13 +56,13 @@ class FlowJsonLink:
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Library.load_folder(FRAME_FOLDER_UUID)
+                store = Library.load_folder(root.uuid)
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Library.load_folder(CACHE_FOLDER_UUID)
+            store = Library.load_folder(root.uuid)
             self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         # print(f.points)
