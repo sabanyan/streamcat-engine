@@ -1682,7 +1682,7 @@ ryudo = {
       },
       "invalid": {},
       "error": {},
-      "id": "compdata20190319.csv",
+      "id": "i",
       "type": "frame",
       "label": "測定データ",
       "uuid": "ryudo_demo",
@@ -1724,7 +1724,7 @@ ryudo = {
       "type": "command",
       "label": "csvチェック",
       "srcs": {
-        "i": "compdata20190319.csv"
+        "i": "i"
       },
       "dsts": {
         "o": "d1"
@@ -1776,7 +1776,7 @@ ryudo = {
       "type": "command",
       "label": "項目確認",
       "srcs": {
-        "i": "compdata20190319.csv"
+        "i": "i"
       },
       "dsts": {
         "o": "d2"
@@ -1822,7 +1822,7 @@ ryudo = {
       "type": "command",
       "label": "撮像時間のフォーマット変換",
       "srcs": {
-        "i": "compdata20190319.csv"
+        "i": "i"
       },
       "dsts": {
         "o": "d4"
@@ -2241,7 +2241,7 @@ ryudo = {
       "args": {
         "時系列集計key": "撮像時間_min"
       },
-      "uuid": "ryudo_sub1_demo1"
+      "uuid": "bd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -2285,7 +2285,7 @@ ryudo = {
       "args": {
         "時系列集計key": "撮像時間_5min"
       },
-      "uuid": "ryudo_sub1_demo1"
+      "uuid": "bd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -2346,7 +2346,7 @@ ryudo = {
       "args": {
         "時系列集計key": "撮像時間_min"
       },
-      "uuid": "ryudo_sub2_demo1"
+      "uuid": "bd27d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -2424,7 +2424,7 @@ ryudo = {
       "args": {
         "時系列集計key": "撮像時間_hr"
       },
-      "uuid": "ryudo_sub1_demo1"
+      "uuid": "bd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -2666,7 +2666,7 @@ ryudo = {
       "args": {
         "時系列集計key": "撮像時間_sec"
       },
-      "uuid": "ryudo_sub1_demo1"
+      "uuid": "bd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -3596,7 +3596,7 @@ shindo = {
       },
       "invalid": {},
       "error": {},
-      "id": "180127_1535_4sensor_5sec.csv",
+      "id": "i",
       "type": "frame",
       "label": "4sensor_5sec.csv",
       "uuid": "2500",
@@ -3638,7 +3638,7 @@ shindo = {
       "type": "command",
       "label": "CSV検査",
       "srcs": {
-        "i": "180127_1535_4sensor_5sec.csv"
+        "i": "i"
       },
       "dsts": {
         "o": "d1"
@@ -3706,7 +3706,7 @@ shindo = {
         "d3": "d2"
       },
       "args": {},
-      "uuid": "shindo_sub1_demo1"
+      "uuid": "ad87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -3848,7 +3848,7 @@ shindo = {
       "type": "command",
       "label": "CSV検査",
       "srcs": {
-        "i": "180127_1535_4sensor_5sec.csv"
+        "i": "i"
       },
       "dsts": {
         "o": "d5"
@@ -3943,7 +3943,7 @@ shindo = {
         "d11": "d7"
       },
       "args": {},
-      "uuid": "shindo_sub2_demo1"
+      "uuid": "bd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4051,7 +4051,7 @@ shindo = {
         "name": "DATA_SOURCE",
         "value": "25.6kHz"
       },
-      "uuid": "shindo_sub3_demo1"
+      "uuid": "cd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4097,7 +4097,7 @@ shindo = {
         "name": "DATA_SOURCE",
         "value": "17.1kHz"
       },
-      "uuid": "shindo_sub3_demo1"
+      "uuid": "cd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4200,7 +4200,7 @@ shindo = {
         "d4": "d12"
       },
       "args": {},
-      "uuid": "shindo_sub4_demo1"
+      "uuid": "dd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4242,7 +4242,7 @@ shindo = {
         "d3": "d13"
       },
       "args": {},
-      "uuid": "shindo_sub1_demo1"
+      "uuid": "ad87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4363,7 +4363,7 @@ shindo = {
         "d3": "d15"
       },
       "args": {},
-      "uuid": "shindo_sub1_demo1"
+      "uuid": "ad87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4409,7 +4409,7 @@ shindo = {
         "sensor_list": "3H,3V,4H,4V",
         "feature_list": "count:件数,min:最小,max:最大,mean:平均,sd:標準偏差,range:値域,cv:変動係数"
       },
-      "uuid": "shindo_sub5_demo1"
+      "uuid": "ed87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4540,7 +4540,7 @@ shindo = {
         "d3": "d19"
       },
       "args": {},
-      "uuid": "shindo_sub1_demo1"
+      "uuid": "ad87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4599,7 +4599,7 @@ shindo = {
         "d3": "d21"
       },
       "args": {},
-      "uuid": "shindo_sub1_demo1"
+      "uuid": "ad87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
@@ -4686,7 +4686,7 @@ shindo = {
         "d1": "d23"
       },
       "args": {},
-      "uuid": "shindo_sub6_demo1"
+      "uuid": "fd87d38d-060e-4304-8610-63d93629a676"
     },
     {
       "position": {
