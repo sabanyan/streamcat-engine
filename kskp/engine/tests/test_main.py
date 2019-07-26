@@ -51,8 +51,6 @@ class ExecuteTestCase(unittest.TestCase):
     実際のフロー実行のテスト
     """
 
-    RESULT_DIR = STORE_DIR / 'frames/csv/フロー実行結果/'
-    CACHE_DIR = STORE_DIR / 'frames/csv/フロー実行キャッシュ/'
     TESTDATA_DIR = STORE_DIR / 'frames/csv/'
 
     # mコマンド１つのフロー
@@ -517,6 +515,8 @@ class ExecuteTestCase(unittest.TestCase):
         """
         rootFolderを削除する
         """
+        from kskp.store import FLOW_FOLDER_UUID
+        Library.delete_folder(FLOW_FOLDER_UUID)
         root.delete()
 
     def setUp(self):
@@ -546,7 +546,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
@@ -594,7 +594,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
@@ -643,7 +643,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
@@ -719,7 +719,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
@@ -795,8 +795,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d2, correct['d2'])
         self.assertEqual(result_d3, correct['d3'])
 
@@ -874,7 +874,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
@@ -897,7 +897,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
@@ -918,8 +918,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d2, correct['d2'])
         self.assertEqual(result_d3, correct['d3'])
 
@@ -949,7 +949,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d3 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result_d3, correct['d2'])
 
         # 後片付け
@@ -977,7 +977,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d3, correct['d3'])
 
         # 後片付け
@@ -997,7 +997,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
         self.assertIsNone(lasts.get('d3'))
 
@@ -1018,7 +1018,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
         self.assertIsNone(lasts.get('d2'))
 
@@ -1079,8 +1079,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
-        result_d4 = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid)
         self.assertEqual(result_d3, correct['d3'])
         self.assertEqual(result_d4, correct['d4'])
 
@@ -1142,7 +1142,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
         self.assertIsNone(lasts.get('d4'))
 
@@ -1202,7 +1202,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d4'].uuid)
         self.assertEqual(result, correct['d4'])
         self.assertIsNone(lasts.get('d3'))
 
@@ -1231,7 +1231,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
@@ -1254,9 +1254,9 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
 
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
-        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
         # 後片付け
@@ -1324,7 +1324,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR, header=False)
+        result = get_frame_by_uuid(lasts['dd3'].uuid, header=False)
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
@@ -1392,7 +1392,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR, header=False)
+        result = get_frame_by_uuid(lasts['dd3'].uuid, header=False)
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
@@ -1460,7 +1460,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR, header=False)
+        result = get_frame_by_uuid(lasts['dd2'].uuid, header=False)
         self.assertEqual(result, correct['dd2'])
 
         # 後片付け
@@ -1528,8 +1528,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
-        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd3, correct['dd3'])
 
@@ -1600,7 +1600,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['dd2'].uuid)
         self.assertEqual(result, correct['dd2'])
 
         # 後片付け
@@ -1669,14 +1669,14 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['dd3'].uuid)
         self.assertEqual(result, correct['dd3'])
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # @unittest.skip
+    # # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1794,8 +1794,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['dd4'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, self.RESULT_DIR)
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
+        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
         self.assertEqual(result_dd4, correct['dd4'])
         self.assertEqual(result_dd5, correct['dd5'])
 
@@ -1922,7 +1922,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['dd5'].uuid)
         self.assertEqual(result, correct['dd5'])
 
         # 後片付け
@@ -2048,8 +2048,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd5, correct['dd5'])
 
@@ -2135,7 +2135,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
-        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
         cache_uuids = []
@@ -2233,7 +2233,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
-        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
         cache_uuids = []
@@ -2378,11 +2378,12 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
+
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd4'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
-        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid, self.RESULT_DIR)
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid, self.RESULT_DIR)
+        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
         self.assertEqual(result_dd4, correct['dd4'])
         self.assertEqual(result_dd5, correct['dd5'])
 
@@ -2465,8 +2466,8 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
-        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd3, correct['dd3'])
 
@@ -2537,8 +2538,8 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid, self.RESULT_DIR)
-        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid, self.RESULT_DIR)
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid)
         self.assertEqual(result_dd2, correct['dd2'])
         self.assertEqual(result_dd3, correct['dd3'])
 
@@ -2573,7 +2574,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
@@ -2659,7 +2660,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
-        result = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
         # 後片付け
@@ -2695,8 +2696,8 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
-        result_d4 = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid)
         self.assertEqual(result_d3, correct['d3'])
         self.assertEqual(result_d4, correct['d4'])
 
@@ -2740,8 +2741,8 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
-        result_d4 = get_frame_by_uuid(lasts['d4'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid)
         self.assertEqual(result_d3, correct['d3'])
         self.assertEqual(result_d4, correct['d4'])
 
@@ -2770,7 +2771,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # 後片付け
@@ -2815,7 +2816,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
@@ -2861,7 +2862,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
-        result = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
 
         # 後片付け
@@ -2898,7 +2899,7 @@ class ExecuteTestCase(unittest.TestCase):
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
-        result = get_frame_by_uuid(lasts['d1'].uuid, self.RESULT_DIR)
+        result = get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         cache_uuids = []
@@ -2944,8 +2945,8 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d2 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d2, correct['d2'])
         self.assertEqual(result_d3, correct['d3'])
 
@@ -2986,7 +2987,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d3 = get_frame_by_uuid(lasts['d2'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result_d3, correct['d2'])
 
         # 後片付け
@@ -3025,7 +3026,7 @@ class ExecuteTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result_d3 = get_frame_by_uuid(lasts['d3'].uuid, self.RESULT_DIR)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d3, correct['d3'])
 
         # 後片付け
@@ -3034,7 +3035,7 @@ class ExecuteTestCase(unittest.TestCase):
 
 
 # Helpler
-def get_frame_by_uuid(uuid, dir_path, header=True):
+def get_frame_by_uuid(uuid, header=True):
     """
     指定したuuidのframeを取得する
     """

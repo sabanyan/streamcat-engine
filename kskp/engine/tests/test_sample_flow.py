@@ -27,6 +27,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         """
         rootFolderを削除する
         """
+        from kskp.store import FLOW_FOLDER_UUID
+        Library.delete_folder(FLOW_FOLDER_UUID)
         root.delete()
 
     # @unittest.skip
