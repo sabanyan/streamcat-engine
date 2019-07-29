@@ -1,4 +1,5 @@
 import os
+import copy
 import json
 import uuid
 import unittest
@@ -582,7 +583,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
@@ -631,7 +632,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
@@ -705,7 +706,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
@@ -780,7 +781,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
@@ -860,7 +861,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
@@ -934,7 +935,7 @@ class ExecuteTestCase(unittest.TestCase):
         oだけ設置
         """
         # 出力uを消す
-        flow_json = json.loads(json.dumps(self.flow_data_outputs))
+        flow_json = copy.deepcopy(self.flow_data_outputs)
         for node in flow_json['nodes']:
             if node['id'] == 'c1':
                 node['dsts'] = {'o': 'd2'}
@@ -962,7 +963,7 @@ class ExecuteTestCase(unittest.TestCase):
         uだけ設置
         """
         # 出力oを消す
-        flow_json = json.loads(json.dumps(self.flow_data_outputs))
+        flow_json = copy.deepcopy(self.flow_data_outputs)
         for node in flow_json['nodes']:
             if node['id'] == 'c1':
                 node['dsts'] = {'u': 'd3'}
@@ -1065,7 +1066,7 @@ class ExecuteTestCase(unittest.TestCase):
           "commandId": "mselstr"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
@@ -1129,7 +1130,7 @@ class ExecuteTestCase(unittest.TestCase):
           "commandId": "mselstr"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
@@ -1189,7 +1190,7 @@ class ExecuteTestCase(unittest.TestCase):
           "commandId": "mselstr"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
@@ -1676,7 +1677,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # # @unittest.skip
+    # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1776,7 +1777,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(json_mainflow))
+        json_flow = copy.deepcopy(json_mainflow)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_1)
@@ -1905,7 +1906,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(json_mainflow))
+        json_flow = copy.deepcopy(json_mainflow)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_1)
@@ -2030,7 +2031,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(json_mainflow))
+        json_flow = copy.deepcopy(json_mainflow)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_1)
@@ -2117,7 +2118,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
@@ -2125,7 +2126,7 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = Library.save_flow(root.uuid, 'test', json.dumps(json_flow))
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
 
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
@@ -2141,7 +2142,7 @@ class ExecuteTestCase(unittest.TestCase):
         cache_uuids = []
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d2']]
         for node in cache_nodes:
             # キャッシュが生成されているか
@@ -2215,7 +2216,7 @@ class ExecuteTestCase(unittest.TestCase):
         }
 
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
@@ -2223,7 +2224,7 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = Library.save_flow(root.uuid, 'test', json.dumps(json_flow))
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
 
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
@@ -2239,7 +2240,7 @@ class ExecuteTestCase(unittest.TestCase):
         cache_uuids = []
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d3']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
@@ -2358,7 +2359,7 @@ class ExecuteTestCase(unittest.TestCase):
           "cacheCreatedAt": ""
         }
 
-        json_flow = json.loads(json.dumps(json_mainflow))
+        json_flow = copy.deepcopy(json_mainflow)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_1)
@@ -2366,7 +2367,7 @@ class ExecuteTestCase(unittest.TestCase):
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = Library.save_flow(root.uuid, 'test', json.dumps(json_flow))
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
@@ -2390,7 +2391,7 @@ class ExecuteTestCase(unittest.TestCase):
         cache_uuids = []
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['dd2', 'dd5']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
@@ -2637,7 +2638,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd_1)
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_cmd_2)
@@ -2680,7 +2681,8 @@ class ExecuteTestCase(unittest.TestCase):
 
         flow = Library.load_flow(sub_uuid)
 
-        flow_link = FlowJsonLink(json.loads(flow.data)['flow'])
+        flow_link = FlowJsonLink(json.dumps(flow.flow_data))
+
         inputs = {
             'd1': [["顧客", "数量", "金額"],
                 ["A", 1, 10],
@@ -2718,7 +2720,7 @@ class ExecuteTestCase(unittest.TestCase):
         create_flow('sub3', sub_uuid)
 
         flow = Library.load_flow(sub_uuid)
-        flow_link = FlowJsonLink(json.loads(flow.data)['flow'])
+        flow_link = FlowJsonLink(json.dumps(flow.flow_data))
 
         inputs = {
             'd1': [["顧客", "数量", "金額"],
@@ -2805,7 +2807,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
@@ -2851,7 +2853,7 @@ class ExecuteTestCase(unittest.TestCase):
           "dataSource": "csv"
         }
 
-        json_flow = json.loads(json.dumps(self.flow_data))
+        json_flow = copy.deepcopy(self.flow_data)
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
@@ -2890,7 +2892,7 @@ class ExecuteTestCase(unittest.TestCase):
         update_flow_node_uuid(self.flow_data_use_mchkcsv, 'i', frame_uuid)
 
         # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
-        flow = Library.save_flow(root.uuid, 'test', json.dumps(self.flow_data_use_mchkcsv))
+        flow = Library.save_flow(root.uuid, 'test', self.flow_data_use_mchkcsv)
 
         flow_link = FlowUuidLink(flow.uuid)
         lasts = execute(flow_link, {}, {})
@@ -2905,7 +2907,7 @@ class ExecuteTestCase(unittest.TestCase):
         cache_uuids = []
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d1']]
         for node in cache_nodes:
             # キャッシュが生成されているか
@@ -2972,7 +2974,7 @@ class ExecuteTestCase(unittest.TestCase):
         update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
 
         # 出力uを消す
-        flow_json = json.loads(json.dumps(self.flow_data_outputs_pcmd))
+        flow_json = self.flow_data_outputs_pcmd
         for node in flow_json['nodes']:
             if node['id'] == 'c1':
                 node['dsts'] = {'o': 'd2'}
@@ -3011,7 +3013,7 @@ class ExecuteTestCase(unittest.TestCase):
         update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
 
         # 出力oを消す
-        flow_json = json.loads(json.dumps(self.flow_data_outputs_pcmd))
+        flow_json = self.flow_data_outputs_pcmd
         for node in flow_json['nodes']:
             if node['id'] == 'c1':
                 node['dsts'] = {'u': 'd3'}

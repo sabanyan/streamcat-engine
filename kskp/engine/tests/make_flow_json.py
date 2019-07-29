@@ -11,7 +11,7 @@ def create_flow(flow_id, uuid):
     """
     root = Library.load_root()
     flow_json = test_json[flow_id]
-    flow = Library.save_flow(root.uuid, 'test', json.dumps(flow_json))
+    flow = Library.save_flow(root.uuid, 'test', flow_json)
     flow.uuid = uuid
     return flow
 

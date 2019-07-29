@@ -45,12 +45,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         main_uuid = str(uuid.uuid4())
         flow = create_flow('ni', main_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
@@ -83,12 +83,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         main_uuid = str(uuid.uuid4())
         flow = create_flow('ni', main_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
@@ -108,7 +108,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Library.load_frame(frame_uuid).remove_reference_only()
 
     # @unittest.skip
-    def test_ni_flow_execute_generate_four_caches(self):
+    def test_ni_flow_execute_generate_caches(self):
         """
         NI様のフローの実行テスト
         とりあえず全部キャッシュを作成する
@@ -123,7 +123,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow = create_flow('ni', main_uuid)
 
         # キャッシュを設定する
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         for node in flow_json['nodes']:
             if node['type'] == 'frame':
                 if node['uuid'] is None:
@@ -133,7 +133,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
@@ -150,7 +150,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         cache_uuids = []
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != frame_uuid]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
@@ -183,12 +183,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         create_flow('ryudo_sub1', sub1_uuid)
         create_flow('ryudo_sub2', sub2_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         result_uuids = []
@@ -228,7 +228,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         create_flow('ryudo_sub1', sub1_uuid)
         create_flow('ryudo_sub2', sub2_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         # キャッシュを設定する
         for node in flow_json['nodes']:
             if node['type'] == 'frame':
@@ -239,7 +239,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         result_uuids = []
@@ -258,7 +258,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != frame_uuid]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
@@ -293,12 +293,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         create_flow('ryudo_sub1', sub1_uuid)
         create_flow('ryudo_sub2', sub2_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
@@ -342,12 +342,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         create_flow('shindo_sub5', sub5_uuid)
         create_flow('shindo_sub6', sub6_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         result_uuids = []
@@ -400,7 +400,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         create_flow('shindo_sub5', sub5_uuid)
         create_flow('shindo_sub6', sub6_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         # キャッシュを設定する
         for node in flow_json['nodes']:
             if node['type'] == 'frame':
@@ -411,7 +411,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         result_uuids = []
@@ -430,7 +430,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # uuidが書き換わっているかのテスト
         flow = Library.load_flow(flow.uuid)
-        result_json = json.loads(json.loads(flow.data)['flow'])
+        result_json = flow.flow_data
         cache_nodes = [node for node in result_json['nodes'] if node['type'] == 'frame' and node['uuid'] != frame_uuid and node['id'] != 'd1']
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
@@ -477,12 +477,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         create_flow('shindo_sub5', sub5_uuid)
         create_flow('shindo_sub6', sub6_uuid)
 
-        flow_json = json.loads(json.loads(flow.data)['flow'])
+        flow_json = flow.flow_data
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
 
         # uuidを更新する
         from kskp.store import Flow
-        Flow.update_data(flow.uuid, 'test', json.dumps(flow_json), '1')
+        Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
