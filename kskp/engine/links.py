@@ -200,6 +200,13 @@ class FlowJsonLink:
         for node in nodes:
             # pointにdatumを入れていく
             if not self.is_runnable_node(node) and not node['type'] in except_type_list:
+                
+                target_points = [point for point in flow.points if point.id == node['id']]
+                if len(target_points) < 1:
+                    continue
+                else:
+                    target_point = target_points[0]
+
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
                 target_point.label = node.get('label')
