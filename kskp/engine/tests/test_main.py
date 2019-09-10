@@ -1,18 +1,3080 @@
-import unittest
+import os
+import copy
+import json
 import uuid
+import unittest
+import nysol.mcmd as nm
 
-from kskp.engine import main
-from kskp.engine.core import EmptyLink
-from kskp.engine.data import PathFileSource, Frame
-from kskp.mcmd import McmdLink
+from pathlib import Path
 
-class MainTestCase(unittest.TestCase):
-    def test_main(self):
-        result = main.execute(EmptyLink(), {}, {})
-        self.assertEqual(result, {})
+from .make_flow_json import create_flow, delete_flow
 
-    def test_mcut(self):    
-        s = PathFileSource('csv', '', 'a.csv')
-        f = Frame(uuid.uuid4(), s)
-        result = main.execute(McmdLink('mcut'), {'f': 'b,c'}, {'i': f})
-        self.assertEqual(result, {})
+from kskp.engine import execute, FlowJsonLink, FlowUuidLink
+from kskp.store import Library, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR
+
+root = Library.load_root()
+
+class Integer(Datum):
+    """
+    テスト用のクラス
+    下記のSquareCommandで使うdatumをラップするためのもの
+    """
+    def __init__(self):
+        super().__init__(None, 'test', None)
+        self._content = None
+
+    def set_content(self, module):
+        self._content = module
+
+    @property
+    def content(self):
+        return self._content
+
+class Square(Command):
+    """
+    与えられた数値を2乗する
+    テストコード内でのみ使用のため、ここに置いておく
+    """
+    def __init__(self):
+        super().__init__()
+        self.i_ports = [Port('i', 'integer')]
+        self.o_ports = [Port('o_sq', 'integer')]
+
+    def run(self, args, inputs):
+        # 厳密にはframeじゃないが、まぁテスト用のコマンドなので
+        # ラップするのはなんでもいいかなと思いframeにした。
+        frame = Integer()
+        frame.set_content([[inputs['i'][0][0] ** 2]])
+        return {self.o_ports[0].name: frame}
+
+class ExecuteTestCase(unittest.TestCase):
+    """
+    実際のフロー実行のテスト
+    """
+
+    TESTDATA_DIR = STORE_DIR / 'frames/csv/'
+
+    # mコマンド１つのフロー
+    flow_data = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+            "f": "0,1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+      ]
+    }
+
+    # mコマンド１つのフロー（csvから読み取り）
+    flow_data_use_by_csv = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": None,
+          "dataSource": "csv",
+          "uuid": "test_data"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+            "f": "0,1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+      ]
+    }
+
+    # mコマンド１つのフロー（csvから読み取り）
+    # mchkcsv単体の実行テスト用
+    flow_data_use_mchkcsv = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": None,
+          "dataSource": "csv",
+          "uuid": "test_data"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv",
+          "makeCache": True,
+          "cacheCreatedAt": ""
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {},
+          "commandId": "mchkcsv"
+        }
+      ]
+    }
+
+    # inputが2つあるフロー
+    flow_data_inputs = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "id": "i2",
+          "type": "frame",
+          "label": "テストデータ2",
+          "value": [["顧客", "年齢"],
+              ["A", 21],
+              ["B", 31]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i",
+            "m": "i2"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+            "k": "顧客",
+            "f": "年齢"
+          },
+          "commandId": "mjoin"
+        }
+      ]
+    }
+
+    # inputが2つあるフロー（mcat）
+    flow_data_inputs_mcat = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "id": "i2",
+          "type": "frame",
+          "label": "テストデータ2",
+          "value": [["顧客", "数量", "金額"],
+              ["C", 3, 10],
+              ["C", 4, 20]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "*1": "i",
+            "*2": "i2"
+          },
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {},
+          "commandId": "mcat"
+        }
+      ]
+    }
+
+    # inputが0個のあるフロー（mnewnumber）
+    flow_data_inputs_mnewnumber = {
+      "label": "mnewnumber",
+      "ports": [
+        [],
+        []
+      ],
+      "params": [],
+      "description": "",
+      "nodes": [
+        {
+          "type": "frame",
+          "id": "d1",
+          "label": "d1",
+          "uuid": None,
+          "makeCache": False,
+          "cacheCreatedAt": "",
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c",
+          "label": "c",
+          "srcs": {},
+          "dsts": {
+            "o": "d1"
+          },
+          "args": {
+              "a": "No."
+          },
+          "commandId": "mnewnumber"
+        }
+      ]
+    }
+
+    # outputが２つあるフロー
+    flow_data_outputs = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["顧客", "数量", "金額"],
+              ["A", 1, 10],
+              ["A", 2, 20],
+              ["B", 1, 30],
+              ["B", 3, 40],
+              ["B", 1, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d2",
+            "u": "d3"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+      ]
+    }
+
+    # outputが２つあるフロー（独自コマンド）
+    flow_data_outputs_pcmd = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i"
+          },
+          "dsts": {
+            "o": "d2",
+            "u": "d3"
+          },
+          "args": {
+            "f": 2,
+          },
+          "commandId": "selrow"
+        }
+      ]
+    }
+
+    # inputとoutputが２つあるフロー
+    flow_data_outputs_and_inputs = {
+      "label": "テストフロ",
+      "params": [],
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "nodes": [
+        {
+          "id": "i",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["日付", "金額"],
+              ["20080123", 10],
+              ["20080203", 10],
+              ["20080203", 20],
+              ["20080203", 45],
+              ["20080410", 50]],
+          "dataSource": "csv"
+        },
+        {
+          "id": "m",
+          "type": "frame",
+          "label": "テストデータ",
+          "value": [["日付", "金額F", "金額T"],
+              ["20080203", 5, 15],
+              ["20080203", 40, 50]],
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        },
+        {
+          "type": "command",
+          "id": "c1",
+          "label": "c1",
+          "srcs": {
+            "i": "i",
+            "m": "m"
+          },
+          "dsts": {
+            "o": "d2",
+            "u": "d3"
+          },
+          "args": {
+            "k": "日付",
+            "R": "金額F,金額T",
+            "rf": "金額%n"
+          },
+          "commandId": "mnrcommon"
+        }
+      ]
+    }
+
+    @classmethod
+    def tearDownClass(cls):
+        """
+        rootFolderを削除する
+        """
+        from kskp.store import FLOW_FOLDER_UUID
+        Library.delete_folder(FLOW_FOLDER_UUID)
+        root.delete()
+
+    def setUp(self):
+        """
+        フォルダの準備
+        libraryが出力用ディレクトリを作成するため、コメントアウト
+        """
+        pass
+        # def mkdir(path_str):
+        #     result_path = Path(path_str)
+        #     if not result_path.exists():
+        #         result_path.mkdir()
+
+        # mkdir(self.RESULT_DIR)
+        # mkdir(self.CACHE_DIR)
+
+    # @unittest.skip
+    def test_simple_flow_execute(self):
+        """
+        mコマンド１個のフロー実行
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data))
+        lasts = execute(flow_link, {}, {})
+
+        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_two_commands_execute(self):
+        """
+        mコマンド２個のフロー実行
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1'], ['A', '2']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_two_commands_preview(self):
+        """
+        mコマンド２個のフロー実行
+        真ん中のdatumでプレビューする
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow), ['d1'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_three_commands_preview(self):
+        """
+        mコマンド３個のフロー実行
+        ２個目のdatumでプレビューする
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow), ['d2'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1'], ['A', '2']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_three_commands_execute(self):
+        """
+        mコマンド３個のフロー実行（逆Y字の分岐）
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "B"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result_d2, correct['d2'])
+        self.assertEqual(result_d3, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_three_commands_preview_d2(self):
+        """
+        mコマンド３個のフロー実行（逆Y字の分岐）
+        片方（d2）をプレビュー
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "B"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow), ['d2'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1'], ['A', '2']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_inputs(self):
+        """
+        mコマンド１個（２つのinputを持つ）のフロー実行
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1', '10', '21'],
+                          ['A', '2', '20', '21'],
+                          ['B', '1', '30', '31'],
+                          ['B', '3', '40', '31'],
+                          ['B', '1', '50', '31']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロー実行
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
+                   'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result_d2, correct['d2'])
+        self.assertEqual(result_d3, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs_one_side_o(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロー実行
+        oだけ設置
+        """
+        # 出力uを消す
+        flow_json = copy.deepcopy(self.flow_data_outputs)
+        for node in flow_json['nodes']:
+            if node['id'] == 'c1':
+                node['dsts'] = {'o': 'd2'}
+                break
+        flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
+
+        flow_link = FlowJsonLink(json.dumps(flow_json))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result_d3, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs_one_side_u(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロー実行
+        uだけ設置
+        """
+        # 出力oを消す
+        flow_json = copy.deepcopy(self.flow_data_outputs)
+        for node in flow_json['nodes']:
+            if node['id'] == 'c1':
+                node['dsts'] = {'u': 'd3'}
+                break
+        flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
+
+        flow_link = FlowJsonLink(json.dumps(flow_json))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result_d3, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_preview_d2_two_outputs(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロープレビュー
+        oだけのテスト（d2）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), ['d2'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+        self.assertIsNone(lasts.get('d3'))
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_preview_d3_two_outputs(self):
+        """
+        mコマンド１個（２つのoutputを持つ）のフロープレビュー
+        uだけのテスト（d3）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), ['d3'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result, correct['d3'])
+        self.assertIsNone(lasts.get('d2'))
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
+    def test_long_flow_execute_two_outputs(self):
+        """
+        mコマンド2個（２つのoutputを持つ）のフロー実行
+        """
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d4",
+          "label": "d4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3",
+            "u": "d4"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid)
+        self.assertEqual(result_d3, correct['d3'])
+        self.assertEqual(result_d4, correct['d4'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+        Library.delete_frame(lasts['d4'].uuid)
+
+    # @unittest.skip
+    def test_long_flow_preview_d2_two_outputs(self):
+        """
+        mコマンド2個（２つのoutputを持つ）のフロープレビュー
+        oだけのテスト（d3）
+        """
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d4",
+          "label": "d4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3",
+            "u": "d4"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow), ['d3'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1'], ['A', '2']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result, correct['d3'])
+        self.assertIsNone(lasts.get('d4'))
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
+    def test_long_flow_preview_d3_two_outputs(self):
+        """
+        mコマンド2個（２つのoutputを持つ）のフロープレビュー
+        uだけのテスト（d4）
+        """
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d4",
+          "label": "d4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d3",
+            "u": "d4"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow), ['d4'])
+        lasts = execute(flow_link, {}, {})
+        correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d4'].uuid)
+        self.assertEqual(result, correct['d4'])
+        self.assertIsNone(lasts.get('d3'))
+
+        # 後片付け
+        Library.delete_frame(lasts['d4'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_no_inputs_command(self):
+        """
+        mコマンド１個（1つもinputを持たない）のフロー実行
+        mnewnumberの実行テスト
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs_mnewnumber))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['0'],
+                          ['1'],
+                          ['2'],
+                          ['3'],
+                          ['4'],
+                          ["5"],
+                          ["6"],
+                          ["7"],
+                          ["8"],
+                          ["9"]]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_use_mnrcommon(self):
+        """
+        mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
+        mnrcommonの実行テスト
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs_and_inputs))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['20080203', '10'], ['20080203', '45']],
+                   'd3': [['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+        result = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+        Library.delete_frame(lasts['d3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_include_subflow(self):
+        """
+        サブフローを１個をもつフローを実行する
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": [[4]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {},
+                    "srcs": { "i": "dd1" },
+                    "dsts": { "o_sq": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": null
+                },
+                {
+                    "id": "ss2",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
+                },
+                {
+                    "id": "dd3",
+                    "type": "int",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub1', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        correct = {'dd3': [['65536']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['dd3'].uuid, header=False)
+        self.assertEqual(result, correct['dd3'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_include_two_subflows(self):
+        """
+        サブフローを2個をもつフローを実行する
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": [[4]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": null
+                },
+                {
+                    "id": "ss2",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
+                },
+                {
+                    "id": "dd3",
+                    "type": "int",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub1', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        correct = {'dd3': [['4294967296']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['dd3'].uuid, header=False)
+        self.assertEqual(result, correct['dd3'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_preview_include_two_subflows(self):
+        """
+        サブフローを2個をもつフローを実行する
+        真ん中のdatumでプレビューする
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": [[4]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": null
+                },
+                {
+                    "id": "ss2",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd2" },
+                    "dsts": { "d3": "dd3" }
+                },
+                {
+                    "id": "dd3",
+                    "type": "int",
+                    "uuid": null
+                }
+            ]
+        }'''
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub1', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
+        correct = {'dd2': [['256']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['dd2'].uuid, header=False)
+        self.assertEqual(result, correct['dd2'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid)
+        self.assertEqual(result_dd2, correct['dd2'])
+        self.assertEqual(result_dd3, correct['dd3'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd2'].uuid)
+        Library.delete_frame(lasts['dd3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_preview_dd2_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+
+        片方のdatum(dd2)をプレビューする
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
+        correct = {'dd2': [['A', '1'], ['A', '2']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['dd2'].uuid)
+        self.assertEqual(result, correct['dd2'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_preview_dd3_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+
+        片方のdatum(dd3)をプレビューする
+        """
+
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow, ['dd3']), {}, {})
+        correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['dd3'].uuid)
+        self.assertEqual(result, correct['dd3'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd3'].uuid)
+
+    # @unittest.skip
+    def test_complex_flow_execute_include_branch_output_subflows(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        さらにメインフローで結果をそれぞれmcutしている
+        """
+
+        json_mainflow = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": None
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": None
+                }
+            ]
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "dd2"
+          },
+          "dsts": {
+            "o": "dd4"
+          },
+          "args": {
+            "f": "0",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "dd4",
+          "label": "dd4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "dd3"
+          },
+          "dsts": {
+            "o": "dd5"
+          },
+          "args": {
+            "f": "1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "dd5",
+          "label": "dd5",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(json_mainflow)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json.dumps(json_flow)), {}, {})
+        correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd4'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
+        self.assertEqual(result_dd4, correct['dd4'])
+        self.assertEqual(result_dd5, correct['dd5'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd4'].uuid)
+        Library.delete_frame(lasts['dd5'].uuid)
+
+    # @unittest.skip
+    def test_complex_flow_preview_include_branch_output_subflowss(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        さらにメインフローで結果をそれぞれmcutしている
+        dd5をプレビュー
+        """
+
+        json_mainflow = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": None
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": None
+                }
+            ]
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "dd2"
+          },
+          "dsts": {
+            "o": "dd4"
+          },
+          "args": {
+            "f": "0",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "dd4",
+          "label": "dd4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "dd3"
+          },
+          "dsts": {
+            "o": "dd5"
+          },
+          "args": {
+            "f": "1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "dd5",
+          "label": "dd5",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(json_mainflow)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd5']), {}, {})
+        correct = {'dd5': [['1'], ['3'], ['1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = get_frame_by_uuid(lasts['dd5'].uuid)
+        self.assertEqual(result, correct['dd5'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd5'].uuid)
+
+    # @unittest.skip
+    def test_complex_flow_two_preview_include_branch_output_subflowss(self):
+        """
+        おまけ（プレビューを２つしてみた。）
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        さらにメインフローで結果をそれぞれmcutしている
+        """
+
+        json_mainflow = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": None
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": None
+                }
+            ]
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "dd2"
+          },
+          "dsts": {
+            "o": "dd4"
+          },
+          "args": {
+            "f": "0",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "dd4",
+          "label": "dd4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "dd3"
+          },
+          "dsts": {
+            "o": "dd5"
+          },
+          "args": {
+            "f": "1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "dd5",
+          "label": "dd5",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(json_mainflow)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd2', 'dd5']), {}, {})
+        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
+        self.assertEqual(result_dd2, correct['dd2'])
+        self.assertEqual(result_dd5, correct['dd5'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd2'].uuid)
+        Library.delete_frame(lasts['dd5'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_generate_one_cache(self):
+        """
+        mコマンド３個のフロー実行
+        真ん中のdatumをキャッシュする
+        """
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv",
+          "makeCache": True,
+          "cacheCreatedAt": "",
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(flow.uuid)
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        result = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result, correct['d3'])
+
+        cache_uuids = []
+        # uuidが書き換わっているかのテスト
+        flow = Library.load_flow(flow.uuid)
+        result_json = flow.flow_data
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d2']]
+        for node in cache_nodes:
+            # キャッシュが生成されているか
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(Library.load_frame(node['uuid']))
+            cache_uuids.append(node['uuid'])
+
+        # 後片付け
+        delete_flow(flow.uuid)
+        Library.delete_frame(lasts['d3'].uuid)
+        for uuid in cache_uuids:
+            Library.delete_frame(uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_generate_last_cache(self):
+        """
+        mコマンド３個のフロー実行
+        最後のdatumをキャッシュする
+        """
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv",
+          "makeCache": True,
+          "cacheCreatedAt": ""
+        }
+
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
+
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(flow.uuid)
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        result = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result, correct['d3'])
+
+        cache_uuids = []
+        # uuidが書き換わっているかのテスト
+        flow = Library.load_flow(flow.uuid)
+        result_json = flow.flow_data
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d3']]
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(Library.load_frame(node['uuid']))
+            cache_uuids.append(node['uuid'])
+
+        # 後片付け
+        delete_flow(flow.uuid)
+        Library.delete_frame(lasts['d3'].uuid)
+        for uuid in cache_uuids:
+            Library.delete_frame(uuid)
+
+    # @unittest.skip
+    def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
+        """
+        outputが２つのサブフローをもつフローを実行する
+        サブフロー内ではmcutで['顧客', '数量']列を取得し、
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        さらにメインフローで結果をそれぞれmcutしている
+
+        サブフローの出力するdd2と、結果をmcutしたdd5をキャッシュする
+        """
+
+        json_mainflow = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {},
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": True,
+                    "cacheCreatedAt": ""
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": None
+                }
+            ]
+        }
+
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "dd2"
+          },
+          "dsts": {
+            "o": "dd4"
+          },
+          "args": {
+            "f": "0",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "dd4",
+          "label": "dd4",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "dd3"
+          },
+          "dsts": {
+            "o": "dd5"
+          },
+          "args": {
+            "f": "1",
+            "x": True
+          },
+          "commandId": "mcut"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "dd5",
+          "label": "dd5",
+          "uuid": None,
+          "dataSource": "csv",
+          "makeCache": True,
+          "cacheCreatedAt": ""
+        }
+
+        json_flow = copy.deepcopy(json_mainflow)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_datum_2)
+
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        # 単純なlastsのテスト
+        flow_link = FlowUuidLink(flow.uuid)
+        lasts = execute(flow_link, {}, {})
+        correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
+
+        # テスト
+
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd4'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
+        result_dd4 = get_frame_by_uuid(lasts['dd4'].uuid)
+        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
+        self.assertEqual(result_dd4, correct['dd4'])
+        self.assertEqual(result_dd5, correct['dd5'])
+
+        cache_uuids = []
+        # uuidが書き換わっているかのテスト
+        flow = Library.load_flow(flow.uuid)
+        result_json = flow.flow_data
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['dd2', 'dd5']]
+        for node in cache_nodes:
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(Library.load_frame(node['uuid']))
+            cache_uuids.append(node['uuid'])
+
+        # 後片付け
+        delete_flow(flow.uuid)
+        delete_flow(sub_uuid)
+        Library.delete_frame(lasts['dd4'].uuid)
+        Library.delete_frame(lasts['dd5'].uuid)
+        for uuid in cache_uuids:
+            Library.delete_frame(uuid)
+
+    # @unittest.skip
+    def test_simploe_flow_include_subflow_execute_use_flowparam(self):
+        """
+        サブフローが１つのフローを実行する
+        フローパラメータを使用する
+        """
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {
+                        "sensor": "0,1",
+                        "customer": "顧客"
+                    },
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub3', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid)
+        self.assertEqual(result_dd2, correct['dd2'])
+        self.assertEqual(result_dd3, correct['dd3'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd2'].uuid)
+        Library.delete_frame(lasts['dd3'].uuid)
+
+    # @unittest.skip
+    def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
+        """
+        サブフローが１つのフローを実行する
+        1つの項目で2つのフローパラメータを使用する
+        """
+        json_mainflow = '''{
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "frame",
+                    "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+                    "uuid": null
+                },
+                {
+                    "id": "ss1",
+                    "type": "flow",
+                    "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
+                    "args": {
+                        "sensor1": "顧客",
+                        "sensor2": "数量",
+                        "customer": "顧客"
+                    },
+                    "srcs": { "d1": "dd1" },
+                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                },
+                {
+                    "id": "dd2",
+                    "type": "frame",
+                    "uuid": null
+                },
+                {
+                    "id": "dd3",
+                    "type": "frame",
+                    "uuid": null
+                }
+            ]
+        }'''
+
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub4', sub_uuid)
+
+        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
+        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
+        result_dd3 = get_frame_by_uuid(lasts['dd3'].uuid)
+        self.assertEqual(result_dd2, correct['dd2'])
+        self.assertEqual(result_dd3, correct['dd3'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['dd2'].uuid)
+        Library.delete_frame(lasts['dd3'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_data_source_from_csv(self):
+        """
+        1つのmコマンドを持つフローを実行する
+        フローの先頭のdatumのuuidが既に入っている
+        """
+        # テストデータ作成
+        data = [
+            ['顧客', '数量', '金額'],
+            ['A', 1, 10],
+            ['A', 2, 20],
+            ['B', 1, 30],
+            ['B', 3, 40],
+            ['B', 1, 50]
+        ]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'test_data.csv', data)
+        update_flow_node_uuid(self.flow_data_use_by_csv, 'i', frame_uuid)
+
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_use_by_csv))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+        Library.delete_frame(frame_uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_data_source_from_cache(self):
+        """
+        mコマンド３個のフロー実行
+        フローの途中（d2）のdatumのuuidが既に入っている
+        """
+        add_cmd_1 = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {
+            "f": "顧客",
+            "v": "A"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_cmd_2 = {
+          "type": "command",
+          "id": "c3",
+          "label": "c3",
+          "srcs": {
+            "i": "d2"
+          },
+          "dsts": {
+            "o": "d3"
+          },
+          "args": {
+            "f": "数量",
+            "v": "1"
+          },
+          "commandId": "mselstr"
+        }
+
+        add_datum_1 = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": "cache_data",
+          "dataSource": "csv"
+        }
+
+        add_datum_2 = {
+          "type": "frame",
+          "id": "d3",
+          "label": "d3",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd_1)
+        json_flow['nodes'].append(add_datum_1)
+        json_flow['nodes'].append(add_cmd_2)
+        json_flow['nodes'].append(add_datum_2)
+
+        # 中間データ作成
+        data = [
+            ['顧客','数量'],
+            ['A',1],
+            ['A',2]
+        ]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
+        update_flow_node_uuid(json_flow, 'd2', frame_uuid)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['A', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        result = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+        Library.delete_frame(frame_uuid)
+
+    # @unittest.skip
+    def test_simple_subflow_execute_by_append_inputs(self):
+        """
+        1つのサブフローを実行する
+        外部からframeを与えて実行する
+        args指定はなし
+        """
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub2', sub_uuid)
+
+        flow = Library.load_flow(sub_uuid)
+
+        flow_link = FlowJsonLink(json.dumps(flow.flow_data))
+
+        inputs = {
+            'd1': [["顧客", "数量", "金額"],
+                ["A", 1, 10],
+                ["A", 2, 20],
+                ["B", 1, 30],
+                ["B", 3, 40],
+                ["B", 1, 50]]
+        }
+        lasts = execute(flow_link, {}, inputs)
+        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid)
+        self.assertEqual(result_d3, correct['d3'])
+        self.assertEqual(result_d4, correct['d4'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['d3'].uuid)
+        Library.delete_frame(lasts['d4'].uuid)
+
+    # @unittest.skip
+    def test_simple_subflow_execute_by_append_inputs_and_args(self):
+        """
+        1つのサブフローを実行する
+        外部からframeを与えて実行する
+        args指定する
+        """
+        # サブフローの作成
+        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        create_flow('sub3', sub_uuid)
+
+        flow = Library.load_flow(sub_uuid)
+        flow_link = FlowJsonLink(json.dumps(flow.flow_data))
+
+        inputs = {
+            'd1': [["顧客", "数量", "金額"],
+                ["A", 1, 10],
+                ["A", 2, 20],
+                ["B", 1, 30],
+                ["B", 3, 40],
+                ["B", 1, 50]]
+        }
+
+        args = {
+            "sensor": "0,1",
+            "customer": "顧客"
+        }
+
+        lasts = execute(flow_link, args, inputs)
+        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        result_d4 = get_frame_by_uuid(lasts['d4'].uuid)
+        self.assertEqual(result_d3, correct['d3'])
+        self.assertEqual(result_d4, correct['d4'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(sub_uuid))
+        Library.delete_frame(lasts['d3'].uuid)
+        Library.delete_frame(lasts['d4'].uuid)
+
+    @unittest.skip
+    def test_simple_flow_execute_use_mcat(self):
+        """
+        mコマンド１個（２つのinputを持つ）のフロー実行
+        mcatの実行テスト
+        ※結合順不定なので、失敗することもある。（きちんと結合されてはいる）
+        """
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs_mcat))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1': [['A', '1', '10'],
+                          ['A', '2', '20'],
+                          ['B', '1', '30'],
+                          ['B', '3', '40'],
+                          ['B', '1', '50'],
+                          ["C", '3', '10'],
+                          ["C", '4', '20']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_use_nmcmd(self):
+        """
+        mコマンド２個のフロー実行
+        確認したいことはnm.cmdの動作（mchkcsvを実行している）
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {},
+          "commandId": "mchkcsv"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_preview_use_nmcmd(self):
+        """
+        mコマンド２個のフロープレビュー
+        確認したいことはnm.cmdの動作（mchkcsvを実行している）
+        nm.cmdから出るものをプレビューするテスト
+        """
+        add_cmd = {
+          "type": "command",
+          "id": "c2",
+          "label": "c2",
+          "srcs": {
+            "i": "d1"
+          },
+          "dsts": {
+            "o": "d2"
+          },
+          "args": {},
+          "commandId": "mchkcsv"
+        }
+
+        add_datum = {
+          "type": "frame",
+          "id": "d2",
+          "label": "d2",
+          "uuid": None,
+          "dataSource": "csv"
+        }
+
+        json_flow = copy.deepcopy(self.flow_data)
+        json_flow['nodes'].append(add_cmd)
+        json_flow['nodes'].append(add_datum)
+
+        flow_link = FlowJsonLink(json.dumps(json_flow))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        result = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_use_mchkcsv_create_cache(self):
+        """
+        mコマンド1個のフロー実行
+        確認したいことはmchkcsvの動作（nm.cmdより実行している）
+
+        ベータ版のengineではキャッシュの生成時の実行で失敗したので
+        """
+        # テストデータ作成
+        data = [
+            ['顧客', '数量', '金額'],
+            ['A', 1, 10],
+            ['A', 2, 20],
+            ['B', 1, 30],
+            ['B', 3, 40],
+            ['B', 1, 50]
+        ]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
+        update_flow_node_uuid(self.flow_data_use_mchkcsv, 'i', frame_uuid)
+
+        # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
+        flow = Library.save_flow(root.uuid, 'test', self.flow_data_use_mchkcsv)
+
+        flow_link = FlowUuidLink(flow.uuid)
+        lasts = execute(flow_link, {}, {})
+        correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        result = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        cache_uuids = []
+        # uuidが書き換わっているかのテスト
+        flow = Library.load_flow(flow.uuid)
+        result_json = flow.flow_data
+        cache_nodes = [node for node in result_json['nodes'] if node['id'] in ['d1']]
+        for node in cache_nodes:
+            # キャッシュが生成されているか
+            self.assertIsNotNone(node['uuid'])
+            self.assertIsNotNone(Library.load_frame(node['uuid']))
+            cache_uuids.append(node['uuid'])
+
+        # 後片付け
+        delete_flow(flow.uuid)
+        Library.delete_frame(lasts['d1'].uuid)
+        Library.delete_frame(frame_uuid)
+        for uuid in cache_uuids:
+            Library.delete_frame(uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs_pcmd(self):
+        """
+        独自コマンド１個（２つのoutputを持つ）のフロー実行
+        """
+        data = [["顧客", "数量", "金額"],
+            ["A", 1, 10],
+            ["A", 2, 20],
+            ["B", 1, 30],
+            ["B", 3, 40],
+            ["B", 1, 50]]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
+        update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
+        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs_pcmd))
+
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
+                   'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result_d2, correct['d2'])
+        self.assertEqual(result_d3, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+        Library.delete_frame(lasts['d3'].uuid)
+        Library.delete_frame(frame_uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs_pcmd_one_side_o(self):
+        """
+        独自コマンド１個（２つのoutputを持つ）のフロー実行
+        oだけ設置
+        """
+        data = [["顧客", "数量", "金額"],
+            ["A", 1, 10],
+            ["A", 2, 20],
+            ["B", 1, 30],
+            ["B", 3, 40],
+            ["B", 1, 50]]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
+        update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
+
+        # 出力uを消す
+        flow_json = self.flow_data_outputs_pcmd
+        for node in flow_json['nodes']:
+            if node['id'] == 'c1':
+                node['dsts'] = {'o': 'd2'}
+                break
+        flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
+
+        flow_link = FlowJsonLink(json.dumps(flow_json))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(result_d3, correct['d2'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d2'].uuid)
+        Library.delete_frame(frame_uuid)
+
+    # @unittest.skip
+    def test_simple_flow_execute_two_outputs_pcmd_one_side_u(self):
+        """
+        独自コマンド１個（２つのoutputを持つ）のフロー実行
+        uだけ設置
+        """
+        data = [["顧客", "数量", "金額"],
+            ["A", 1, 10],
+            ["A", 2, 20],
+            ["B", 1, 30],
+            ["B", 3, 40],
+            ["B", 1, 50]]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
+        update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
+
+        # 出力oを消す
+        flow_json = self.flow_data_outputs_pcmd
+        for node in flow_json['nodes']:
+            if node['id'] == 'c1':
+                node['dsts'] = {'u': 'd3'}
+                break
+        flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
+
+        flow_link = FlowJsonLink(json.dumps(flow_json))
+        lasts = execute(flow_link, {}, {})
+        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result_d3 = get_frame_by_uuid(lasts['d3'].uuid)
+        self.assertEqual(result_d3, correct['d3'])
+
+        # 後片付け
+        Library.delete_frame(lasts['d3'].uuid)
+        Library.delete_frame(frame_uuid)
+
+
+# Helpler
+def get_frame_by_uuid(uuid, header=True):
+    """
+    指定したuuidのframeを取得する
+    """
+    import csv
+    result = []
+    frame = Library.load_frame(uuid)
+    with open(frame.path, 'r') as f:
+        rows = csv.reader(f)
+        if header:
+            header = next(rows)
+        for row in rows:
+            result.append(row)
+
+    return result
+
+def write_data_to_json(path, data):
+    """
+    データをJSONとしてファイルに書き込むヘルパー
+    """
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def create_data(file_path_obj, data=None):
+    """
+    テストデータ作成用
+    frameのuuidが返る
+    """
+    if data is not None:
+        nm.mread(i=data, o=file_path_obj.as_posix()).run()
+    frame = Library.save_frame(root.uuid, str(uuid.uuid4()), file_path_obj)
+    return frame.uuid
+
+def update_flow_node_uuid(flow_json, node_id, uuid):
+    """
+    指定したflow_jsonのnode_idをuuidで更新する
+    """
+    for node in flow_json['nodes']:
+        if node['id'] == node_id:
+            node['uuid'] = uuid
+            return True
+    return False

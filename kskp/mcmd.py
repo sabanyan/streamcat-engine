@@ -1,46 +1,46 @@
-import re # for MCMDError
+import io
+import sys
 
-from kskp.engine.core import Command, UnixCommand, Parameter, Port
-from kskp.engine.data import UnixCommandSource
+class Mcommand():
+    def run(self, args, inputs):        
+        with io.StringIO() as messages_mem:
+            with RedirectStdStreams(stderr=messages_mem):
+                # 実際の内部の処理を呼び出す
+                res = self.run_internal(args, inputs)
+            
+                messages = messages_mem.getvalue()
+                
+                if '#ERROR#' in messages:
+                    content = [lin for lin in messages.split('\n') if lin.startswith('#ERROR#') and 'kgshell' not in lin][0]
+                    err = MCMDError([MCMDErrorInfo.parse_stderr(content)])
 
-class McmdLink:
-    def __init__(self, id):
-        self.id = id
+                    print(err)
 
-    def resolve(self):
-        if self.id == 'mcut':
-            return McutOld()
-        else:
-            return Command()
+                    raise err
+                else:
+                    return res
 
-class MCommand(UnixCommand):
+    def run_internal(self, args, inputs):
+        """ override用 """
+        return ''
 
-    def command_args(self, args, inputs):
-        res = self.name.split()
-        for k, v in args.items():
-            # booleanに対応していないのでひとまず
-            if k == 'x':
-                if v == True or v == "true":
-                    res.append('-x')
-            elif k == 'rng':
-                if v == True:
-                    res.append('-rng')
-            elif k == 'r':
-                if v == True or v == "true":
-                    res.append('-r')
-            else:
-                res.append('%s=%s' % (k, v))
-        return res
-
-    # @property
-    def source(self, args, inputs):
-        return UnixCommandSource('csv', self.command_args(args, inputs), stdin=self.stdin(inputs))
+class McutTest(Mcommand):
+    def run_internal(self, args, inputs):
+        import nysol.mcmd as nm
+        return nm.mcut(i=inputs['i'], f=args['f']).run(msg='on') # amountをtypoしている
 
 class MCMDError(Exception):
-    def __init__(self, description, input, output, called_at):
+    def __init__(self, errors):
+        self.errors = errors
+
+    def __repr__(self):
+        return repr(self.errors[0])
+
+class MCMDErrorInfo():
+    def __init__(self, description, input_n, output_n, called_at):
         self.description = description
-        self.number_of_input = input
-        self.number_of_output = output
+        self.number_of_input = input_n
+        self.number_of_output = output_n
         self.called_at = called_at
 
     @classmethod
@@ -54,25 +54,85 @@ class MCMDError(Exception):
         ss = s.split(';')
 
         # 入力と出力の件数をパースする
-        io = re.search(r'IN=(\d+) OUT=(\d+)', ss[2]).groups()
+        if len(ss) >= 3:
+            import re
+            io = re.search(r'IN=(\d+) OUT=(\d+)', ss[2]).groups()
+            return cls(ss[0].replace('#ERROR#', ''), int(io[0]), int(io[1]), ss[3])
+        else:
+            print('re:', s)
 
-        return cls(ss[0].replace('#ERROR# ', ''), int(io[0]), int(io[1]), ss[3])
+    def __repr__(self):
+        return f'MCMDError:{self.description}'
 
-class Mcut(Command):
-    def __init__(self):
-        self.id = 'mcut'
-        self.i_ports = [Port('i', 'frame')]
-        self.o_ports = [Port('o', 'frame')]
-        self.params = []   
-        self.params.append(Parameter('f', '対象列名(必須)'))
-        self.description = '列選択'
+class RedirectStdStreams(object):
+    def __init__(self, stdout=None, stderr=None):
+        self._stdout = stdout or sys.stdout
+        self._stderr = stderr or sys.stderr
 
-    def run(self, args, inputs):
-        pass
+    def __enter__(self):
+        self.old_stdout, self.old_stderr = sys.stdout, sys.stderr
+        self.old_stdout.flush(); self.old_stderr.flush()
+        sys.stdout, sys.stderr = self._stdout, self._stderr
 
-class McutOld(MCommand):
-    def __init__(self):
-        super().__init__()
-        self.name = 'mcut'
-        self.params.append(Parameter('f', '対象列名(必須)'))
-        self.description = '列選択'
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._stdout.flush(); self._stderr.flush()
+        self._stderr.close() # for ResoucredWarning: unclosed file
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
+
+# import re # for MCMDError
+
+# from kskp.engine.core import Command, UnixCommand, Parameter, Port
+# from kskp.engine.data import UnixCommandSource
+
+# class McmdLink:
+#     def __init__(self, id):
+#         self.id = id
+
+#     def resolve(self):
+#         if self.id == 'mcut':
+#             return McutOld()
+#         else:
+#             return Command()
+
+# class MCommand(UnixCommand):
+
+#     def command_args(self, args, inputs):
+#         res = self.name.split()
+#         for k, v in args.items():
+#             # booleanに対応していないのでひとまず
+#             if k == 'x':
+#                 if v == True or v == "true":
+#                     res.append('-x')
+#             elif k == 'rng':
+#                 if v == True:
+#                     res.append('-rng')
+#             elif k == 'r':
+#                 if v == True or v == "true":
+#                     res.append('-r')
+#             else:
+#                 res.append('%s=%s' % (k, v))
+#         return res
+
+#     # @property
+#     def source(self, args, inputs):
+#         return UnixCommandSource('csv', self.command_args(args, inputs), stdin=self.stdin(inputs))
+
+# class Mcut(Command):
+#     def __init__(self):
+#         self.id = 'mcut'
+#         self.i_ports = [Port('i', 'frame')]
+#         self.o_ports = [Port('o', 'frame')]
+#         self.params = []   
+#         self.params.append(Parameter('f', '対象列名(必須)'))
+#         self.description = '列選択'
+
+#     def run(self, args, inputs):
+#         pass
+
+# class McutOld(MCommand):
+#     def __init__(self):
+#         super().__init__()
+#         self.name = 'mcut'
+#         self.params.append(Parameter('f', '対象列名(必須)'))
+#         self.description = '列選択'
