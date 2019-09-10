@@ -5,7 +5,9 @@ import uuid
 from pathlib import Path
 
 from kskp.engine import Flow, Step, Point, Tube
-from kskp.store import CommandLink, Port, FRAME_FOLDER_UUID, CACHE_FOLDER_UUID, FLOW_PATH, Library, Folder
+from kskp.store import FlowLink, CommandLink, Port, Library, Folder
+
+root = Library.load_root()
 
 class FlowJsonLink:
     """
@@ -23,7 +25,7 @@ class FlowJsonLink:
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(Path(FLOW_PATH), node['uuid'])
+            ret = FlowUuidLink(node['uuid'])
 
             # かなりの力技・・・。
             # 実行を行う場合、サブフロー内で余分な処理が走らないように
@@ -54,13 +56,13 @@ class FlowJsonLink:
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Folder(Path(Library.load_folder(FRAME_FOLDER_UUID).path))
+                store = Library.load_folder(root.uuid)
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Folder(Path(Library.load_folder(CACHE_FOLDER_UUID).path))
+            store = Library.load_folder(root.uuid)
             self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         # print(f.points)
@@ -198,6 +200,13 @@ class FlowJsonLink:
         for node in nodes:
             # pointにdatumを入れていく
             if not self.is_runnable_node(node) and not node['type'] in except_type_list:
+                
+                target_points = [point for point in flow.points if point.id == node['id']]
+                if len(target_points) < 1:
+                    continue
+                else:
+                    target_point = target_points[0]
+
                 target_point = [point for point in flow.points if point.id == node['id']][0]
                 target_point.cache = node.get('makeCache')
                 target_point.label = node.get('label')
@@ -209,9 +218,7 @@ class FlowJsonLink:
                         target_point.datum = node['value']
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
                     elif node.get('uuid') is not None:
-                        # TODO? FolderクラスはコンストラクタにPathを指定するが、loadではuuidからframeを取ってきて
-                        # frameが持つpath属性から取得先を取得できるので使わなくなった。とりあえず空のpathを入れている。
-                        self.put_loader(node.get('uuid'), target_point, flow, Folder(Path('')))
+                        self.put_loader(node.get('uuid'), target_point, flow, Folder)
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                         target_point.cache = False
         return flow
@@ -340,22 +347,14 @@ class FlowUuidLink(FlowJsonLink):
     UUIDを元にFlowを返却するリンク
     """
 
-    def __init__(self, source, flow_uuid, last_ids=[]):
-        self.source = source
+    def __init__(self, flow_uuid, last_ids=[]):
         self.flow_uuid = flow_uuid
-        if source is None:
-            super().__init__('''{
-                "ports": [[], []],
-                "nodes": []
-            }''')
-        else:
-            p = self.source.joinpath(f'{flow_uuid}.json')
-            super().__init__(p.read_text(), last_ids)
+        super().__init__(json.dumps(FlowLink(flow_uuid).resolve()), last_ids)
 
     def node2link(self, node):
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(self.source, node['uuid'])
+            ret = FlowUuidLink(node['uuid'])
 
         return ret
