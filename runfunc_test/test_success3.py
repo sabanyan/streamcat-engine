@@ -21,19 +21,20 @@ def Mod(FIFO):
     with open(FIFO, "w") as fifo:
         for line in sys.stdin:
             datum = line.split(',')
+            data_str = ','.join(datum)
 
             # header
             if header:
                 header = False
                 # headerは標準入力、名前付きパイプ両方に出力する
-                print(datum[0] + ',' + datum[1] + ',' + datum[2] + ',' + datum[3])
-                fifo.write(datum[0] + ',' + datum[1] + ',' + datum[2] + ',' + datum[3] + '\n')
+                print(data_str)
+                fifo.write(data_str + '\n')
                 continue
 
             if datum[0] == '275399':
-                print(datum[0] + ',' + datum[1] + ',' + datum[2] + ',' + datum[3])
+                print(data_str)
             else:
-                fifo.write(datum[0] + ',' + datum[1] + ',' + datum[2] + ',' + datum[3] + '\n')
+                fifo.write(data_str + '\n')
 
 def Mod2(FIFO):
     header = True
