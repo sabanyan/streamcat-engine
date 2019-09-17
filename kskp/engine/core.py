@@ -82,8 +82,8 @@ class Step:
                             self.args[step_param] = self.args[step_param].replace(f'@[{g}]', value)
 
 class Flow(Datum):
-    def __init__(self):
-        super().__init__(None, 'flow', None)
+    def __init__(self, label):
+        super().__init__(None, Datum.FLOW_TYPE, label)
 
         self.i_ports = []
         self.o_ports = []
