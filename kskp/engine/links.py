@@ -353,7 +353,9 @@ class FlowUuidLink(FlowJsonLink):
 
     def __init__(self, flow_uuid, last_ids=[]):
         self.flow_uuid = flow_uuid
-        flow_label, flow_data = FlowLink(flow_uuid).resolve()
+        flow_link = FlowLink(flow_uuid)
+        flow_data = flow_link.resolve()
+        flow_label = flow_link.resolve_label()
         super().__init__(flow_label, json.dumps(flow_data), last_ids)
 
     def node2link(self, node):
