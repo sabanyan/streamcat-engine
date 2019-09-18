@@ -34,7 +34,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         import shutil
         shutil.rmtree(root_dir.as_posix())
 
-    @unittest.skip
+    # @unittest.skip
     def test_ni_flow_execute(self):
         """
         NI様のフローの実行テスト
