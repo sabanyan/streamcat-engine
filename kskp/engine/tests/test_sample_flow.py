@@ -20,7 +20,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
     """
     import json
 
-    TESTDATA_DIR = 'kskp/engine/tests/test_data/'
+    # dataテーブルのpath列はkskp-data-storeディレクトリを起点とする相対パスである
+    TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
 
     @classmethod
     def tearDownClass(cls):
@@ -29,7 +30,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         """
         from kskp.store import FLOW_FOLDER_UUID
         Library.delete_folder(FLOW_FOLDER_UUID)
-        root.delete()
+        root_dir = STORE_DIR.parent / Library.load_root().path
+        import shutil
+        shutil.rmtree(root_dir.as_posix())
 
     # @unittest.skip
     def test_ni_flow_execute(self):
@@ -62,7 +65,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         frame = Library.load_frame(uuid)
         self.assertIsNotNone(frame)
-        self.assertTrue(Path(frame.path).exists())
+        self.assertTrue(frame.file_exists)
 
         # 後片付け
         delete_flow(flow.uuid)
@@ -100,7 +103,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         frame = Library.load_frame(uuid)
         self.assertIsNotNone(frame)
-        self.assertTrue(Path(frame.path).exists())
+        self.assertTrue(frame.file_exists)
 
         # 後片付け
         delete_flow(main_uuid)
@@ -145,7 +148,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         # DBにframeデータが生成されているか
         frame = Library.load_frame(uuid)
         self.assertIsNotNone(frame)
-        self.assertTrue(Path(frame.path).exists())
+        self.assertTrue(frame.file_exists)
 
         cache_uuids = []
         # uuidが書き換わっているかのテスト
@@ -200,7 +203,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             # DBにframeデータが生成されているか
             frame = Library.load_frame(datum.uuid)
             self.assertIsNotNone(frame)
-            self.assertTrue(Path(frame.path).exists())
+            self.assertTrue(frame.file_exists)
             result_uuids.append(datum.uuid)
 
         delete_flow(flow.uuid)
@@ -252,7 +255,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             # DBにframeデータが生成されているか
             frame = Library.load_frame(datum.uuid)
             self.assertIsNotNone(frame)
-            self.assertTrue(Path(frame.path).exists())
+            self.assertTrue(frame.file_exists)
             # 後片付け
             result_uuids.append(datum.uuid)
 
@@ -307,7 +310,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         self.assertIsNotNone(lasts['d14'])
         frame = Library.load_frame(lasts['d14'].uuid)
         self.assertIsNotNone(frame)
-        self.assertTrue(Path(frame.path).exists())
+        self.assertTrue(frame.file_exists)
 
         delete_flow(flow.uuid)
         self.assertTrue(delete_flow(sub1_uuid))
@@ -359,7 +362,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             # DBにframeデータが生成されているか
             frame = Library.load_frame(datum.uuid)
             self.assertIsNotNone(frame)
-            self.assertTrue(Path(frame.path).exists())
+            self.assertTrue(frame.file_exists)
             # 後片付け
             result_uuids.append(datum.uuid)
 
@@ -424,7 +427,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             # DBにframeデータが生成されているか
             frame = Library.load_frame(datum.uuid)
             self.assertIsNotNone(frame)
-            self.assertTrue(Path(frame.path).exists())
+            self.assertTrue(frame.file_exists)
             # 後片付け
             result_uuids.append(datum.uuid)
 
@@ -491,7 +494,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         self.assertIsNotNone(lasts['d12'])
         frame = Library.load_frame(lasts['d12'].uuid)
         self.assertIsNotNone(frame)
-        self.assertTrue(Path(frame.path).exists())
+        self.assertTrue(frame.file_exists)
 
         self.assertTrue(delete_flow(main_uuid))
         self.assertTrue(delete_flow(sub1_uuid))
@@ -512,7 +515,7 @@ def get_frame_by_uuid(uuid, dir_path, header=True):
     import csv
     result = []
     frame = Library.load_frame(uuid)
-    with open(frame.path, 'r') as f:
+    with open(STORE_DIR.parent / frame.path, 'r') as f:
         rows = csv.reader(f)
         if header:
             header = next(rows)
@@ -535,6 +538,7 @@ def create_data(file_path_obj, data=None):
     if data is not None:
         nm.mread(i=data, o=file_path_obj.as_posix()).run()
     frame = Library.save_frame(root.uuid, str(uuid.uuid4()), file_path_obj)
+    print(file_path_obj)
     return frame.uuid
 
 def update_flow_node_uuid(flow_json, node_id, uuid):
