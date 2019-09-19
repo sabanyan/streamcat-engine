@@ -333,8 +333,11 @@ class Flow(Datum):
         self.lasts_store.save()
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
-            if isinstance(substep.runnable, Flow):
+            from kskp.store import Command
+            if isinstance(substep.runnable, Flow) or isinstance(substep.runnable, Command):
                 substep.runnable.dtor()
+            else:
+                raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')
 
 class Point:
     """
