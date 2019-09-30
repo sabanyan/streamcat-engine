@@ -52,7 +52,7 @@ class ExecuteTestCase(unittest.TestCase):
     実際のフロー実行のテスト
     """
 
-    TESTDATA_DIR = STORE_DIR / 'frames/csv/'
+    TESTDATA_DIR = STORE_DIR.parent / Library.load_root().path
 
     # mコマンド１つのフロー
     flow_data = {
@@ -518,7 +518,9 @@ class ExecuteTestCase(unittest.TestCase):
         """
         from kskp.store import FLOW_FOLDER_UUID
         Library.delete_folder(FLOW_FOLDER_UUID)
-        root.delete()
+        root_dir = STORE_DIR.parent / Library.load_root().path
+        import shutil
+        shutil.rmtree(root_dir.as_posix())
 
     def setUp(self):
         """
@@ -539,7 +541,7 @@ class ExecuteTestCase(unittest.TestCase):
         """
         mコマンド１個のフロー実行
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data))
+        flow_link = FlowJsonLink(self.flow_data['label'], json.dumps(self.flow_data))
         lasts = execute(flow_link, {}, {})
 
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -587,7 +589,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -636,7 +638,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow), ['d1'])
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d1'])
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -712,7 +714,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow), ['d2'])
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d2'])
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -787,7 +789,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -867,7 +869,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow), ['d2'])
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d2'])
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -886,7 +888,7 @@ class ExecuteTestCase(unittest.TestCase):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs))
+        flow_link = FlowJsonLink(self.flow_data_inputs['label'], json.dumps(self.flow_data_inputs))
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1', '10', '21'],
                           ['A', '2', '20', '21'],
@@ -909,7 +911,7 @@ class ExecuteTestCase(unittest.TestCase):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs))
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
                    'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
@@ -942,7 +944,7 @@ class ExecuteTestCase(unittest.TestCase):
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
 
-        flow_link = FlowJsonLink(json.dumps(flow_json))
+        flow_link = FlowJsonLink(flow_json['label'], json.dumps(flow_json))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
@@ -970,7 +972,7 @@ class ExecuteTestCase(unittest.TestCase):
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
 
-        flow_link = FlowJsonLink(json.dumps(flow_json))
+        flow_link = FlowJsonLink(flow_json['label'], json.dumps(flow_json))
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -990,7 +992,7 @@ class ExecuteTestCase(unittest.TestCase):
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         oだけのテスト（d2）
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), ['d2'])
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs), ['d2'])
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
@@ -1011,7 +1013,7 @@ class ExecuteTestCase(unittest.TestCase):
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         uだけのテスト（d3）
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs), ['d3'])
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs), ['d3'])
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -1071,7 +1073,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1135,7 +1137,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow), ['d3'])
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d3'])
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1'], ['A', '2']]}
 
@@ -1195,7 +1197,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow), ['d4'])
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d4'])
         lasts = execute(flow_link, {}, {})
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1216,7 +1218,8 @@ class ExecuteTestCase(unittest.TestCase):
         mコマンド１個（1つもinputを持たない）のフロー実行
         mnewnumberの実行テスト
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs_mnewnumber))
+        flow_link = FlowJsonLink(self.flow_data_inputs_mnewnumber['label'],
+                                 json.dumps(self.flow_data_inputs_mnewnumber))
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['0'],
                           ['1'],
@@ -1244,7 +1247,8 @@ class ExecuteTestCase(unittest.TestCase):
         mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
         mnrcommonの実行テスト
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs_and_inputs))
+        flow_link = FlowJsonLink(self.flow_data_outputs_and_inputs['label'],
+                                 json.dumps(self.flow_data_outputs_and_inputs))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['20080203', '10'], ['20080203', '45']],
                    'd3': [['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
@@ -1318,7 +1322,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub1', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow), {}, {})
         correct = {'dd3': [['65536']]}
 
         # テスト
@@ -1386,7 +1390,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub1', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow), {}, {})
         correct = {'dd3': [['4294967296']]}
 
         # テスト
@@ -1454,7 +1458,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub1', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd2']), {}, {})
         correct = {'dd2': [['256']]}
 
         # テスト
@@ -1521,7 +1525,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -1594,7 +1598,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow, ['dd2']), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd2']), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
         # テスト
@@ -1663,7 +1667,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow, ['dd3']), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd3']), {}, {})
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -1787,7 +1791,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json.dumps(json_flow)), {}, {})
+        lasts = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow)), {}, {})
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
@@ -1916,7 +1920,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd5']), {}, {})
+        lasts = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['dd5']), {}, {})
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
@@ -2041,7 +2045,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json.dumps(json_flow), ['dd2', 'dd5']), {}, {})
+        lasts = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['dd2', 'dd5']), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
@@ -2460,7 +2464,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub3', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2532,7 +2536,7 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub4', sub_uuid)
 
-        lasts = execute(FlowJsonLink(json_mainflow), {}, {})
+        lasts = execute(FlowJsonLink('メインフロー', json_mainflow), {}, {})
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2568,7 +2572,8 @@ class ExecuteTestCase(unittest.TestCase):
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'test_data.csv', data)
         update_flow_node_uuid(self.flow_data_use_by_csv, 'i', frame_uuid)
 
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_use_by_csv))
+        flow_link = FlowJsonLink(self.flow_data_use_by_csv['label'],
+                                 json.dumps(self.flow_data_use_by_csv))
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2654,7 +2659,7 @@ class ExecuteTestCase(unittest.TestCase):
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
         update_flow_node_uuid(json_flow, 'd2', frame_uuid)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['A', '1']]}
 
@@ -2681,7 +2686,7 @@ class ExecuteTestCase(unittest.TestCase):
 
         flow = Library.load_flow(sub_uuid)
 
-        flow_link = FlowJsonLink(json.dumps(flow.flow_data))
+        flow_link = FlowJsonLink(flow.flow_data['label'], json.dumps(flow.flow_data))
 
         inputs = {
             'd1': [["顧客", "数量", "金額"],
@@ -2720,7 +2725,7 @@ class ExecuteTestCase(unittest.TestCase):
         create_flow('sub3', sub_uuid)
 
         flow = Library.load_flow(sub_uuid)
-        flow_link = FlowJsonLink(json.dumps(flow.flow_data))
+        flow_link = FlowJsonLink(flow.flow_data['label'], json.dumps(flow.flow_data))
 
         inputs = {
             'd1': [["顧客", "数量", "金額"],
@@ -2760,7 +2765,8 @@ class ExecuteTestCase(unittest.TestCase):
         mcatの実行テスト
         ※結合順不定なので、失敗することもある。（きちんと結合されてはいる）
         """
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_inputs_mcat))
+        flow_link = FlowJsonLink(self.flow_data_inputs_mcat['label'],
+                                 json.dumps(self.flow_data_inputs_mcat))
         lasts = execute(flow_link, {}, {})
         correct = {'d1': [['A', '1', '10'],
                           ['A', '2', '20'],
@@ -2811,7 +2817,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2857,7 +2863,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        flow_link = FlowJsonLink(json.dumps(json_flow))
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow))
         lasts = execute(flow_link, {}, {})
         correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2936,7 +2942,8 @@ class ExecuteTestCase(unittest.TestCase):
 
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
         update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
-        flow_link = FlowJsonLink(json.dumps(self.flow_data_outputs_pcmd))
+        flow_link = FlowJsonLink(self.flow_data_outputs_pcmd['label'],
+                                 json.dumps(self.flow_data_outputs_pcmd))
 
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
@@ -2981,7 +2988,7 @@ class ExecuteTestCase(unittest.TestCase):
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
 
-        flow_link = FlowJsonLink(json.dumps(flow_json))
+        flow_link = FlowJsonLink(flow_json['label'], json.dumps(flow_json))
         lasts = execute(flow_link, {}, {})
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
@@ -3020,7 +3027,7 @@ class ExecuteTestCase(unittest.TestCase):
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
 
-        flow_link = FlowJsonLink(json.dumps(flow_json))
+        flow_link = FlowJsonLink(flow_json['label'], json.dumps(flow_json))
         lasts = execute(flow_link, {}, {})
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -3044,7 +3051,7 @@ def get_frame_by_uuid(uuid, header=True):
     import csv
     result = []
     frame = Library.load_frame(uuid)
-    with open(frame.path, 'r') as f:
+    with open(STORE_DIR.parent / frame.path, 'r') as f:
         rows = csv.reader(f)
         if header:
             header = next(rows)
