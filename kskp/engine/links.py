@@ -8,12 +8,15 @@ from kskp.engine import Flow, Step, Point, Tube
 from kskp.store import FlowLink, CommandLink, Port, Library, Folder
 
 root = Library.load_root()
+result_folder = Library.load_result_folder()
+cache_folder = Library.load_cache_folder()
 
 class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, json_str, last_ids=[]):
+    def __init__(self, label, json_str, last_ids=[]):
+        self.label = label
         self.json_str = json_str
         self.last_ids = last_ids
         self.is_root = False
@@ -40,7 +43,7 @@ class FlowJsonLink:
         return ret
 
     def resolve(self):
-        f = self.make_flow(self.json_str)
+        f = self.make_flow(self.label, self.json_str)
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
@@ -56,24 +59,24 @@ class FlowJsonLink:
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Library.load_folder(root.uuid)
+                store = Library.load_folder(result_folder.uuid)
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Library.load_folder(root.uuid)
+            store = Library.load_folder(cache_folder.uuid)
             self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         # print(f.points)
         return f
 
-    def make_flow(self, json_str):
+    def make_flow(self, label, json_str):
 
         # JSONを読み込む
         json_obj = json.loads(json_str)
 
-        flow = Flow()
+        flow = Flow(label)
 
         # portを読む
         ports = json_obj['ports']
@@ -320,7 +323,8 @@ class FlowJsonLink:
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        args['label'] = point.label if point.label is not None else point.id
+        flow_label = flow.label + '_' if flow.label is not None else ''
+        args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
@@ -349,7 +353,10 @@ class FlowUuidLink(FlowJsonLink):
 
     def __init__(self, flow_uuid, last_ids=[]):
         self.flow_uuid = flow_uuid
-        super().__init__(json.dumps(FlowLink(flow_uuid).resolve()), last_ids)
+        flow_link = FlowLink(flow_uuid)
+        flow_data = flow_link.resolve()
+        flow_label = flow_link.resolve_label()
+        super().__init__(flow_label, json.dumps(flow_data), last_ids)
 
     def node2link(self, node):
         if node['type'] == 'command':
