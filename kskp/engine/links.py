@@ -220,6 +220,9 @@ class FlowJsonLink:
                     if self.is_value_node(node):
                         target_point.datum = node['value']
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
+                    elif self.is_store(node):
+                        # Storeの場合
+                        self.put_store(node.get('uuid'), target_point)
                     elif node.get('uuid') is not None:
                         self.put_loader(node.get('uuid'), target_point, flow, Folder)
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
@@ -232,6 +235,12 @@ class FlowJsonLink:
         uuidが入っていたらそっちを優先する
         """
         return node.get('value') is not None and node.get('uuid') is None
+
+    def is_store(self, node):
+        """
+        指定されたnodeがStoreの場合はTrueを返す
+        """
+        return node['type'] == 'store'
 
     def is_runnable_node(self, node):
         """ 指定されたnodeがrunnableかどうかを判断する """
@@ -293,6 +302,13 @@ class FlowJsonLink:
                         necessary_points.extend(self.search_necessary_point(points, point))
 
         return necessary_points
+
+    def put_store(self, store_uuid, store_point):
+        from kskp.store import Database
+        # ライブラリからDatabaseを取得する
+        database = Database.find_by_uuid(store_uuid)
+        # StoreにDatabaseを設定する
+        store_point.datum = database
 
     def put_loader(self, frame_uuid, target_point, flow, store):
         """
