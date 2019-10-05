@@ -7,9 +7,9 @@ from pathlib import Path
 from kskp.engine import Flow, Step, Point, Tube
 from kskp.store import FlowLink, CommandLink, Port, Library, Folder
 
-root = Library.load_root()
-result_folder = Library.load_result_folder()
-cache_folder = Library.load_cache_folder()
+# root = Library.load_root()
+# result_folder = Library.load_result_folder()
+# cache_folder = Library.load_cache_folder()
 
 class FlowJsonLink:
     """
@@ -59,13 +59,13 @@ class FlowJsonLink:
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Library.load_folder(result_folder.uuid)
+                store = Library.load_result_folder()
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Library.load_folder(cache_folder.uuid)
+            store = Library.load_cache_folder()
             self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
 
         # print(f.points)
@@ -323,8 +323,10 @@ class FlowJsonLink:
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        flow_label = flow.label + '_' if flow.label is not None else ''
-        args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
+        from datetime import datetime, timezone
+        args['flow_label'] = flow.label if flow.label is not None else ''
+        args['point_label'] = point.label if point.label is not None else point.id
+        args['start_time'] = datetime.utcnow().replace(tzinfo=timezone.utc)
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
