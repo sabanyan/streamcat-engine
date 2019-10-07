@@ -55,18 +55,22 @@ class FlowJsonLink:
         lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
         f.points = self.pick_necessary_points(f, lasts)
 
+        # 処理の開始時刻を取得する
+        from datetime import datetime, timezone
+        start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+            
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
                 store = Library.load_result_folder()
-                self.put_saver(point, f, store, CommandLink("saver").resolve())
+                self.put_saver(point, f, store, CommandLink("saver").resolve(), start_time)
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
             store = Library.load_cache_folder()
-            self.put_saver(point, f, store, CommandLink("cachesaver").resolve())
+            self.put_saver(point, f, store, CommandLink("cachesaver").resolve(), start_time)
 
         # print(f.points)
         return f
@@ -312,7 +316,7 @@ class FlowJsonLink:
         """
         return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
-    def put_saver(self, point, flow, store, saver):
+    def put_saver(self, point, flow, store, saver, start_time):
         """
         指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
@@ -326,7 +330,7 @@ class FlowJsonLink:
         from datetime import datetime, timezone
         args['flow_label'] = flow.label if flow.label is not None else ''
         args['point_label'] = point.label if point.label is not None else point.id
-        args['start_time'] = datetime.utcnow().replace(tzinfo=timezone.utc)
+        args['start_time'] = start_time
 
         saver_step = self.make_saver_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
