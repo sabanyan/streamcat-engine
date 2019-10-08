@@ -9,7 +9,7 @@ from pathlib import Path
 from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink
-from kskp.store import Library, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR
+from kskp.store import Library, FLOW_PATH, Folder, Frame, Command, Port, Datum, STORE_DIR
 
 root = Library.load_root()
 
@@ -29,7 +29,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         rootFolderを削除する
         """
         from kskp.store import FLOW_FOLDER_UUID
-        Library.delete_folder(FLOW_FOLDER_UUID)
+        if Folder.exists(FLOW_FOLDER_UUID):
+            Library.delete_folder(FLOW_FOLDER_UUID)
         root_dir = STORE_DIR.parent / Library.load_root().path
         import shutil
         shutil.rmtree(root_dir.as_posix())
