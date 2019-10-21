@@ -56,8 +56,15 @@ class FlowJsonLink:
         f.points = self.pick_necessary_points(f, lasts)
 
         # lasts出力処理（メインフローの場合のみ）
-        if self.is_root:
+        # if self.is_root:
+
+        if True:
             last_points = [point for point in f.points if point.is_last]
+
+            import pprint 
+            # pprint.pprint('main flow')
+            pprint.pprint(last_points)
+
             for point in last_points:
                 store = Library.load_folder(result_folder.uuid)
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
@@ -343,6 +350,10 @@ class FlowJsonLink:
         args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
 
         saver_step = self.make_saver_step(args, saver)
+
+        import pprint 
+        pprint.pprint(store)
+
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         # point.id = str(uuid.uuid4())

@@ -57,6 +57,10 @@ class Step:
     def __repr__(self):
         return self.id
 
+    @property
+    def is_flow(self):
+        return isinstance(self.runnable, Flow) 
+
     def replace_args(self, flow_args):
         """
         自身のargsにフロー変数を使っている箇所があれば、argsの値で置き換える
@@ -179,8 +183,24 @@ class Flow(Datum):
         #             last_steps.add(p.o_runnable)
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
+        import pprint 
+
+        sub_flow_last_steps = {}
+
+        sub_flow_steps = [s for s in self.substeps if s.is_flow] 
+
+        for sub_flow_step in sub_flow_steps:
+            sub_flow_last_steps = {p.o_runnable for p in sub_flow_step.runnable.points if p.is_last and p.datum is None}
+
+        last_steps = sub_flow_last_steps
+
+        pprint.pprint(f'search_invokable_steps ({self.label})')       
+        
+
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
+
+        pprint.pprint(first_steps) 
 
         return first_steps
 
