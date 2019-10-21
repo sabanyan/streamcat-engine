@@ -184,11 +184,11 @@ class Flow(Datum):
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
         # 出力のないサブフローを集める
-        last_sub_flows = {s for s in self.substeps if s.is_flow and len(s.lasts) == 0}
+        last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0}
 
-        # 最後のコマンドとサブフロー
+        # 
         last_steps.update(last_sub_flows)
-        
+
         import pprint 
         pprint.pprint(f'search_invokable_steps ({self.label})')       
 
