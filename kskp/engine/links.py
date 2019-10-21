@@ -52,7 +52,10 @@ class FlowJsonLink:
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
         # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
+
         lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
+        # lasts = self.pick_last_points(f.lasts, f.points)
+    
         f.points = self.pick_necessary_points(f, lasts)
 
         # lasts出力処理（メインフローの場合のみ）
@@ -61,9 +64,6 @@ class FlowJsonLink:
         if True:
             last_points = [point for point in f.points if point.is_last]
 
-            import pprint 
-            # pprint.pprint('main flow')
-            pprint.pprint(last_points)
 
             for point in last_points:
                 store = Library.load_folder(result_folder.uuid)
@@ -77,6 +77,31 @@ class FlowJsonLink:
 
         # print(f.points)
         return f
+
+    def pick_last_points(self, lasts, points):
+        # プレビューなど、lastsが指定されている場合
+        if len(self.last_ids) > 0:
+            return self.last_ids 
+        
+        # 出力のないサブフローの入力ポイントを集める
+        # (入力ポイントを出力のないサブフローに渡すため)
+        ret = self.pick_points_of_no_output_subflow(points)
+        # lastsを集める
+        ret.extend(lasts.keys())
+        return ret
+
+    def pick_points_of_no_output_subflow(self, points):
+        """
+        入力のみのRunnableの手前のpointをすべて取得する
+        """
+        ret = []
+        for point in points:
+            for t_tube in point.target:
+                if t_tube.is_None:
+                    continue
+                if len(t_tube.runnable.runnable.o_ports) == 0:
+                    ret.append(point.id)
+        return ret
 
     def make_flow(self, label, json_str):
 
@@ -350,9 +375,6 @@ class FlowJsonLink:
         args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
 
         saver_step = self.make_saver_step(args, saver)
-
-        import pprint 
-        pprint.pprint(store)
 
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])

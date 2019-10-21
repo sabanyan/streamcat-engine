@@ -151,7 +151,7 @@ class Flow(Datum):
             # print('invokable_steps2', invokable_steps, self.points)
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
-        invokable_steps = self.search_invokable_steps()
+            invokable_steps = self.search_invokable_steps()
 
             # print('invokable_steps3', invokable_steps, self.points)
 
@@ -186,12 +186,8 @@ class Flow(Datum):
         # 出力のないサブフローを集める
         last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0}
 
-        # 
-        last_steps.update(last_sub_flows)
-
-        import pprint 
-        pprint.pprint(f'search_invokable_steps ({self.label})')       
-
+        # lastsと出力のないサブフローを纏める
+        # last_steps.update(last_sub_flows)
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -225,7 +221,6 @@ class Flow(Datum):
         実行後、結果をpointに格納する
         """
 
-        # print('steps in run_invokable_steps:', steps)
 
         for step in steps:
             # flow変数を使ってargsを書き換える
