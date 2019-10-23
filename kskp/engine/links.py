@@ -22,9 +22,6 @@ class FlowJsonLink:
         self.is_root = False
 
     def node2link(self, node):
-        if 'link' in node:
-            return SampleFlowJsonLink()
-
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
@@ -52,19 +49,13 @@ class FlowJsonLink:
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
         # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
-
-        lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
-        # lasts = self.pick_last_points(f.lasts, f.points)
-    
+        # lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
+        lasts = self.pick_last_points(f.lasts, f.points)
         f.points = self.pick_necessary_points(f, lasts)
 
         # lasts出力処理（メインフローの場合のみ）
-        # if self.is_root:
-
-        if True:
+        if self.is_root:
             last_points = [point for point in f.points if point.is_last]
-
-
             for point in last_points:
                 store = Library.load_folder(result_folder.uuid)
                 self.put_saver(point, f, store, CommandLink("saver").resolve())
@@ -82,7 +73,7 @@ class FlowJsonLink:
         # プレビューなど、lastsが指定されている場合
         if len(self.last_ids) > 0:
             return self.last_ids 
-        
+
         # 出力のないサブフローの入力ポイントを集める
         # (入力ポイントを出力のないサブフローに渡すため)
         ret = self.pick_points_of_no_output_subflow(points)
@@ -99,7 +90,7 @@ class FlowJsonLink:
             for t_tube in point.target:
                 if t_tube.is_None:
                     continue
-                if len(t_tube.runnable.runnable.o_ports) == 0:
+                if t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0: 
                     ret.append(point.id)
         return ret
 
@@ -304,7 +295,7 @@ class FlowJsonLink:
         necessary_points = []
         for id in last_ids:
             lasts_point = flow.select_point_by_id(id)
-            if not len(flow.o_ports) > 0:
+            if not len(flow.o_ports) > 0 and not self.is_in_point_of_no_output_subflow(lasts_point):
                 # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
                 lasts_point.target = [Tube(None, None)]
 
@@ -313,6 +304,11 @@ class FlowJsonLink:
             necessary_points.append(lasts_point)
 
         return list(set(necessary_points))
+
+    def is_in_point_of_no_output_subflow(self, point):
+        if point.target is not None:
+            return any(t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0 for t_tube in point.target)
+        return False
 
     def search_necessary_point(self, points, current_point):
         """
@@ -375,7 +371,6 @@ class FlowJsonLink:
         args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
 
         saver_step = self.make_saver_step(args, saver)
-
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         # point.id = str(uuid.uuid4())
