@@ -18,6 +18,10 @@ class Job:
             self.errors.append(e)
             raise
 
+    @property
+    def is_flow(self):
+        return isinstance(self.runnable, Flow) 
+
     def runs(self):
         """
         runsを実行する
@@ -173,6 +177,9 @@ class Flow(Datum):
         stepのうち、実行準備が整ったものを探して返す
         """
 
+        import pprint
+        pprint.pprint('search_invokable_steps :')
+
         # まず、グラフ構造を解析する必要がある
 
         # 最初に「最後の矢印」を集める
@@ -184,10 +191,11 @@ class Flow(Datum):
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
         # 出力のないサブフローを集める
-        last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0}
+        # last_sub_flows = {s for s in self.substeps if s.is_flow and len(s.lasts) == 0}
+        last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0 and s.is_flow and len(s.runnable.search_invokable_steps()) == 0}
 
         # lastsと出力のないサブフローを纏める
-        # last_steps.update(last_sub_flows)
+        last_steps.update(last_sub_flows)
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
