@@ -33,10 +33,6 @@ class Job:
             module_list = self.step.runnable.get_module_list()
             last_modules.extend(module_list)
 
-            import pprint 
-            pprint.pprint('last_modules : ')
-            pprint.pprint(last_modules)
-
             # 実行
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
@@ -71,8 +67,6 @@ class Step:
 
     @property
     def is_datadst(self):
-        # いい条件が思い浮かばない
-        # return self.is_flow and len(self.runnable.o_ports) == 0 and len(self.runnable.lasts) == 1
         return self.is_flow and self.runnable.is_datadst
 
     def replace_args(self, flow_args):
@@ -146,14 +140,12 @@ class Flow(Datum):
 
     @property
     def is_datadst(self):
-        # いい条件が思い浮かばない
-        return len(self.o_ports) == 0 and len(self.lasts) == 1
-
-    def has_datadst(self):
         """
-        データデストを持っている場合はTrueを返す
+        データデストの場合はTrueを返す
         """
-        return any (s for s in self.substeps if s.is_datadst)
+        # いい条件が思い浮かばない,,,
+        has_store = any (p for p in self.points if p.is_store)
+        return len(self.o_ports) == 0 and len(self.lasts) == 1 and has_store
 
     def run(self, args, inputs):
         """
@@ -197,8 +189,6 @@ class Flow(Datum):
         """
         stepのうち、実行準備が整ったものを探して返す
         """
-        import pprint
-        pprint.pprint(f'search_invokable_steps : {self.label}')
 
         # まず、グラフ構造を解析する必要がある
 
@@ -210,29 +200,15 @@ class Flow(Datum):
         #             last_steps.add(p.o_runnable)
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
-        # 出力のないサブフローを集める
-        # last_sub_flows = {s for s in self.substeps if s.is_flow and len(s.lasts) == 0}
-        # last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0 and s.is_flow and len(s.runnable.search_invokable_steps()) > 0}
-        # last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0 and s.is_flow and not s.already_ran}
-        # last_sub_flows = {s for s in self.substeps if len(s.runnable.o_ports) == 0 and not s.already_ran}
-        last_sub_flows = {p.t_runnable for p in self.points if not p.is_last and len(p.t_runnable.runnable.o_ports) == 0 and not p.t_runnable.already_ran }
+        # 未実行かつ出力のないサブフローを集める
+        last_sub_flows = {p.t_runnable for p in self.points \
+                          if not p.is_last and len(p.t_runnable.runnable.o_ports) == 0 and not p.t_runnable.already_ran}
 
         # lastsと出力のないサブフローを纏める
         last_steps.update(last_sub_flows)
-        
-        pprint.pprint(self.substeps) 
-        # if self.substeps[0].id == 'c1':
-        #     pprint.pprint(self.substeps[0].runnable.o_ports[0])
-        pprint.pprint(f'            end1 {last_steps} : {self.label}')   
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
-
-        # if last_sub_flows != {}:
-        import time, io   
-        # time.sleep(1)
-        pprint.pprint(f'            end2 {first_steps} : {self.label}')
-        # pprint.pprint(first_steps) 
 
         return first_steps
 
@@ -250,18 +226,8 @@ class Flow(Datum):
         #             prev_points.add(p)
         prev_points = {p for p in self.points if any(t_tube.runnable == original_step for t_tube in p.target)}
 
-        if original_step.id == 'c1':
-            import pprint 
-            pprint.pprint('search_first_steps_to_run (prev_points) :')
-            pprint.pprint(prev_points)
-
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
         if all([a.datum is not None for a in prev_points]):
-
-            if original_step.id == 'c1':
-                import pprint
-                pprint.pprint(original_step)
-
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
@@ -272,7 +238,6 @@ class Flow(Datum):
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
         """
-
 
         for step in steps:
             # flow変数を使ってargsを書き換える
@@ -316,15 +281,8 @@ class Flow(Datum):
 
             # stepがデータデストの場合は、データデスト内のlastsを取得する
             if step.is_datadst:
-                print('>>>>>>>>>')  
-                import pprint
-                pprint.pprint(step.runnable.lasts)
-                # datum = result.pop('o')
-                datum = step.runnable.lasts
-
                 for last_frame in step.runnable.lasts.values():
                     self.put_datum_in_store(step.id, last_frame)
-                
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
@@ -353,10 +311,6 @@ class Flow(Datum):
             self.cache_store.append(id, datum)
         elif isinstance(datum, Frame):
             self.lasts_store.append(id, datum)
-
-        import pprint
-        pprint.pprint(f'put_datum_in_store : {id}')
-        pprint.pprint(datum) 
 
     def get_output_point(self, o_port):
         """
@@ -464,11 +418,19 @@ class Point:
         return self.o_runnable is None and self.o_port is not None and self.datum is None
 
     @property
+    def is_store(self):
+        from kskp.store import Store
+        return self.datum is not None and isinstance(self.datum, Store)
+
+    @property
     def o_port(self):
         return self.origin[0].port
 
     @property
     def o_runnable(self):
+        """
+        out_runableの略称ではないことに注意!
+        """
         return self.origin[0].runnable
 
     @property
