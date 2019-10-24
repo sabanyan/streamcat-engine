@@ -49,13 +49,9 @@ class FlowJsonLink:
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
         # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
-        # lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
         lasts = self.pick_last_points(f.lasts, f.points)
 
-        import pprint
-        pprint.pprint('return of pick_last_points')
-        pprint.pprint(lasts)
-
+        # 実行するのに必要なpointを取得する
         is_preview = len(self.last_ids) > 0
         f.points = self.pick_necessary_points(f, lasts, is_preview)
 
@@ -91,7 +87,6 @@ class FlowJsonLink:
         ret.extend(lasts.keys())
         return ret
 
-
     def pick_points_of_no_output_subflow(self, points):
         """
         入力のみのRunnableの手前のpointをすべて取得する
@@ -103,11 +98,6 @@ class FlowJsonLink:
                     continue
                 if t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0: 
                     ret.append(point.id)
-
-        import pprint  
-        pprint.pprint('pick_points_of_no_output_subflow :')
-        pprint.pprint(ret)
-
         return ret
 
     def make_flow(self, label, json_str):
@@ -253,7 +243,7 @@ class FlowJsonLink:
                 target_point.cache = node.get('makeCache')
                 target_point.label = node.get('label')
 
-                # Storeの場合
+                # Storeの場合、Storeオブジェクトをpointに格納する
                 if self.is_store_node(node):
                     self.put_store(node.get('uuid'), target_point)
 
@@ -314,19 +304,11 @@ class FlowJsonLink:
         """
         necessary_points = []
 
-        import pprint
-        pprint.pprint('SET LAST POINT 1')
-        pprint.pprint(last_ids)
-
         for id in last_ids:
             lasts_point = flow.select_point_by_id(id)
-            # if len(flow.o_ports) == 0 and not flow.has_datadst:
+            # if len(flow.o_ports) == 0:
             if self.is_root and is_preview:
                 # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
-                import pprint
-                pprint.pprint('SET LAST POINT 2')
-                pprint.pprint(lasts_point)
-
                 lasts_point.target = [Tube(None, None)]
 
             # lasts_pointの上に繋がっているpointsを取得する
@@ -334,11 +316,6 @@ class FlowJsonLink:
             necessary_points.append(lasts_point)
 
         return list(set(necessary_points))
-
-    # def is_input_of_no_output_subflow(self, point):
-    #     if point.target is not None:
-    #         return any(t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0 for t_tube in point.target)
-    #     return False
 
     def search_necessary_point(self, points, current_point):
         """
