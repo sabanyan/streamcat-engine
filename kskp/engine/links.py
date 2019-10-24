@@ -51,7 +51,17 @@ class FlowJsonLink:
         # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
         # lasts = self.last_ids if len(self.last_ids) > 0 else f.lasts.keys()
         lasts = self.pick_last_points(f.lasts, f.points)
-        f.points = self.pick_necessary_points(f, lasts)
+
+        import pprint
+        pprint.pprint('return of pick_last_points')
+        pprint.pprint(lasts)
+
+        is_preview = len(self.last_ids) > 0
+        f.points = self.pick_necessary_points(f, lasts, is_preview)
+
+        # import pprint
+        # pprint.pprint('f.points: ')
+        # pprint.pprint(f.points)
 
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
@@ -81,6 +91,7 @@ class FlowJsonLink:
         ret.extend(lasts.keys())
         return ret
 
+
     def pick_points_of_no_output_subflow(self, points):
         """
         入力のみのRunnableの手前のpointをすべて取得する
@@ -92,6 +103,11 @@ class FlowJsonLink:
                     continue
                 if t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0: 
                     ret.append(point.id)
+
+        import pprint  
+        pprint.pprint('pick_points_of_no_output_subflow :')
+        pprint.pprint(ret)
+
         return ret
 
     def make_flow(self, label, json_str):
@@ -237,16 +253,20 @@ class FlowJsonLink:
                 target_point.cache = node.get('makeCache')
                 target_point.label = node.get('label')
 
+                # Storeの場合
+                if self.is_store_node(node):
+                    self.put_store(node.get('uuid'), target_point)
+
                 # データの取得先の設定
                 # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
                 if not (len(flow.i_ports) > 0 and target_point.is_first):
                     if self.is_value_node(node):
                         target_point.datum = node['value']
-                    # uuidが既に振られている場合は、loaderから取ってくるようにする
-                    elif self.is_store(node):
-                        # Storeの場合
-                        self.put_store(node.get('uuid'), target_point)
+                    # elif self.is_store_node(node):
+                    #     # Storeの場合  
+                    #     self.put_store(node.get('uuid'), target_point)
                     elif node.get('uuid') is not None:
+                        # uuidが既に振られている場合は、loaderから取ってくるようにする
                         self.put_loader(node.get('uuid'), target_point, flow, Folder)
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                         target_point.cache = False
@@ -259,7 +279,7 @@ class FlowJsonLink:
         """
         return node.get('value') is not None and node.get('uuid') is None
 
-    def is_store(self, node):
+    def is_store_node(self, node):
         """
         指定されたnodeがStoreの場合はTrueを返す
         """
@@ -288,15 +308,25 @@ class FlowJsonLink:
         """
         return self.is_runnable_node(node) and datum_id in list(node['dsts'].values())
 
-    def pick_necessary_points(self, flow, last_ids):
+    def pick_necessary_points(self, flow, last_ids, is_preview):
         """
         実行するのに必要なpointを取得する
         """
         necessary_points = []
+
+        import pprint
+        pprint.pprint('SET LAST POINT 1')
+        pprint.pprint(last_ids)
+
         for id in last_ids:
             lasts_point = flow.select_point_by_id(id)
-            if not len(flow.o_ports) > 0 and not self.is_in_point_of_no_output_subflow(lasts_point):
+            # if len(flow.o_ports) == 0 and not flow.has_datadst:
+            if self.is_root and is_preview:
                 # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+                import pprint
+                pprint.pprint('SET LAST POINT 2')
+                pprint.pprint(lasts_point)
+
                 lasts_point.target = [Tube(None, None)]
 
             # lasts_pointの上に繋がっているpointsを取得する
@@ -305,10 +335,10 @@ class FlowJsonLink:
 
         return list(set(necessary_points))
 
-    def is_in_point_of_no_output_subflow(self, point):
-        if point.target is not None:
-            return any(t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0 for t_tube in point.target)
-        return False
+    # def is_input_of_no_output_subflow(self, point):
+    #     if point.target is not None:
+    #         return any(t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0 for t_tube in point.target)
+    #     return False
 
     def search_necessary_point(self, points, current_point):
         """
