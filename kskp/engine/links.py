@@ -236,10 +236,8 @@ class FlowJsonLink:
                 target_points = [point for point in flow.points if point.id == node['id']]
                 if len(target_points) < 1:
                     continue
-                else:
-                    target_point = target_points[0]
 
-                target_point = [point for point in flow.points if point.id == node['id']][0]
+                target_point = target_points[0]
                 target_point.cache = node.get('makeCache')
                 target_point.label = node.get('label')
 
@@ -252,9 +250,6 @@ class FlowJsonLink:
                 if not (len(flow.i_ports) > 0 and target_point.is_first):
                     if self.is_value_node(node):
                         target_point.datum = node['value']
-                    # elif self.is_store_node(node):
-                    #     # Storeの場合  
-                    #     self.put_store(node.get('uuid'), target_point)
                     elif node.get('uuid') is not None:
                         # uuidが既に振られている場合は、loaderから取ってくるようにする
                         self.put_loader(node.get('uuid'), target_point, flow, Folder)
@@ -339,11 +334,11 @@ class FlowJsonLink:
         return necessary_points
 
     def put_store(self, store_uuid, store_point):
-        from kskp.store import Database
+        from kskp.store import Store
         # ライブラリからDatabaseを取得する
-        database = Database.find_by_uuid(store_uuid)
+        store = Store.find_by_uuid(store_uuid)
         # StoreにDatabaseを設定する
-        store_point.datum = database
+        store_point.datum = store
 
     def put_loader(self, frame_uuid, target_point, flow, store):
         """
