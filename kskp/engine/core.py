@@ -33,6 +33,9 @@ class Job:
             module_list = self.step.runnable.get_module_list()
             last_modules.extend(module_list)
 
+            # import pprint
+            # pprint.pprint(last_modules)
+
             # 実行
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
@@ -201,8 +204,8 @@ class Flow(Datum):
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
         # 未実行かつ出力のないサブフローを集める
-        last_sub_flows = {p.t_runnable for p in self.points \
-                          if not p.is_last and len(p.t_runnable.runnable.o_ports) == 0 and not p.t_runnable.already_ran}
+        last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
+                          if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
 
         # lastsと出力のないサブフローを纏める
         last_steps.update(last_sub_flows)
@@ -432,10 +435,6 @@ class Point:
         out_runableの略称ではないことに注意!
         """
         return self.origin[0].runnable
-
-    @property
-    def t_runnable(self):
-        return self.target[0].runnable
 
     @property
     def is_last(self):
