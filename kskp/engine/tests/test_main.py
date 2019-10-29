@@ -10,7 +10,7 @@ from pathlib import Path
 from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink
-from kskp.store import Library, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR
+from kskp.store import Library, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR, Database, DatabaseConn
 
 root = Library.load_root()
 
@@ -3042,6 +3042,117 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(frame_uuid)
+
+
+class ExecuteTestCase2(unittest.TestCase):
+
+    # mコマンド１つのフロー
+    flow_data = {
+      "label": "test用",
+      "creator": "開発用",
+      "createdAt": "2019-10-28 15:06:35",
+      "projectId": None,
+      "description": "",
+      "ports": [
+        [],
+        []
+      ],
+      "params": [],
+      "nodes": [
+        {
+          "id": "d",
+          "type": "frame",
+          "uuid": None,
+          "error": {},
+          "label": "d",
+          "invalid": {},
+          "makeCache": False,
+          "dataSource": "csv",
+          "cacheCreatedAt": None
+        },
+        {
+          "id": "f",
+          "args": {},
+          "dsts": {
+            "d1": "d"
+          },
+          "srcs": {},
+          "type": "flow",
+          "uuid": "8cfbce33-f2f9-4f52-a97d-ce170f70f6e3",
+          "error": {},
+          "label": "f",
+          "invalid": {},
+          "srcsOrder": []
+        },
+        {
+          "id": "f1",
+          "args": {},
+          "dsts": {},
+          "srcs": {
+            "d1": "d"
+          },
+          "type": "flow",
+          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
+          "error": {},
+          "label": "f1",
+          "invalid": {},
+          "srcsOrder": [
+            "d1"
+          ]
+        },
+        {
+          "id": "f2",
+          "args": {},
+          "dsts": {},
+          "srcs": {
+            "d1": "d"
+          },
+          "type": "flow",
+          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
+          "error": {},
+          "label": "PostgreSQLデータデスト",
+          "invalid": {},
+          "srcsOrder": [
+            "d1"
+          ]
+        }
+      ]
+    }
+
+    database_conn = DatabaseConn("postgresql", "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 5432, "kskp", "kskp", r'J2-pH|%B')
+
+    # @unittest.skip
+    def test_simple_flow_execute(self):
+        """
+        mコマンド１個のフロー実行
+        """
+        # DBストアの作成
+        db = Database(root.uuid, 'postgresql', self.database_conn, None)
+        db.uuid = 'c410cd16-2529-498d-8e7f-490ffa58dc95'
+        db.save()
+
+        # サブフロー(PostgreSQLデータソース)の作成
+        postgre_src = '8cfbce33-f2f9-4f52-a97d-ce170f70f6e3'
+        create_flow('postgre_src', postgre_src)
+
+        # サブフロー(PostgreSQLデータデスト)の作成
+        postgre_dst = 'b3e980d4-8338-4e83-a238-dd4537148c43'
+        create_flow('postgre_dst', postgre_dst)
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow_link = FlowJsonLink(self.flow_data['label'], json.dumps(self.flow_data))
+        lasts = execute(flow_link, {}, {})
+
+        # テスト
+        # DBにframeデータが生成されているか
+        # self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        # result = get_frame_by_uuid(lasts['d1'].uuid)
+        # self.assertEqual(result, correct['d1'])
+
+        # 後片付け
+        self.assertTrue(delete_flow(postgre_src))
+        self.assertTrue(delete_flow(postgre_dst))
 
 
 # Helpler
