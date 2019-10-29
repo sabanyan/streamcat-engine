@@ -6784,6 +6784,155 @@ shindo_sub6 = {
   ]
 }
 
+import os
+
+# PostgreSQLのデータソース
+postgre_src = {
+    "label": "PostgreSQLデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2019-10-02 16:55:56",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "c410cd16-2529-498d-8e7f-490ffa58dc95",
+        "error": {},
+        "label": "データベース?",
+        "invalid": {},
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "error": {},
+        "label": "d1",
+        "invalid": {},
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "schema_name" : os.environ['KSKP_POSTGRESQL_SCHEMA_NAME'],
+          "table_name": "data"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "error": {},
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "db_loader",
+        "srcsOrder": [
+          "i"
+        ]
+      }
+    ]
+  }
+
+# PostgreSQLのデータデスト
+postgre_dst = {
+    "label": "PostgreSQLデータデスト",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2019-10-02 16:55:56",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
+		{
+			"id": "d",
+			"type": "store",
+			"uuid": "c410cd16-2529-498d-8e7f-490ffa58dc95",
+			"error": {},
+			"label": "データベース?",
+			"invalid": {},
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		},
+		{
+			"id": "d1",
+			"type": "frame",
+			"uuid": None,
+			"error": {},
+			"label": "d1",
+			"invalid": {},
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		},
+		{
+			"id": "c1",
+			"args": {
+        "schema_name" : os.environ['KSKP_POSTGRESQL_SCHEMA_NAME'],
+				"table_name": "tmp"
+			},
+			"dsts": {
+				"o": "d2"
+			},
+			"srcs": {
+				"i": "d1",
+				"store": "d"
+			},
+			"type": "command",
+			"error": {},
+			"label": "c1",
+			"invalid": {},
+			"commandId": "db_saver",
+			"srcsOrder": [
+				"i",
+				"store"
+			]
+		},
+		{
+			"id": "d2",
+			"type": "frame",
+			"uuid": None,
+			"error": {},
+			"label": "d2",
+			"invalid": {},
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		}
+	]
+}
+
 test_json = {
     'sub1': sub1,
     'sub2': sub2,
@@ -6800,4 +6949,7 @@ test_json = {
     'shindo_sub4': shindo_sub4,
     'shindo_sub5': shindo_sub5,
     'shindo_sub6': shindo_sub6,
+    'shindo_sub6': shindo_sub6,
+    'postgre_src': postgre_src,
+    'postgre_dst': postgre_dst
 }
