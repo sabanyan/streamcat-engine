@@ -11,6 +11,67 @@ root = Library.load_root()
 result_folder = Library.load_result_folder()
 cache_folder = Library.load_cache_folder()
 
+class FolderDataDestAppender():
+    def __init__(self, flow_uuid):
+        # core.pyで定義されているFlowはf
+        # flow.pyで定義されているFlowはflowと表記する
+        self.flow_uuid = flow_uuid
+        # self.f = f
+
+    def do_append(self, f, point):
+        from kskp.store import Folder
+
+        # folder_store = Library.load_result_folder()
+        folder_store = Folder.convert_to_folder(result_folder)
+        saver = CommandLink("saver").resolve()
+        self._put_saver(point, f, folder_store, saver)
+
+    def _put_saver(self, point, f, store, saver):
+        """
+        指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
+        lastsなら最後に設置し、そうでないなら間に挟むように設置する
+        """
+        # 出力コマンドとそれが出すpointを追加
+
+        # saverのargs設定
+        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
+        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if self.flow_uuid is not None else {}
+        # saverが作るframe及びcacheのlabelはここで設定できる
+        flow_label = f.label + '_' if f.label is not None else ''
+        args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
+
+        saver_step = self._make_saver_step(args, saver)
+        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+        saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        # point.id = str(uuid.uuid4())
+
+        # lastsじゃない場合は追加したpointを次のstepに繋げる
+        if not point.is_last:
+            saver_point.target = point.target
+        # pointの向き先を変更する
+        point.target = [Tube(Port('i', 'frame'), saver_step)]
+
+        f.substeps.append(saver_step)
+        f.points.extend([saver_point, store_point])
+
+    def _make_saver_step(self, args, saver):
+        """
+        saverコマンドのstepを作成する
+        """
+        return Step(str(uuid.uuid4()), saver, args)
+
+class CacheDataDestAppender(FolderDataDestAppender):
+    def do_append(self, f, point):
+        from kskp.store import Folder
+
+        # folder_store = Library.load_result_folder()
+        folder_store = Folder.convert_to_folder(result_folder)
+        saver = CommandLink("cachesaver").resolve()
+        self._put_saver(point, f, folder_store, saver)
+
+
+
+
 class FlowJsonLink:
     """
     フローへのリンク
@@ -20,6 +81,9 @@ class FlowJsonLink:
         self.json_str = json_str
         self.last_ids = last_ids
         self.is_root = False
+
+        self.folder_data_dest_appender = FolderDataDestAppender(None)
+        self.cache_data_dest_appender = CacheDataDestAppender(None)
 
     def _node2link(self, node):
         if node['type'] == 'command':
@@ -59,14 +123,16 @@ class FlowJsonLink:
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
             for point in last_points:
-                store = Library.load_folder(result_folder.uuid)
-                self._put_saver(point, f, store, CommandLink("saver").resolve())
+                # store = Library.load_folder(result_folder.uuid)
+                # self._put_saver(point, f, store, CommandLink("saver").resolve())
+                self.folder_data_dest_appender.do_append(f, point)
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            store = Library.load_folder(cache_folder.uuid)
-            self._put_saver(point, f, store, CommandLink("cachesaver").resolve())
+            # store = Library.load_folder(cache_folder.uuid)
+            # self._put_saver(point, f, store, CommandLink("cachesaver").resolve())
+            self.cache_data_dest_appender.do_append(f, point)
 
         # print(f.points)
         return f
@@ -399,7 +465,12 @@ class FlowUuidLink(FlowJsonLink):
         flow_link = FlowLink(flow_uuid)
         flow_data = flow_link.resolve()
         flow_label = flow_link.resolve_label()
+
         super().__init__(flow_label, json.dumps(flow_data), last_ids)
+
+        # super().__init__より下に記述すること
+        self.folder_data_dest_appender = FolderDataDestAppender(flow_uuid)
+        self.cache_data_dest_appender = CacheDataDestAppender(flow_uuid)
 
     def node2link(self, node):
         if node['type'] == 'command':
