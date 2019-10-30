@@ -420,40 +420,6 @@ class FlowJsonLink:
         """
         return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
-    def _put_saver(self, point, flow, store, saver):
-        """
-        指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
-        lastsなら最後に設置し、そうでないなら間に挟むように設置する
-        """
-        # 出力コマンドとそれが出すpointを追加
-
-        # saverのargs設定
-        # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
-        # そうでないならflowのjsonが存在しないということでとりあえず何も渡さない
-        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if isinstance(self, FlowUuidLink) else {}
-        # saverが作るframe及びcacheのlabelはここで設定できる
-        flow_label = flow.label + '_' if flow.label is not None else ''
-        args['label'] = flow_label + point.label if point.label is not None else flow_label + point.id
-
-        saver_step = self._make_saver_step(args, saver)
-        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
-        saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        # point.id = str(uuid.uuid4())
-
-        # lastsじゃない場合は追加したpointを次のstepに繋げる
-        if not point.is_last:
-            saver_point.target = point.target
-        # pointの向き先を変更する
-        point.target = [Tube(Port('i', 'frame'), saver_step)]
-
-        flow.substeps.append(saver_step)
-        flow.points.extend([saver_point, store_point])
-
-    def _make_saver_step(self, args, saver):
-        """
-        saverコマンドのstepを作成する
-        """
-        return Step(str(uuid.uuid4()), saver, args)
 
 class FlowUuidLink(FlowJsonLink):
     """
