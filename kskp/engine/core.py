@@ -10,6 +10,9 @@ class Job:
 
         self.errors = []
 
+        # 実行を終了したらTrueにするフラグ
+        self.already_ran = False
+
     def start(self):
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
@@ -29,6 +32,9 @@ class Job:
 
             module_list = self.step.runnable.get_module_list()
             last_modules.extend(module_list)
+
+            # import pprint
+            # pprint.pprint(last_modules)
 
             # 実行
             import nysol.mcmd as nm
@@ -53,9 +59,18 @@ class Step:
         self.id = step_id
         self.runnable = runnable
         self.args = args
+        self.already_ran = False
 
     def __repr__(self):
         return self.id
+
+    @property
+    def is_flow(self):
+        return isinstance(self.runnable, Flow)
+
+    @property
+    def is_datadst(self):
+        return self.is_flow and self.runnable.is_datadst
 
     def replace_args(self, flow_args):
         """
@@ -126,6 +141,15 @@ class Flow(Datum):
         """
         return self.cache_store.data
 
+    @property
+    def is_datadst(self):
+        """
+        データデストの場合はTrueを返す
+        """
+        # いい条件が思い浮かばない,,,
+        has_store = any (p for p in self.points if p.is_store)
+        return len(self.o_ports) == 0 and len(self.lasts) == 1 and has_store
+
     def run(self, args, inputs):
         """
         pointではなくstepを基軸にして書き直し
@@ -179,6 +203,13 @@ class Flow(Datum):
         #             last_steps.add(p.o_runnable)
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
+        # 未実行かつ出力のないサブフローを集める
+        last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
+                          if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
+
+        # lastsと出力のないサブフローを纏める
+        last_steps.update(last_sub_flows)
+
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
 
@@ -211,8 +242,6 @@ class Flow(Datum):
         実行後、結果をpointに格納する
         """
 
-        # print('steps in run_invokable_steps:', steps)
-
         for step in steps:
             # flow変数を使ってargsを書き換える
             if len(flow_args) > 0:
@@ -243,12 +272,20 @@ class Flow(Datum):
             # まず、outputのpointを取得する
             output_points = {point for point in self.points if point.o_runnable == step}
 
+            # 実行を終了したフラグをたてる
+            step.already_ran = True
+
             # それぞれのpointに結果を格納する
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result.pop(output_point.o_port.name)
                 self.put_datum_in_store(output_point.id, output_point.datum)
                 # print('output_point:', output_point)
+
+            # stepがデータデストの場合は、データデスト内のlastsを取得する
+            if step.is_datadst:
+                for last_frame in step.runnable.lasts.values():
+                    self.put_datum_in_store(step.id, last_frame)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
@@ -384,11 +421,19 @@ class Point:
         return self.o_runnable is None and self.o_port is not None and self.datum is None
 
     @property
+    def is_store(self):
+        from kskp.store import Store
+        return self.datum is not None and isinstance(self.datum, Store)
+
+    @property
     def o_port(self):
         return self.origin[0].port
 
     @property
     def o_runnable(self):
+        """
+        out_runableの略称ではないことに注意!
+        """
         return self.origin[0].runnable
 
     @property
