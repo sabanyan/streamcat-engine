@@ -34,6 +34,7 @@ class Job:
             last_modules.extend(module_list)
 
             # import pprint
+            # pprint.pprint('runs :')  
             # pprint.pprint(last_modules)
 
             # 実行
@@ -309,10 +310,10 @@ class Flow(Datum):
         """
         Cacheなどを後で保存処理を行うためにstoreに入れておく
         """
-        from kskp.store import Cache, Frame
+        from kskp.store import Cache, Frame, Preview
         if isinstance(datum, Cache):
             self.cache_store.append(id, datum)
-        elif isinstance(datum, Frame):
+        elif isinstance(datum, Frame) or isinstance(datum, Preview):
             self.lasts_store.append(id, datum)
 
     def get_output_point(self, o_port):
@@ -354,6 +355,7 @@ class Flow(Datum):
         for point in self.points:
             if point.id == point_id:
                 return point
+        raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
 
     def get_module_list(self):
         """

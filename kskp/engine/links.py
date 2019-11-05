@@ -71,20 +71,83 @@ class CacheDataDestAppender(FolderDataDestAppender):
         saver = CommandLink("cachesaver").resolve()
         self._put_saver(point, f, folder_store, saver, start_time)
 
+class PreviewDataDestAppender():
+    def __init__(self, preview_args={}):
+        self.preview_args = preview_args
 
+    def do_append(self, f, point, start_time):
+        # Visualizerフローを作成する
+        visualizer_args = self.preview_args[point.id]
+        if 'visualizer' not in visualizer_args:
+            raise Exception('visualizer属性を指定してください')
+        visualizer_cmd_name = visualizer_args['visualizer']
+        visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
+        visualizer_step = self._make_visualizer_step(visualizer_args, visualizer_cmd)
+        visualizer_point = Point(point.id, [Tube(Port('o', 'preview'), visualizer_step)], None, [Tube(None, None)])
+
+        # プレビューPointにVisualizerフローを繋げる
+        point.id = str(uuid.uuid4())
+        point.target = [Tube(Port('i', 'frame'), visualizer_step)]
+
+        f.substeps.append(visualizer_step)
+        f.points.append(visualizer_point)
+
+    def _make_visualizer_step(self, args, cmd):
+        """
+        visualizerコマンドのstepを作成する
+        """
+        return Step(str(uuid.uuid4()), cmd, args)
+
+class FolderDataSourcePrepender():
+    def __init__(self):
+        # core.pyで定義されているFlowはf
+        # flow.pyで定義されているFlowはflowと表記する
+        pass
+
+    def do_prepend(self, f, point, frame_uuid):
+        from kskp.store import Folder
+
+        folder_store = Folder.convert_to_folder(result_folder)
+        self._put_loader(frame_uuid, point, f, folder_store)
+
+    def _put_loader(self, frame_uuid, target_point, f, store):
+        """
+        target_point(uuidが既にあるdatumのpoint)の前に
+        LoaderStepとStorePointをくっつける
+        Loaderは指定したstoreからデータを取ってくる
+        """
+        loader_step = self._make_loader_step(frame_uuid)
+        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
+        target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
+        f.points.append(store_point)
+        f.substeps.append(loader_step)
+
+    def _make_loader_step(self, node_uuid):
+        """
+        指定したuuidのデータを取ってくるLoaderStepを作成する
+        """
+        return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
 
 class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, label, json_str, last_ids=[]):
+    def __init__(self, label, json_str, last_ids=[], preview_args={}):
         self.label = label
         self.json_str = json_str
-        self.last_ids = last_ids
         self.is_root = False
+        # self.last_ids = last_ids
+        self.last_ids = preview_args.keys()
 
-        self.folder_data_dest_appender = FolderDataDestAppender(None)
+        self.folder_data_source_prepender = FolderDataSourcePrepender()
+
+        is_preview =  len(self.last_ids) > 0
+        if is_preview:
+            self.folder_data_dest_appender = PreviewDataDestAppender(preview_args)
+        else:
+            self.folder_data_dest_appender = FolderDataDestAppender(None)
+
         self.cache_data_dest_appender = CacheDataDestAppender(None)
 
     def _node2link(self, node):
@@ -115,11 +178,11 @@ class FlowJsonLink:
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
         # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
-        lasts = self._pick_last_points(f.lasts, f.points)
+        last_ids = self._pick_last_points(f.lasts, f.points)
 
         # 実行するのに必要なpointを取得する
         is_preview = len(self.last_ids) > 0
-        f.points = self._pick_necessary_points(f, lasts, is_preview)
+        f.points = self._pick_necessary_points(f, last_ids, is_preview)
 
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
@@ -320,7 +383,8 @@ class FlowJsonLink:
                         target_point.datum = node['value']
                     elif node.get('uuid') is not None:
                         # uuidが既に振られている場合は、loaderから取ってくるようにする
-                        self._put_loader(node.get('uuid'), target_point, flow, Folder)
+                        # self._put_loader(node.get('uuid'), target_point, flow, Folder)
+                        self.folder_data_source_prepender.do_prepend(flow, target_point, node.get('uuid'))
                         # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                         target_point.cache = False
         return flow
@@ -408,40 +472,24 @@ class FlowJsonLink:
         # StoreにDatabaseを設定する
         store_point.datum = store
 
-    def _put_loader(self, frame_uuid, target_point, flow, store):
-        """
-        target_point(uuidが既にあるdatumのpoint)の前に
-        LoaderStepとStorePointをくっつける
-        Loaderは指定したstoreからデータを取ってくる
-        """
-        loader_step = self._make_loader_step(frame_uuid)
-        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
-        target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
-        flow.points.append(store_point)
-        flow.substeps.append(loader_step)
-
-    def _make_loader_step(self, node_uuid):
-        """
-        指定したuuidのデータを取ってくるLoaderStepを作成する
-        """
-        return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
-
 
 class FlowUuidLink(FlowJsonLink):
     """
     UUIDを元にFlowを返却するリンク
     """
 
-    def __init__(self, flow_uuid, last_ids=[]):
+    def __init__(self, flow_uuid, last_ids=[], preview_args={}):
         self.flow_uuid = flow_uuid
         flow_link = FlowLink(flow_uuid)
         flow_data = flow_link.resolve()
         flow_label = flow_link.resolve_label()
 
-        super().__init__(flow_label, json.dumps(flow_data), last_ids)
+        super().__init__(flow_label, json.dumps(flow_data), last_ids, preview_args)
 
         # super().__init__より下に記述すること
-        self.folder_data_dest_appender = FolderDataDestAppender(flow_uuid)
+        is_preview =  len(self.last_ids) > 0
+        if not is_preview:
+            self.folder_data_dest_appender = FolderDataDestAppender(flow_uuid)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_uuid)
 
     def node2link(self, node):
