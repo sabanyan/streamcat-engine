@@ -82,16 +82,25 @@ class Step:
         
         # TODO: 正規表現やreplace対象を外に出す。
         for param, value in flow_args.items():
-            for step_param, step_value in self.args.items():
-                # ネスト深くなるので、continueを利用してネストを浅くした
+            for step_param, step_value in self.args.items():                
                 if isinstance(step_value, str):
+                    # 文字列の場合は通常通り置換を行う
                     self.replace_arg_internal(self.args, param, value, step_param, step_value)
                 elif isinstance(step_value, list):
-                        for list_value in step_value:
-                            for list_value_dict_key, list_value_dict_val in list_value.items():
-                                self.replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
+                    # リストの場合は、リストの要素それぞれに対して置換を行う
+                    for list_value in step_value:
+                        for list_value_dict_key, list_value_dict_val in list_value.items():
+                            self.replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
 
     def replace_arg_internal(self, args, param, value, step_param, step_value):
+        """
+        特定のargのペア（いわゆるオプションのキー名と値）に
+        変数名（e.g. @[variable]）が入っている場合には、
+        実際に与えられた値で置き換える
+
+        param/value 親フローに与えられた値、いわば「実引数」
+        args/step_param/step_value それぞれのstepに与えられた「仮引数」        
+        """
         import re        
         for r in re.finditer(r'@\[(\S*?)\]', step_value):
             if r is None:
