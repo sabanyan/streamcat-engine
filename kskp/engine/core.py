@@ -79,22 +79,28 @@ class Step:
         FIXME?: フロー変数を書き換えるのはStep以外でもいいが、
         早めに書き換えたかったので、とりあえずStepに記載してある
         """
-        import re
+        
         # TODO: 正規表現やreplace対象を外に出す。
         for param, value in flow_args.items():
             for step_param, step_value in self.args.items():
                 # ネスト深くなるので、continueを利用してネストを浅くした
-                if not isinstance(step_value, str):
-                    continue
+                if isinstance(step_value, str):
+                    self.replace_arg_internal(self.args, param, value, step_param, step_value)
+                elif isinstance(step_value, list):
+                        for list_value in step_value:
+                            for list_value_dict_key, list_value_dict_val in list_value.items():
+                                self.replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
 
+    def replace_arg_internal(self, args, param, value, step_param, step_value):
+        import re        
+        for r in re.finditer(r'@\[(\S*?)\]', step_value):
+            if r is None:
+                continue
 
-                for r in re.finditer(r'@\[(\S*?)\]', step_value):
-                    if r is None:
-                        continue
+            for g in r.groups():
+                if param == g:
+                    args[step_param] = args[step_param].replace(f'@[{g}]', value)
 
-                    for g in r.groups():
-                        if param == g:
-                            self.args[step_param] = self.args[step_param].replace(f'@[{g}]', value)
 
 class Flow(Datum):
     def __init__(self, label):
