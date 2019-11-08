@@ -76,13 +76,47 @@ class PreviewDataDestAppender():
         self.preview_args = preview_args
 
     def do_append(self, f, point, start_time):
-        # Visualizerフローを作成する
+        """
+        RowRangeコマンドを付加する
+        ToListコマンドを付加する
+        """
+        # RowRange Stepへの引数を作成する
+        offset = self.preview_args[point.id]['offset'] if 'offset' in self.preview_args[point.id] else 0
+        limit = self.preview_args[point.id]['limit'] if 'limit' in self.preview_args[point.id] else 100
+        rowrange_args = {'offset':offset, 'limit':limit}
+
+        # RowRange Stepを作成する
+        rowrange_cmd = CommandLink('rowrange').resolve()
+        rowrange_step = self._make_step(rowrange_args, rowrange_cmd)
+
+        # ToList Stepを作成する 
+        tolist_cmd = CommandLink('to_list').resolve()
+        tolist_step = self._make_step({}, tolist_cmd)
+
+        # RowRange Stepを繋げる
+        point_id = point.id + '_rowrange'
+        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
+        # ToListコマンドを繋げる
+        tolist_point = Point(point.id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
+
+        point.id = str(uuid.uuid4())
+        point.target = [Tube(Port('i', 'frame'), rowrange_step)]
+
+        f.substeps.append(rowrange_step)
+        f.substeps.append(tolist_step)
+        f.points.append(rowrange_point)
+        f.points.append(tolist_point)
+
+    def do_append_after_runs(self, f, point, start_time):
+        """
+        Visualizerコマンドを付加する
+        """
         visualizer_args = self.preview_args[point.id]
         if 'visualizer' not in visualizer_args:
             raise Exception('visualizer属性を指定してください')
         visualizer_cmd_name = visualizer_args['visualizer']
         visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
-        visualizer_step = self._make_visualizer_step(visualizer_args, visualizer_cmd)
+        visualizer_step = self._make_step(visualizer_args, visualizer_cmd)
         visualizer_point = Point(point.id, [Tube(Port('o', 'preview'), visualizer_step)], None, [Tube(None, None)])
 
         # プレビューPointにVisualizerフローを繋げる
@@ -92,7 +126,7 @@ class PreviewDataDestAppender():
         f.substeps.append(visualizer_step)
         f.points.append(visualizer_point)
 
-    def _make_visualizer_step(self, args, cmd):
+    def _make_step(self, args, cmd):
         """
         visualizerコマンドのstepを作成する
         """
@@ -128,6 +162,33 @@ class FolderDataSourcePrepender():
         """
         return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
+class RunsCommandAppender():
+    def __init__(self):
+        # Runsコマンドを取得する
+        runs_cmd = CommandLink("runs").resolve()
+        # Runsステップを作成する
+        self.runs_step = Step(str(uuid.uuid4()), runs_cmd, {})
+        # ポート名は0番から順に採番する
+        self.next_port_no = 0
+        # Flow.substepsにruns_stepをすでに追加した場合はTrue
+        self._already_step_added = False
+
+    def do_append(self, f, point, start_time):
+        # RunsCommandに繋げるPointを作成する
+        port_name = str(self.next_port_no)
+        runs_point = Point(point.id, [Tube(Port(port_name, 'datum?'), self.runs_step)], None, [Tube(None, None)])
+
+        # ここでRunsCommandを繋げる
+        point.id = point.id + '_runs'
+        point.target = [Tube(Port(port_name, 'mcmd'), self.runs_step)]
+
+        if not self._already_step_added:
+            f.substeps.append(self.runs_step)
+            self._already_step_added = True
+        f.points.append(runs_point)
+
+        self.next_port_no += 1
+
 
 class FlowJsonLink:
     """
@@ -142,14 +203,14 @@ class FlowJsonLink:
 
         self.folder_data_source_prepender = FolderDataSourcePrepender()
 
-        is_preview =  len(self.last_ids) > 0
-        if is_preview:
-            self.folder_data_dest_appender = PreviewDataDestAppender(preview_args)
-        else:
-            self.folder_data_dest_appender = FolderDataDestAppender(None)
+        self.folder_data_dest_appender = FolderDataDestAppender(None)
+
+        self.preview_data_dest_appender = PreviewDataDestAppender(preview_args)
 
         self.cache_data_dest_appender = CacheDataDestAppender(None)
 
+        self.runs_command_appender = RunsCommandAppender()
+            
     def _node2link(self, node):
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
@@ -191,17 +252,29 @@ class FlowJsonLink:
         # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
             last_points = [point for point in f.points if point.is_last]
-            for point in last_points:
-                # store = Library.load_folder(result_folder.uuid)
-                # self._put_saver(point, f, store, CommandLink("saver").resolve())
-                self.folder_data_dest_appender.do_append(f, point, start_time)
+            if is_preview:
+                for point in last_points:
+                    self.preview_data_dest_appender.do_append(f, point, start_time)
+            else:
+                for point in last_points:
+                    self.folder_data_dest_appender.do_append(f, point, start_time)
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            # store = Library.load_folder(cache_folder.uuid)
-            # self._put_saver(point, f, store, CommandLink("cachesaver").resolve())
             self.cache_data_dest_appender.do_append(f, point, start_time)
+
+        # Runsコマンドを付加する
+        if self.is_root:
+            last_points = [point for point in f.points if point.is_last]
+            for point in last_points:
+                self.runs_command_appender.do_append(f, point, start_time)
+
+        # Visualizeコマンドを付加する
+        if is_preview:
+            last_points = [point for point in f.points if point.is_last]
+            for point in last_points:
+                self.preview_data_dest_appender.do_append_after_runs(f, point, start_time)
 
         # print(f.points)
         return f
