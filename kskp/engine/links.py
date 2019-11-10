@@ -16,7 +16,17 @@ class FolderDataDestAppender():
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow_uuid = flow_uuid
-        # self.f = f
+
+        # Activityコマンドを取得する
+        activity_cmd = CommandLink("activity").resolve()
+        # Activity Stepへの引数を作成する
+        activity_args = {'flow_uuid': flow_uuid, 'points':{}}
+        # Activity Stepを作成する
+        self.activity_step = Step(str(uuid.uuid4()), activity_cmd, activity_args)
+        # ポート名は0番から順に採番する
+        self.next_port_no = 0
+        # Flow.substepsにruns_stepをすでに追加した場合はTrue
+        self._already_step_added = False
 
     def do_append(self, f, point, start_time):
         from kskp.store import Folder
@@ -24,7 +34,10 @@ class FolderDataDestAppender():
         # folder_store = Library.load_result_folder()
         folder_store = Folder.convert_to_folder(result_folder)
         saver = CommandLink("saver").resolve()
-        self._put_saver(point, f, folder_store, saver, start_time)
+        saver_step, saver_point = self._put_saver(point, f, folder_store, saver, start_time)
+        activity_point = self._put_activity(point, saver_step, saver_point, f)
+
+        return saver_point, activity_point
 
     def _put_saver(self, point, f, store, saver, start_time):
         """
@@ -39,10 +52,11 @@ class FolderDataDestAppender():
         # saverが作るframe及びcacheのlabelはここで設定できる
         from datetime import datetime, timezone
         args['flow_label'] = f.label if f.label is not None else ''
-        args['point_label'] = point.label if point.label is not None else point.id
+        # args['point_label'] = point.label if point.label is not None else point.id
+        args['point'] = point
         args['start_time'] = start_time
 
-        saver_step = self._make_saver_step(args, saver)
+        saver_step = self._make_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         # point.id = str(uuid.uuid4())
@@ -56,11 +70,45 @@ class FolderDataDestAppender():
         f.substeps.append(saver_step)
         f.points.extend([saver_point, store_point])
 
-    def _make_saver_step(self, args, saver):
+        return saver_step, saver_point
+
+    def _put_activity(self, point, saver_step, saver_point, f):
+        port_name = str(self.next_port_no)
+
+        # Activity Stepのargsにpointを追加する
+        self.activity_step.args['points'][port_name] = point
+
+        # pointにActivity Stepを繋げる
+        saver_point2 = Point(str(uuid.uuid4()),
+                             [Tube(Port('u', 'uuid'), saver_step)],
+                             None, 
+                             [Tube(Port(port_name, 'datum'),
+                             self.activity_step)])
+
+        # activity_pointにActivity Stepを繋げる
+        point_id = saver_point.id
+        activity_point = Point(point_id + '_activity',
+                               [Tube(Port('o', 'activity'),
+                               self.activity_step)],
+                               None,
+                               [Tube(None, None)])
+
+        f.points.append(saver_point2)
+
+        if not self._already_step_added:
+            f.substeps.append(self.activity_step)
+            f.points.append(activity_point)
+            self._already_step_added = True
+
+        self.next_port_no += 1
+
+        return activity_point
+
+    def _make_step(self, args, cmd):
         """
         saverコマンドのstepを作成する
         """
-        return Step(str(uuid.uuid4()), saver, args)
+        return Step(str(uuid.uuid4()), cmd, args)
 
 class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, f, point, start_time):
@@ -72,8 +120,19 @@ class CacheDataDestAppender(FolderDataDestAppender):
         self._put_saver(point, f, folder_store, saver, start_time)
 
 class PreviewDataDestAppender():
-    def __init__(self, preview_args={}):
+    def __init__(self, flow_uuid, preview_args={}):
         self.preview_args = preview_args
+
+        # Activityコマンドを取得する
+        activity_cmd = CommandLink("activity").resolve()
+        # Activity Stepへの引数を作成する
+        activity_args = {'flow_uuid': flow_uuid, 'points':{}}
+        # Activity Stepを作成する
+        self.activity_step = Step(str(uuid.uuid4()), activity_cmd, activity_args)
+        # ポート名は0番から順に採番する
+        self.next_port_no = 0
+        # Flow.substepsにruns_stepをすでに追加した場合はTrue
+        self._already_step_added = False
 
     def do_append(self, f, point, start_time):
         """
@@ -98,9 +157,10 @@ class PreviewDataDestAppender():
         point_id = point.id + '_rowrange'
         rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
         # ToListコマンドを繋げる
-        tolist_point = Point(point.id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
+        point_id = point.id + '_tolist'
+        tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
 
-        point.id = str(uuid.uuid4())
+        # point.id = str(uuid.uuid4())
         point.target = [Tube(Port('i', 'frame'), rowrange_step)]
 
         f.substeps.append(rowrange_step)
@@ -108,27 +168,61 @@ class PreviewDataDestAppender():
         f.points.append(rowrange_point)
         f.points.append(tolist_point)
 
-    def do_append_after_runs(self, f, point, start_time):
+        return tolist_point
+
+    def do_append_after_runs(self, f, point, start_time, original_last_point):
+        visualizer_step, visualizer_point = self._put_visualizer(f, point, original_last_point, start_time)
+        activity_point = self._put_activity(original_last_point, visualizer_step, visualizer_point, f)
+
+        return activity_point
+
+    def _put_visualizer(self, f, point, original_last_point, start_time):
         """
         Visualizerコマンドを付加する
         """
-        if 'args' not in self.preview_args[point.id]:
+        if 'args' not in self.preview_args[original_last_point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください.')
 
-        visualizer_args = self.preview_args[point.id]['args']
+        visualizer_args = self.preview_args[original_last_point.id]['args']
         if 'visualizer' not in visualizer_args:
             raise Exception('visualizer属性を指定してください')
         visualizer_cmd_name = visualizer_args['visualizer']
         visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
         visualizer_step = self._make_step(visualizer_args, visualizer_cmd)
-        visualizer_point = Point(point.id, [Tube(Port('o', 'preview'), visualizer_step)], None, [Tube(None, None)])
+        visualizer_point = Point(point.id + '_v', [Tube(Port('o', 'datum'), visualizer_step)], None, [Tube(None, None)])
 
         # プレビューPointにVisualizerフローを繋げる
-        point.id = str(uuid.uuid4())
+        # point.id = str(uuid.uuid4())
         point.target = [Tube(Port('i', 'frame'), visualizer_step)]
 
         f.substeps.append(visualizer_step)
         f.points.append(visualizer_point)
+
+        return visualizer_step, visualizer_point
+
+    def _put_activity(self, original_last_point, visualizer_step, visualizer_point, f):
+        # Activity Stepのargsにpointを追加する
+        port_name = str(self.next_port_no)
+        self.activity_step.args['points'][port_name] = original_last_point
+
+        # Visualizer PointにActivity Stepを繋げる
+        visualizer_point.target = [Tube(Port(port_name, 'datum'), self.activity_step)]
+
+        # Activity_pointを作成し、これにActivity Stepを繋げる
+        point_id = visualizer_point.id
+        activity_point = Point(point_id + '_activity',
+                               [Tube(Port('o', 'activity'), self.activity_step)],
+                               None,
+                               [Tube(None, None)])
+
+        if not self._already_step_added:
+            f.substeps.append(self.activity_step)
+            f.points.append(activity_point)
+            self._already_step_added = True
+
+        self.next_port_no += 1
+
+        return activity_point
 
     def _make_step(self, args, cmd):
         """
@@ -193,6 +287,8 @@ class RunsCommandAppender():
 
         self.next_port_no += 1
 
+        return runs_point
+
 
 class FlowJsonLink:
     """
@@ -209,7 +305,7 @@ class FlowJsonLink:
 
         self.folder_data_dest_appender = FolderDataDestAppender(None)
 
-        self.preview_data_dest_appender = PreviewDataDestAppender(preview_args)
+        self.preview_data_dest_appender = PreviewDataDestAppender(None, preview_args)
 
         self.cache_data_dest_appender = CacheDataDestAppender(None)
 
@@ -252,35 +348,29 @@ class FlowJsonLink:
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
         start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
-            
-        # lasts出力処理（メインフローの場合のみ）
-        if self.is_root:
-            last_points = [point for point in f.points if point.is_last]
-            if is_preview:
-                for point in last_points:
-                    self.preview_data_dest_appender.do_append(f, point, start_time)
-            else:
-                for point in last_points:
-                    self.folder_data_dest_appender.do_append(f, point, start_time)
 
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
             self.cache_data_dest_appender.do_append(f, point, start_time)
 
-        # Runsコマンドを付加する
+        # lasts出力処理（メインフローの場合のみ）
         if self.is_root:
-            last_points = [point for point in f.points if point.is_last]
-            for point in last_points:
-                self.runs_command_appender.do_append(f, point, start_time)
+            for original_last_point in [point for point in f.points if point.is_last]:
+                if is_preview:
+                    # Visualizerコマンドのための前処理コマンドを付加する
+                    last_point = self.preview_data_dest_appender.do_append(f, original_last_point, start_time)
+                else:
+                    # Saverコマンドを付加する
+                    last_point, activity_point = self.folder_data_dest_appender.do_append(f, original_last_point, start_time)
 
-        # Visualizeコマンドを付加する
-        if is_preview:
-            last_points = [point for point in f.points if point.is_last]
-            for point in last_points:
-                self.preview_data_dest_appender.do_append_after_runs(f, point, start_time)
+                # Runsコマンドを付加する
+                last_point = self.runs_command_appender.do_append(f, last_point, start_time)
 
-        # print(f.points)
+                # Visualizeコマンドを付加する
+                if is_preview:
+                    self.preview_data_dest_appender.do_append_after_runs(f, last_point, start_time, original_last_point)
+
         return f
 
     def _pick_last_points(self, lasts, points):
@@ -565,7 +655,9 @@ class FlowUuidLink(FlowJsonLink):
 
         # super().__init__より下に記述すること
         is_preview =  len(self.last_ids) > 0
-        if not is_preview:
+        if is_preview:
+            self.preview_data_dest_appender = PreviewDataDestAppender(flow_uuid, preview_args)
+        else:
             self.folder_data_dest_appender = FolderDataDestAppender(flow_uuid)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_uuid)
 
