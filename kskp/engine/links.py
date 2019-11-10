@@ -80,10 +80,11 @@ class PreviewDataDestAppender():
         RowRangeコマンドを付加する
         ToListコマンドを付加する
         """
+        if 'args' not in self.preview_args[point.id]:
+            raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
+
         # RowRange Stepへの引数を作成する
-        offset = self.preview_args[point.id]['offset'] if 'offset' in self.preview_args[point.id] else 0
-        limit = self.preview_args[point.id]['limit'] if 'limit' in self.preview_args[point.id] else 100
-        rowrange_args = {'offset':offset, 'limit':limit}
+        rowrange_args = self.preview_args[point.id]['args']
 
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
@@ -111,7 +112,10 @@ class PreviewDataDestAppender():
         """
         Visualizerコマンドを付加する
         """
-        visualizer_args = self.preview_args[point.id]
+        if 'args' not in self.preview_args[point.id]:
+            raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください.')
+
+        visualizer_args = self.preview_args[point.id]['args']
         if 'visualizer' not in visualizer_args:
             raise Exception('visualizer属性を指定してください')
         visualizer_cmd_name = visualizer_args['visualizer']
