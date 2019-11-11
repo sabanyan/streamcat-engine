@@ -547,6 +547,8 @@ class FlowJsonLink:
                 # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
                 if not (len(flow.i_ports) > 0 and target_point.is_first):
                     if self._is_value_node(node):
+                        # nodeのvalue属性はテストで用いるためだけに存在する
+                        # テストコードからvalue属性を無くした後、この分岐は削除したい
                         target_point.datum = node['value']
                     elif node.get('uuid') is not None:
                         # uuidが既に振られている場合は、loaderから取ってくるようにする
