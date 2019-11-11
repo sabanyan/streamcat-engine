@@ -59,7 +59,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
-        lasts = execute(flow_link, {}, {})
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
         uuid = [value for value in lasts.values()][0].uuid
 
         # テスト
@@ -95,20 +96,28 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
+        # Preview Args
+        preview_args = {
+          "new e9c09a48-901a-45d7-8bf3-91a323801277": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, ['new e9c09a48-901a-45d7-8bf3-91a323801277'])
-        lasts = execute(flow_link, {}, {})
-        uuid = [value for value in lasts.values()][0].uuid
+        flow_link = FlowUuidLink(flow.uuid, ['new e9c09a48-901a-45d7-8bf3-91a323801277'], preview_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_preview(activity)
 
         # テスト
-        # DBにframeデータが生成されているか
-        frame = Library.load_frame(uuid)
-        self.assertIsNotNone(frame)
-        self.assertTrue(frame.file_exists)
+        # 正しいPreviewが得られるか
+        self.assertIn("new e9c09a48-901a-45d7-8bf3-91a323801277", lasts)
 
         # 後片付け
         delete_flow(main_uuid)
-        Library.delete_frame(uuid)
         Library.load_frame(frame_uuid).remove_reference_only()
 
     # @unittest.skip
@@ -142,7 +151,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
-        lasts = execute(flow_link, {}, {})
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
         uuid = [value for value in lasts.values()][0].uuid
 
         # テスト
@@ -198,7 +208,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         result_uuids = []
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
-        lasts = execute(flow_link, {}, {})
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
         for datum in lasts.values():
             # テスト
             # DBにframeデータが生成されているか
@@ -250,7 +261,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         cache_uuids = []
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
-        lasts = execute(flow_link, {}, {})
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
         for datum in lasts.values():
             # テスト
             # DBにframeデータが生成されているか
@@ -305,19 +317,30 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
-        # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, ['d14'])
-        lasts = execute(flow_link, {}, {})
-        self.assertIsNotNone(lasts['d14'])
-        frame = Library.load_frame(lasts['d14'].uuid)
-        self.assertIsNotNone(frame)
-        self.assertTrue(frame.file_exists)
+        # Preview Args
+        preview_args = {
+          "d14": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
 
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(flow.uuid, ['d14'], preview_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_preview(activity)
+
+        # テスト
+        self.assertIn("d14", lasts)
+
+        # 後片付け
         delete_flow(flow.uuid)
         self.assertTrue(delete_flow(sub1_uuid))
         self.assertTrue(delete_flow(sub2_uuid))
         Library.load_frame(frame_uuid).remove_reference_only()
-        Library.delete_frame(frame.uuid)
 
     # @unittest.skip
     def test_shindo_flow_execute(self):
@@ -357,7 +380,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         result_uuids = []
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
-        lasts = execute(flow_link, {}, {})
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
         for datum in lasts.values():
             # テスト
             # DBにframeデータが生成されているか
@@ -422,7 +446,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         cache_uuids = []
         # 単純な実行結果のテスト
         flow_link = FlowUuidLink(flow.uuid)
-        lasts = execute(flow_link, {}, {})
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
         for datum in lasts.values():
             # テスト
             # DBにframeデータが生成されているか
@@ -489,14 +514,26 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
-        # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, ['d12'])
-        lasts = execute(flow_link, {}, {})
-        self.assertIsNotNone(lasts['d12'])
-        frame = Library.load_frame(lasts['d12'].uuid)
-        self.assertIsNotNone(frame)
-        self.assertTrue(frame.file_exists)
+        # Preview Args
+        preview_args = {
+          "d12": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
 
+        # 単純な実行結果のテスト
+        flow_link = FlowUuidLink(flow.uuid, ['d12'], preview_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_preview(activity)
+
+        # テスト
+        self.assertIn("d12", lasts)
+
+        # 後片付け
         self.assertTrue(delete_flow(main_uuid))
         self.assertTrue(delete_flow(sub1_uuid))
         self.assertTrue(delete_flow(sub2_uuid))
@@ -505,7 +542,6 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub5_uuid))
         self.assertTrue(delete_flow(sub6_uuid))
         Library.load_frame(frame_uuid).remove_reference_only()
-        Library.delete_frame(frame.uuid)
 
 
 # Helpler
@@ -551,3 +587,17 @@ def update_flow_node_uuid(flow_json, node_id, uuid):
             node['uuid'] = uuid
             return True
     return False
+
+def convert_from_activity(activity):
+    """
+    execute()の戻り値であるActivityから
+    pointのidとframeのDictに置き換える
+    """
+    return {point.id : Frame.find_by_uuid(frame_uuid) for point, frame_uuid in activity.result.items()}
+
+def convert_from_activity_preview(activity):
+    """
+    execute()の戻り値であるActivityから
+    pointのidとpreviewのDictに置き換える
+    """
+    return {point.id : preview.result['reader'] for point, preview in activity.result.items()}
