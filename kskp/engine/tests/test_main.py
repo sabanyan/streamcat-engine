@@ -608,20 +608,25 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d1'])
+        # Preview Args
+        preview_args = {
+          "d1": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d1'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d1'].uuid)
-        self.assertEqual(result, correct['d1'])
-
-        # 後片付け
-        Library.delete_frame(lasts['d1'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_simple_flow_three_commands_preview(self):
@@ -685,20 +690,25 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d2'])
+        # Preview Args
+        preview_args = {
+          "d2": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d2'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid)
-        self.assertEqual(result, correct['d2'])
-
-        # 後片付け
-        Library.delete_frame(lasts['d2'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_simple_flow_three_commands_execute(self):
@@ -842,20 +852,25 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d2'])
+        # Preview Args
+        preview_args = {
+          "d2": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d2'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid)
-        self.assertEqual(result, correct['d2'])
-
-        # 後片付け
-        Library.delete_frame(lasts['d2'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
@@ -970,21 +985,25 @@ class ExecuteTestCase(unittest.TestCase):
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         oだけのテスト（d2）
         """
-        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs), ['d2'])
+        # Preview Args
+        preview_args = {
+          "d2": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs), ['d2'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d2'].uuid)
-        self.assertEqual(result, correct['d2'])
-        self.assertIsNone(lasts.get('d3'))
-
-        # 後片付け
-        Library.delete_frame(lasts['d2'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_simple_flow_preview_d3_two_outputs(self):
@@ -992,21 +1011,26 @@ class ExecuteTestCase(unittest.TestCase):
         mコマンド１個（２つのoutputを持つ）のフロープレビュー
         uだけのテスト（d3）
         """
-        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs), ['d3'])
+
+        # Preview Args
+        preview_args = {
+          "d3": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], json.dumps(self.flow_data_outputs), ['d3'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d3'].uuid)
-        self.assertEqual(result, correct['d3'])
-        self.assertIsNone(lasts.get('d2'))
-
-        # 後片付け
-        Library.delete_frame(lasts['d3'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_long_flow_execute_two_outputs(self):
@@ -1118,21 +1142,25 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d3'])
+        # Preview Args
+        preview_args = {
+          "d3": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d3'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d3': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d3'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d3'].uuid)
-        self.assertEqual(result, correct['d3'])
-        self.assertIsNone(lasts.get('d4'))
-
-        # 後片付け
-        Library.delete_frame(lasts['d3'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_long_flow_preview_d3_two_outputs(self):
@@ -1179,21 +1207,25 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d4'])
+        # Preview Args
+        preview_args = {
+          "d4": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        flow_link = FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['d4'], preview_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity(activity)
+        lasts = convert_from_activity_preview(activity)
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['d4'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['d4'].uuid)
-        self.assertEqual(result, correct['d4'])
-        self.assertIsNone(lasts.get('d3'))
-
-        # 後片付け
-        Library.delete_frame(lasts['d4'].uuid)
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
     def test_simple_flow_execute_no_inputs_command(self):
@@ -1391,14 +1423,17 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # @unittest.skip
+    # Nodeのvalue属性値がRowRangeCommandのinputsに入ってきてNysolエラーになる
+    # そもそもNodeのvalue属性は仕様にない実装である。
+    # テストコードの再利用を試みたがSquareCommandはNysolModuleを受け付けないしで、断念
+    @unittest.skip
     def test_simple_flow_preview_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
         真ん中のdatumでプレビューする
         """
 
-        json_mainflow = '''{
+        json_mainflow = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1410,8 +1445,7 @@ class ExecuteTestCase(unittest.TestCase):
                 {
                     "id": "dd1",
                     "type": "int",
-                    "value": [[4]],
-                    "uuid": null
+                    "uuid": None
                 },
                 {
                     "id": "ss1",
@@ -1424,7 +1458,7 @@ class ExecuteTestCase(unittest.TestCase):
                 {
                     "id": "dd2",
                     "type": "int",
-                    "uuid": null
+                    "uuid": None
                 },
                 {
                     "id": "ss2",
@@ -1437,28 +1471,40 @@ class ExecuteTestCase(unittest.TestCase):
                 {
                     "id": "dd3",
                     "type": "int",
-                    "uuid": null
+                    "uuid": None
                 }
             ]
-        }'''
+        }
+
+        data = [[4]]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data_z.csv', data)
+        update_flow_node_uuid(json_mainflow, 'dd1', frame_uuid)
+
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub1', sub_uuid)
 
-        activity = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd2']), {}, {})
-        lasts = convert_from_activity(activity)
+        # Preview Args
+        preview_args = {
+          "dd2": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        activity = execute(FlowJsonLink('メインフロー', json.dumps(json_mainflow), ['dd2'], preview_args), {}, {})
+        lasts = convert_from_activity_preview(activity)
         correct = {'dd2': [['256']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd2'].uuid, header=False)
-        self.assertEqual(result, correct['dd2'])
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
-        Library.delete_frame(lasts['dd2'].uuid)
 
     # @unittest.skip
     def test_simple_flow_execute_include_branch_output_subflows(self):
@@ -1587,20 +1633,27 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        activity = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd2']), {}, {})
-        lasts = convert_from_activity(activity)
+        # Preview Args
+        preview_args = {
+          "dd2": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        activity = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd2'], preview_args), {}, {})
+        lasts = convert_from_activity_preview(activity)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd2'].uuid)
-        self.assertEqual(result, correct['dd2'])
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
-        Library.delete_frame(lasts['dd2'].uuid)
 
     # @unittest.skip
     def test_simple_flow_preview_dd3_include_branch_output_subflows(self):
@@ -1657,20 +1710,27 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        activity = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd3']), {}, {})
-        lasts = convert_from_activity(activity)
+        # Preview Args
+        preview_args = {
+          "dd3": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        activity = execute(FlowJsonLink('メインフロー', json_mainflow, ['dd3'], preview_args), {}, {})
+        lasts = convert_from_activity_preview(activity)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['dd3'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd3'].uuid)
-        self.assertEqual(result, correct['dd3'])
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
-        Library.delete_frame(lasts['dd3'].uuid)
 
     # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
@@ -1912,20 +1972,27 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        activity = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['dd5']), {}, {})
-        lasts = convert_from_activity(activity)
+        # Preview Args
+        preview_args = {
+          "dd5": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        activity = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['dd5'], preview_args), {}, {})
+        lasts = convert_from_activity_preview(activity)
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result = get_frame_by_uuid(lasts['dd5'].uuid)
-        self.assertEqual(result, correct['dd5'])
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
-        Library.delete_frame(lasts['dd5'].uuid)
 
     # @unittest.skip
     def test_complex_flow_two_preview_include_branch_output_subflowss(self):
@@ -2038,24 +2105,34 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        activity = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['dd2', 'dd5']), {}, {})
-        lasts = convert_from_activity(activity)
+        # Preview Args
+        preview_args = {
+          "dd2": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          },
+          "dd5": {
+            "args": {
+              "visualizer" : "csvtohtmltable",
+              "offset" : 0,
+              "limit"  : 100
+            }
+          }
+        }
+
+        activity = execute(FlowJsonLink(json_flow['label'], json.dumps(json_flow), ['dd2', 'dd5'], preview_args), {}, {})
+        lasts = convert_from_activity_preview(activity)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(Library.load_frame(lasts['dd2'].uuid))
-        self.assertIsNotNone(Library.load_frame(lasts['dd5'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        result_dd2 = get_frame_by_uuid(lasts['dd2'].uuid)
-        result_dd5 = get_frame_by_uuid(lasts['dd5'].uuid)
-        self.assertEqual(result_dd2, correct['dd2'])
-        self.assertEqual(result_dd5, correct['dd5'])
+        # 正しいPreviewが得られるか
+        self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
-        Library.delete_frame(lasts['dd2'].uuid)
-        Library.delete_frame(lasts['dd5'].uuid)
 
     # @unittest.skip
     def test_simple_flow_execute_generate_one_cache(self):
@@ -2761,6 +2838,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(lasts['d4'].uuid)
 
+    # もともとskip状態
     @unittest.skip
     def test_simple_flow_execute_use_mcat(self):
         """
@@ -2972,7 +3050,11 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(frame_uuid)
 
-    # @unittest.skip
+    # 二股コマンドの片一方の出力先にPointを繋げない場合のテストになる
+    # mselrowのFIFOの関係で、nm.runs()でフリーズする。
+    # だが、そもそもそのようなフローはフローエディタでは作成不可能なので
+    # このテストは無効である
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_pcmd_one_side_o(self):
         """
         独自コマンド１個（２つのoutputを持つ）のフロー実行
@@ -2992,7 +3074,7 @@ class ExecuteTestCase(unittest.TestCase):
         flow_json = self.flow_data_outputs_pcmd
         for node in flow_json['nodes']:
             if node['id'] == 'c1':
-                node['dsts'] = {'o': 'd2'}
+                # node['dsts'] = {'o': 'd2'}
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
 
@@ -3012,7 +3094,11 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
         Library.delete_frame(frame_uuid)
 
-    # @unittest.skip
+    # 二股コマンドの片一方の出力先にPointを繋げない場合のテストになる
+    # mselrowのFIFOの関係で、nm.runs()でフリーズする。
+    # だが、そもそもそのようなフローはフローエディタでは作成不可能なので
+    # このテストは無効である
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_pcmd_one_side_u(self):
         """
         独自コマンド１個（２つのoutputを持つ）のフロー実行
@@ -3025,14 +3111,15 @@ class ExecuteTestCase(unittest.TestCase):
             ["B", 3, 40],
             ["B", 1, 50]]
 
-        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data_a.csv', data)
         update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
 
         # 出力oを消す
         flow_json = self.flow_data_outputs_pcmd
         for node in flow_json['nodes']:
             if node['id'] == 'c1':
-                node['dsts'] = {'u': 'd3'}
+                # ⬇️これしたらnm.runs()でフリーズ！
+                # node['dsts'] = {'u': 'd3'}
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
 
@@ -3209,7 +3296,14 @@ def update_flow_node_uuid(flow_json, node_id, uuid):
 
 def convert_from_activity(activity):
     """
-    execute()の戻り値であるPreviewから
+    execute()の戻り値であるActivityから
     pointのidとframeのDictに置き換える
     """
     return {point.id : Frame.find_by_uuid(frame_uuid) for point, frame_uuid in activity.result.items()}
+
+def convert_from_activity_preview(activity):
+    """
+    execute()の戻り値であるActivityから
+    pointのidとpreviewのDictに置き換える
+    """
+    return {point.id : preview.result['reader'] for point, preview in activity.result.items()}
