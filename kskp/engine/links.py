@@ -371,6 +371,11 @@ class FlowJsonLink:
                 if is_preview:
                     self.preview_data_dest_appender.do_append_after_runs(f, last_point, start_time, original_last_point)
 
+        elif f.is_datadst:
+            # データデストの場合はその中のLastsにRunsコマンドを付加する
+            for last_point in [point for point in f.points if point.is_last]:
+                self.runs_command_appender.do_append(f, last_point, start_time)
+
         return f
 
     def _pick_last_points(self, lasts, points):
