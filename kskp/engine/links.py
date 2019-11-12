@@ -411,8 +411,10 @@ class FlowJsonLink:
         flow.o_ports = self._parse_ports(ports[1])
 
         # flowを更新する
-        self._update_flow_by_runnable(flow, json_obj['nodes'])
-        self._update_flow_by_other_than_runnable(flow, json_obj['nodes'])
+        if 'nodes' in json_obj:
+            self._update_flow_by_runnable(flow, json_obj['nodes'])
+            self._update_flow_by_other_than_runnable(flow, json_obj['nodes'])
+
         return flow
 
     def _parse_ports(self, port_dict_list):
