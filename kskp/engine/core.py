@@ -108,13 +108,7 @@ class Flow(Datum):
         self.points = []
         self.substeps = []
 
-        # TODO:FrameStoreは外部にあるべき？
-        # contextに'framestore'というキーを作ってそこに入れる？
-        # それともこのままでいい？
-        from kskp.store import FrameStore, ModuleStore
-        self.cache_store = FrameStore()
-        self.lasts_store = FrameStore()
-
+        from kskp.store import ModuleStore
         self.module_store = ModuleStore()
 
     @property
@@ -127,20 +121,6 @@ class Flow(Datum):
 
         # return lasts
         return {p.id: p.datum for p in self.points if p.is_last}
-
-    @property
-    def results(self):
-        """
-        最後にできる結果
-        """
-        return self.lasts_store.data
-
-    @property
-    def caches(self):
-        """
-        作成したキャッシュ
-        """
-        return self.cache_store.data
 
     @property
     def is_datadst(self):
@@ -280,13 +260,6 @@ class Flow(Datum):
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result.pop(output_point.o_port.name)
-                self.put_datum_in_store(output_point.id, output_point.datum)
-                # print('output_point:', output_point)
-
-            # stepがデータデストの場合は、データデスト内のlastsを取得する
-            if step.is_datadst:
-                for last_frame in step.runnable.lasts.values():
-                    self.put_datum_in_store(step.id, last_frame)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
@@ -305,16 +278,6 @@ class Flow(Datum):
         # result = {port.name: self.get_output_point(port).datum.run() for port in self.o_ports}
         # print('make_outputs result:', result)
         # return result
-
-    def put_datum_in_store(self, id, datum):
-        """
-        Cacheなどを後で保存処理を行うためにstoreに入れておく
-        """
-        from kskp.store import Cache, Frame, Preview
-        if isinstance(datum, Cache):
-            self.cache_store.append(id, datum)
-        elif isinstance(datum, Frame) or isinstance(datum, Preview):
-            self.lasts_store.append(id, datum)
 
     def get_output_point(self, o_port):
         """
@@ -368,8 +331,6 @@ class Flow(Datum):
         return self.module_store.module_list
 
     def dtor(self):
-        self.cache_store.save()
-        self.lasts_store.save()
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.store import Command
