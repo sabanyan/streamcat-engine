@@ -6,7 +6,7 @@ from pathlib import Path
 
 from kskp.engine import Flow, Step, Point, Tube
 from kskp.store import Port, FlowLink, Library, Folder
-from kskp.store.commands import  CommandLink
+from kskp.store.commands import CommandLink
 
 root = Library.load_root()
 result_folder = Library.load_result_folder()
@@ -553,7 +553,11 @@ class FlowJsonLink:
                     if self._is_value_node(node):
                         # nodeのvalue属性はテストで用いるためだけに存在する
                         # テストコードからvalue属性を無くした後、この分岐は削除したい
-                        target_point.datum = node['value']
+                        if isinstance(node['value'], list):
+                            from kskp.store import List
+                            target_point.datum = List(node['value'])
+                        else:
+                            target_point.datum = node['value']
                     elif node.get('uuid') is not None:
                         # uuidが既に振られている場合は、loaderから取ってくるようにする
                         # self._put_loader(node.get('uuid'), target_point, flow, Folder)
