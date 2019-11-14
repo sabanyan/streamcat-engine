@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .make_flow_json import create_flow, delete_flow
 
-from kskp.engine import execute, FlowJsonLink, FlowUuidLink
+from kskp.engine import execute, FlowJsonLink, FlowUuidLink, FlowLinkContext
 from kskp.store import Library, FLOW_PATH, Folder, Frame, Command, Port, Datum, STORE_DIR
 
 root = Library.load_root()
@@ -58,7 +58,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
         uuid = [value for value in lasts.values()][0].uuid
@@ -108,7 +108,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, ['new e9c09a48-901a-45d7-8bf3-91a323801277'], preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), ['new e9c09a48-901a-45d7-8bf3-91a323801277'], preview_args)
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity_preview(activity)
 
@@ -150,7 +150,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         flow = Library.load_flow(flow.uuid)
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
         uuid = [value for value in lasts.values()][0].uuid
@@ -207,7 +207,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         result_uuids = []
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
         for datum in lasts.values():
@@ -260,7 +260,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         result_uuids = []
         cache_uuids = []
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
         for datum in lasts.values():
@@ -329,7 +329,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, ['d14'], preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), ['d14'], preview_args)
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity_preview(activity)
 
@@ -379,7 +379,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
 
         result_uuids = []
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
         for datum in lasts.values():
@@ -445,7 +445,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         result_uuids = []
         cache_uuids = []
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
         for datum in lasts.values():
@@ -526,7 +526,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, ['d12'], preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), ['d12'], preview_args)
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity_preview(activity)
 
