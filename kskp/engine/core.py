@@ -129,7 +129,7 @@ class Flow(Datum):
         """
         # いい条件が思い浮かばない,,,
         has_store = any (p for p in self.points if p.is_store)
-        return len(self.o_ports) == 0 and len(self.lasts) == 1 and has_store
+        return len(self.o_ports) == 0 and len(self.lasts) == 2 and has_store
 
     def run(self, args, inputs):
         """
@@ -264,7 +264,7 @@ class Flow(Datum):
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
             # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
-            from kskp.store import RunfuncCommand
+            from kskp.store.commands import RunfuncCommand
             if isinstance(step.runnable, RunfuncCommand):
                 for value in result.values():
                     self.module_store.append(value.content)
@@ -329,6 +329,26 @@ class Flow(Datum):
                 self.module_store.extend(substep.runnable.get_module_list())
 
         return self.module_store.module_list
+
+    def find_activity(self):
+        """
+        Activity Stepをメインフローから再帰的に探し出す
+        """
+        from kskp.store import Activity
+        # 自身がActivityを持っている場合
+        for activity in self.lasts.values():
+            if isinstance(activity, Activity):
+                return activity
+        # 自身が持っていない場合、サブフローを探しに行く
+        # (データデストのみを用いている場合)
+        for substep in self.substeps:
+            if substep.is_flow :
+                result = substep.runnable.find_activity()
+                if result is not None:
+                    return result
+        # Activityが見つからなかった場合
+        # raise Exception('No activity is found !')
+        return None
 
     def dtor(self):
         # 配下のflowのdtorも動かす

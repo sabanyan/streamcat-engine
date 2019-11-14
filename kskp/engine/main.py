@@ -53,9 +53,13 @@ def execute(link, args, inputs, job_complete_handler=None):
 
         # Activityを結果として返す
         from kskp.store import Activity
-        for activity in job.step.runnable.lasts.values():
-            if isinstance(activity, Activity):
-                return activity
+        # for activity in job.step.runnable.lasts.values():
+        #     if isinstance(activity, Activity):
+        #         return activity
+        activity = job.step.runnable.find_activity()
+
+        print(activity.count_result())
+        return activity
 
     except Exception as e:
         print('main:', e)
