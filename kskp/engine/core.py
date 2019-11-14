@@ -17,7 +17,6 @@ class Job:
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
         except Exception as e:
-            print(repr(e))
             self.errors.append(e)
             raise
 
@@ -40,7 +39,6 @@ class Job:
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
         except Exception as e:
-            print(repr(e))
             self.errors.append(e)
             raise
 
