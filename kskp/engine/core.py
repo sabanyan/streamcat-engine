@@ -17,7 +17,6 @@ class Job:
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
         except Exception as e:
-            print(repr(e))
             self.errors.append(e)
             raise
 
@@ -41,7 +40,6 @@ class Job:
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
         except Exception as e:
-            print(repr(e))
             self.errors.append(e)
             raise
 
@@ -185,6 +183,12 @@ class Flow(Datum):
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
 
         # 未実行かつ出力のないサブフローを集める
+        # last_sub_flows = set()
+        # for p in self.points:
+        #     if not p.is_last:
+        #         for t_tube in p.target:
+        #             if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran:
+        #                 last_sub_flows.add(t_tube.runnable)
         last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
                           if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
 
@@ -234,10 +238,8 @@ class Flow(Datum):
             for p in self.points:
                 for t_tube in p.target:
                     if t_tube.runnable == step:
-                        # content（datumのラップ対象、生nysol_moduleなど）を渡すか、datumを渡すかで悩んでいる
-                        # datumを渡すと受け手側で必ずinputs['i'].contentみたいにとり出させるのが煩わしかったのでcontent渡している
-                        # commandがpointのcontentを知っているのも気持ち悪いし。。。
-                        inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
+                        # コマンドのinputs引数に値を格納する
+                        inputs[t_tube.port.name] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id

@@ -10,7 +10,9 @@ from pathlib import Path
 from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowUuidLink, FlowLinkContext
-from kskp.store import Library, FLOW_PATH, Frame, Command, Port, Datum, STORE_DIR, Database, DatabaseConn
+from kskp.core import Datum
+from kskp.store import Library, FLOW_PATH, Frame, Command, Port, STORE_DIR, Database, DatabaseConn
+from kskp.store import List
 
 root = Library.load_root()
 
@@ -2767,12 +2769,12 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(flow.flow_data['label'], json.dumps(flow.flow_data), FlowLinkContext())
 
         inputs = {
-            'd1': [["顧客", "数量", "金額"],
-                ["A", 1, 10],
-                ["A", 2, 20],
-                ["B", 1, 30],
-                ["B", 3, 40],
-                ["B", 1, 50]]
+            'd1': List([["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]])
         }
         activity = execute(flow_link, {}, inputs)
         lasts = convert_from_activity(activity)
@@ -2807,12 +2809,12 @@ class ExecuteTestCase(unittest.TestCase):
         flow_link = FlowJsonLink(flow.flow_data['label'], json.dumps(flow.flow_data), FlowLinkContext())
 
         inputs = {
-            'd1': [["顧客", "数量", "金額"],
-                ["A", 1, 10],
-                ["A", 2, 20],
-                ["B", 1, 30],
-                ["B", 3, 40],
-                ["B", 1, 50]]
+            'd1': List([["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]])
         }
 
         args = {
@@ -2850,13 +2852,14 @@ class ExecuteTestCase(unittest.TestCase):
                                  json.dumps(self.flow_data_inputs_mcat), FlowLinkContext())
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity(activity)
-        correct = {'d1': [['A', '1', '10'],
-                          ['A', '2', '20'],
-                          ['B', '1', '30'],
-                          ['B', '3', '40'],
-                          ['B', '1', '50'],
-                          ["C", '3', '10'],
-                          ["C", '4', '20']]}
+        correct = {'d1': List([['A', '1', '10'],
+                              ['A', '2', '20'],
+                              ['B', '1', '30'],
+                              ['B', '3', '40'],
+                              ['B', '1', '50'],
+                              ["C", '3', '10'],
+                              ["C", '4', '20']])
+                  }
 
         # テスト
         # DBにframeデータが生成されているか
@@ -3019,11 +3022,11 @@ class ExecuteTestCase(unittest.TestCase):
         独自コマンド１個（２つのoutputを持つ）のフロー実行
         """
         data = [["顧客", "数量", "金額"],
-            ["A", 1, 10],
-            ["A", 2, 20],
-            ["B", 1, 30],
-            ["B", 3, 40],
-            ["B", 1, 50]]
+                ["A", 1, 10],
+                ["A", 2, 20],
+                ["B", 1, 30],
+                ["B", 3, 40],
+                ["B", 1, 50]]
 
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
         update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
@@ -3105,11 +3108,11 @@ class ExecuteTestCase(unittest.TestCase):
         uだけ設置
         """
         data = [["顧客", "数量", "金額"],
-            ["A", 1, 10],
-            ["A", 2, 20],
-            ["B", 1, 30],
-            ["B", 3, 40],
-            ["B", 1, 50]]
+                ["A", 1, 10],
+                ["A", 2, 20],
+                ["B", 1, 30],
+                ["B", 3, 40],
+                ["B", 1, 50]]
 
         frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'cache_data_a.csv', data)
         update_flow_node_uuid(self.flow_data_outputs_pcmd, 'i', frame_uuid)
@@ -3259,12 +3262,17 @@ def get_frame_by_uuid(uuid, header=True):
     import csv
     result = []
     frame = Library.load_frame(uuid)
-    with open(STORE_DIR.parent / frame.path, 'r') as f:
-        rows = csv.reader(f)
-        if header:
-            header = next(rows)
-        for row in rows:
-            result.append(row)
+    try:
+      with open(STORE_DIR.parent / frame.path, 'r') as f:
+          rows = csv.reader(f)
+          if header:
+              header = next(rows)
+          for row in rows:
+              result.append(row)
+    except Exception as e:
+      import pprint
+      pprint.pprint(f)
+      raise e
 
     return result
 

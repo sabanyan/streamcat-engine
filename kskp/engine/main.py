@@ -58,7 +58,6 @@ def execute(link, args, inputs, job_complete_handler=None):
         #         return activity
         activity = job.step.runnable.find_activity()
 
-        print(activity.count_result())
         return activity
 
     except Exception as e:
