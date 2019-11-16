@@ -189,8 +189,11 @@ class ActivityDataDestAppender():
 
         # Activityコマンドを取得する
         activity_cmd = CommandLink("activity").resolve()
+        # Activity Datumを作成する
+        from kskp.store import Activity
+        activity = Activity(None, 'activity', flow_uuid)
         # Activity Stepへの引数を作成する
-        activity_args = {'flow_uuid': flow_uuid, 'points':{}}
+        activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
         self.activity_step = Step(str(uuid.uuid4()), activity_cmd, activity_args)
         # ポート名は0番から順に採番する

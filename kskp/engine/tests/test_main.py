@@ -3307,7 +3307,7 @@ def convert_from_activity(activity):
     execute()の戻り値であるActivityから
     pointのidとframeのDictに置き換える
     """
-    return {point.id : Frame.find_by_uuid(frame_uuid) for point, frame_uuid in activity.result.items()}
+    return {point.id : frame for point, frame in activity.result.items()}
 
 def convert_from_activity_preview(activity):
     """

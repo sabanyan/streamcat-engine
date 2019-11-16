@@ -58,6 +58,11 @@ def execute(link, args, inputs, job_complete_handler=None):
         #         return activity
         activity = job.step.runnable.find_activity()
 
+        if activity is not None:
+            # 実行結果情報を保存する
+            # (今は出力ファイル名にその情報を刻んでいる)
+            activity.save()
+
         return activity
 
     except Exception as e:
