@@ -127,7 +127,7 @@ class Flow(Datum):
         """
         # いい条件が思い浮かばない,,,
         has_store = any (p for p in self.points if p.is_store)
-        return len(self.o_ports) == 0 and len(self.lasts) == 2 and has_store
+        return len(self.i_ports) == 1 and len(self.lasts) == 2 and has_store
 
     def run(self, args, inputs):
         """
@@ -261,7 +261,12 @@ class Flow(Datum):
             # それぞれのpointに結果を格納する
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
-                output_point.datum = result.pop(output_point.o_port.name)
+                try:
+                    output_point.datum = result.pop(output_point.o_port.name)
+                except Exception as e:
+                    import pprint
+                    pprint.pprint(result)
+                    raise e
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
@@ -349,7 +354,6 @@ class Flow(Datum):
                 if result is not None:
                     return result
         # Activityが見つからなかった場合
-        # raise Exception('No activity is found !')
         return None
 
     def dtor(self):
@@ -400,6 +404,10 @@ class Point:
             return f"{self.id}<{dom_o} -> {cod_i}>"
         else:
             return f"{self.id}<{dom_o} -({self.datum})-> {cod_i}>"
+
+    def __hash__(self):
+        # PointをDictのキーとして扱う場合同じインスタンスで同じとみなす
+        return id(self)
 
     @property
     def is_for_input(self):
@@ -499,6 +507,9 @@ class Tube:
     def __init__(self, port, runnable):
         self.port = port
         self.runnable = runnable
+
+    def __repr__(self):
+        return f'({self.port.name}, {str(self.runnable)})'
 
     @property
     def is_None(self):

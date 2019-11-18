@@ -199,27 +199,27 @@ class ActivityDataDestAppender():
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
-        self._already_step_added = False
+        self._already_step_added = set()
 
     def do_append(self, f, point, original_last_point, start_time):
         # Activity Stepのargsにpointを追加する
         port_name = str(self.next_port_no)
         self.activity_step.args['points'][port_name] = original_last_point
 
-        # Visualizer PointにActivity Stepを繋げる
+        # PointにActivity Stepを繋げる
         point.target = [Tube(Port(port_name, 'datum'), self.activity_step)]
 
         # Activity_pointを作成し、これにActivity Stepを繋げる
-        point_id = point.id
-        activity_point = Point(point_id + '_activity',
+        point_id = point.id + '_activity_' + port_name
+        activity_point = Point(point_id,
                                [Tube(Port('o', 'activity'), self.activity_step)],
                                None,
                                [Tube(None, None)])
 
-        if not self._already_step_added:
+        if f.uuid not in self._already_step_added:
             f.substeps.append(self.activity_step)
             f.points.append(activity_point)
-            self._already_step_added = True
+            self._already_step_added.add(f.uuid)
 
         self.next_port_no += 1
 
@@ -262,6 +262,10 @@ class FlowLinkContext():
         self.runs_command_appender = RunsCommandAppender()
         self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
 
+        # {flow_uuid:, [(original_last_point:, points: )]}
+        self.detadst_o_ports = {}
+        self.detadst_u_ports = {}
+
 class FlowJsonLink:
     """
     フローへのリンク
@@ -280,9 +284,6 @@ class FlowJsonLink:
         self.preview_data_dest_appender = PreviewDataDestAppender(None, preview_args)
 
         self.cache_data_dest_appender = CacheDataDestAppender(None)
-
-        # self.runs_command_appender = RunsCommandAppender()
-        # self.activity_data_dest_appender = ActivityDataDestAppender(None)
 
         self.context = context
             
@@ -306,6 +307,80 @@ class FlowJsonLink:
 
     def resolve(self):
         f = self._make_flow(self.label, self.json_str)
+
+        self.context.detadst_o_ports[f.uuid] = []
+        self.context.detadst_u_ports[f.uuid] = []
+
+        for p in f.points:
+            for p_target in p.target:
+                if p_target.runnable is None:
+                    continue
+
+                # import pprint
+                # pprint.pprint(p_target)
+
+                step = p_target.runnable
+                # データデストの場合
+                if step.is_datadst:
+                    
+                    print('>> step.is_datadst')     
+
+                    # oポートの中継
+                    origin_tubes = [Tube(Port('o', 'mcmd'), step)]
+                    new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
+                    self.context.detadst_o_ports[f.uuid].append((p, new_point))
+                    # データデストの出力を親フローに繋げる)
+                    if not self.is_root:
+                        port = Port(new_point.id, 'mcmd')
+                        f.o_ports.append(port)
+                        self._update_point(point=new_point, target=Tube(port, None))
+
+                    # uポートの中継
+                    origin_tubes = [Tube(Port('u', 'frame'), step)]
+                    new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
+                    self.context.detadst_u_ports[f.uuid].append((p, new_point))
+                    # データデストの出力を親フローに繋げる)
+                    if not self.is_root:
+                        port = Port(new_point.id, 'frame')
+                        f.o_ports.append(port)
+                        self._update_point(point=new_point, target=Tube(port, None))
+            
+                elif step.is_flow:
+                    # 中継リレーですね
+                    inner_flow = step.runnable
+
+                    # フローが'o','u'の出力ポートを持っている場合
+                    if inner_flow.uuid in self.context.detadst_o_ports:
+
+                        for i in range(len(self.context.detadst_o_ports[inner_flow.uuid])):
+                            original_last_point, last_point = self.context.detadst_o_ports[inner_flow.uuid][i]
+
+                            # oポートの中継
+                            origin_tubes = [Tube(Port('o', 'mcmd'), step)]
+                            new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
+                            self.context.detadst_o_ports[f.uuid].append((original_last_point, new_point))
+
+                            # データデストの出力を親フローに繋げる)
+                            if not self.is_root:
+                                port = Port(new_point.id, 'mcmd')
+                                f.o_ports.append(port)
+                                self._update_point(point=new_point, target=Tube(port, None))
+
+                        for i in range(len(self.context.detadst_u_ports[inner_flow.uuid])):
+                            original_last_point, last_point = self.context.detadst_u_ports[inner_flow.uuid][i]
+
+                            # uポートの中継
+                            origin_tubes = [Tube(Port('u', 'frame'), step)]
+                            new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
+                            self.context.detadst_u_ports[f.uuid].append((original_last_point, new_point))
+
+                            # データデストの出力を親フローに繋げる)
+                            if not self.is_root:
+                                port = Port(new_point.id, 'frame')
+                                f.o_ports.append(port)
+                                self._update_point(point=new_point, target=Tube(port, None))
+
+
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
@@ -331,30 +406,50 @@ class FlowJsonLink:
 
         if self.is_root:
             # lasts出力処理（メインフローの場合のみ）
-            for original_last_point in [point for point in f.points if point.is_last]:
+            for first_last_point in [point for point in f.points if point.is_last]:
                 if is_preview:
                     # Visualizerコマンドのための前処理コマンドを付加する
-                    last_point = self.preview_data_dest_appender.do_append(f, original_last_point, start_time)
+                    last_point = self.preview_data_dest_appender.do_append(f, first_last_point, start_time)
+                    # Runsコマンドを付加する
+                    last_point = self.context.runs_command_appender.do_append(f, last_point, start_time)
+                    # Visualizeコマンドを付加する
+                    visualizer_point = self.preview_data_dest_appender.do_append_after_runs(f, last_point, start_time, first_last_point)
+                    # Activity Stepを付加する
+                    self.context.activity_data_dest_appender.do_append(f, visualizer_point, first_last_point, start_time)
+
                 else:
-                    # Saverコマンドを付加する
-                    last_point, activity_point = self.folder_data_dest_appender.do_append(f, original_last_point, start_time)
-                    # Activity Stepを付加する
-                    self.context.activity_data_dest_appender.do_append(f, activity_point, original_last_point, start_time)
 
-                # Runsコマンドを付加する
-                last_point = self.context.runs_command_appender.do_append(f, last_point, start_time)
+                    point_is_input_datadest = False
 
-                # Visualizeコマンドを付加する
-                if is_preview:
-                    visualizer_point = self.preview_data_dest_appender.do_append_after_runs(f, last_point, start_time, original_last_point)
-                    # Activity Stepを付加する
-                    self.context.activity_data_dest_appender.do_append(f, visualizer_point, original_last_point, start_time)
+                    if first_last_point.o_runnable.is_flow:
+                        # ↓どちらかのFor文しか通らない、いまいちなコード
+                        for detadst_o_points in self.context.detadst_o_ports[f.uuid]:
+                            if detadst_o_points[1] == first_last_point:
+                                # Runsコマンドを付加する
+                                last_point = self.context.runs_command_appender.do_append(f, first_last_point, start_time)
+                                point_is_input_datadest = True
+
+                        for detadst_u_points in self.context.detadst_u_ports[f.uuid]:
+                            if detadst_u_points[1] == first_last_point:
+                                # Activity Stepを付加する
+                                original_last_point = detadst_u_points[0]
+                                self.context.activity_data_dest_appender.do_append(f, first_last_point, original_last_point, start_time)
+                                point_is_input_datadest = True
+
+                    if not point_is_input_datadest:
+                        # Saverコマンドを付加する
+                        last_point, activity_point = self.folder_data_dest_appender.do_append(f, first_last_point, start_time)
+                        # Activity Stepを付加する
+                        self.context.activity_data_dest_appender.do_append(f, activity_point, first_last_point, start_time)
+                        # Runsコマンドを付加する
+                        last_point = self.context.runs_command_appender.do_append(f, last_point, start_time)
+
 
         elif f.is_datadst:
             # データデストの場合はその中のLastsにRunsコマンドを付加する
 
             # 2出力StepのCommandの出力Pointを取得する
-            original_last_point = None
+            last_point = None
             activity_point = None
             for p in f.points:
                 if p.o_runnable is None:
@@ -364,19 +459,40 @@ class FlowJsonLink:
                 if len(p.o_runnable.runnable.o_ports) != 2:
                     continue
                 if p.o_port.name == 'o':
-                    original_last_point = p
+                    last_point = p
                 elif p.o_port.name =='u':
                     activity_point = p
 
-            if original_last_point is None or activity_point is None:
+            if last_point is None or activity_point is None:
                 raise Exception('No out point of saver found !!')
             
-            # Activity Stepを付加する
-            self.context.activity_data_dest_appender.do_append(f, activity_point, original_last_point, start_time)
-            # Runsコマンドを付加する
-            self.context.runs_command_appender.do_append(f, original_last_point, start_time)
+            # # Activity Stepを付加する
+            # self.context.activity_data_dest_appender.do_append(f, activity_point, last_point, start_time)
+            # # Runsコマンドを付加する
+            # self.context.runs_command_appender.do_append(f, last_point, start_time)
+
+            # データデストの出力を親フローに繋げる
+            o_port = Port('o', 'mcmd')
+            u_port = Port('u', 'frame')
+
+            f.o_ports.append(o_port)
+            f.o_ports.append(u_port)
+            
+            self._update_point(point=last_point, target=Tube(o_port, None))
+            self._update_point(point=activity_point, target=Tube(u_port, None))
+
+            print('>> f.is_datadst')    
 
         return f
+
+    # def _find_step_by_o_port(self, steps, port):
+    #     for step in steps:
+    #         if not step.is_flow:
+    #             continue
+    #         for o_port in step.runnable.o_ports:
+    #             if o_port.name == port.name:
+    #                 return step
+    #     raise Exception('No step found in flow!')
 
     def _pick_last_points(self, lasts, points):
         # プレビューなど、lastsが指定されている場合

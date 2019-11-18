@@ -3307,11 +3307,11 @@ def convert_from_activity(activity):
     execute()の戻り値であるActivityから
     pointのidとframeのDictに置き換える
     """
-    return {point.id : frame for point, frame in activity.result.items()}
+    return {point.id : frame for point, frame in activity.result}
 
 def convert_from_activity_preview(activity):
     """
     execute()の戻り値であるActivityから
     pointのidとpreviewのDictに置き換える
     """
-    return {point.id : preview.result['reader'] for point, preview in activity.result.items()}
+    return {point.id : preview.result['reader'] for point, preview in activity.result}
