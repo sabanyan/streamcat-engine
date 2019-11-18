@@ -108,7 +108,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), ['new e9c09a48-901a-45d7-8bf3-91a323801277'], preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), preview_args)
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity_preview(activity)
 
@@ -329,7 +329,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), ['d14'], preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), preview_args)
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity_preview(activity)
 
@@ -526,7 +526,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), ['d12'], preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), preview_args)
         activity = execute(flow_link, {}, {})
         lasts = convert_from_activity_preview(activity)
 

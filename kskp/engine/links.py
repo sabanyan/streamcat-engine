@@ -270,9 +270,9 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, label, json_str, context, last_ids=[], preview_args={}):
+    def __init__(self, label, flow_data, context, preview_args={}):
         self.label = label
-        self.json_str = json_str
+        self.flow_data = flow_data
         self.is_root = False
         # self.last_ids = last_ids
         self.last_ids = preview_args.keys()
@@ -298,7 +298,7 @@ class FlowJsonLink:
             # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
 
             # メインフローでプレビュー時、どのdstsを通るかを求める
-            dst_ids = self._pick_necessary_dst_ids(json.loads(self.json_str), self.last_ids)
+            dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.last_ids)
             # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
             if len(dst_ids) > 0:
                 ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
@@ -306,7 +306,7 @@ class FlowJsonLink:
         return ret
 
     def resolve(self):
-        f = self._make_flow(self.label, self.json_str)
+        f = self._make_flow(self.label, self.flow_data)
 
         self.context.detadst_o_ports[f.uuid] = []
         self.context.detadst_u_ports[f.uuid] = []
@@ -316,71 +316,27 @@ class FlowJsonLink:
                 if p_target.runnable is None:
                     continue
 
-                # import pprint
-                # pprint.pprint(p_target)
-
                 step = p_target.runnable
                 # データデストの場合
                 if step.is_datadst:
-                    
-                    print('>> step.is_datadst')     
-
                     # oポートの中継
-                    origin_tubes = [Tube(Port('o', 'mcmd'), step)]
-                    new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
-                    self.context.detadst_o_ports[f.uuid].append((p, new_point))
-                    # データデストの出力を親フローに繋げる)
-                    if not self.is_root:
-                        port = Port(new_point.id, 'mcmd')
-                        f.o_ports.append(port)
-                        self._update_point(point=new_point, target=Tube(port, None))
-
+                    self._relay_o_port(f, step, p)
                     # uポートの中継
-                    origin_tubes = [Tube(Port('u', 'frame'), step)]
-                    new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
-                    self.context.detadst_u_ports[f.uuid].append((p, new_point))
-                    # データデストの出力を親フローに繋げる)
-                    if not self.is_root:
-                        port = Port(new_point.id, 'frame')
-                        f.o_ports.append(port)
-                        self._update_point(point=new_point, target=Tube(port, None))
-            
-                elif step.is_flow:
-                    # 中継リレーですね
-                    inner_flow = step.runnable
+                    self._relay_u_port(f, step, p)
 
+                elif step.is_flow:
+                    # データデスト以外のサブフローの場合
+                    inner_flow = step.runnable
                     # フローが'o','u'の出力ポートを持っている場合
                     if inner_flow.uuid in self.context.detadst_o_ports:
-
                         for i in range(len(self.context.detadst_o_ports[inner_flow.uuid])):
                             original_last_point, last_point = self.context.detadst_o_ports[inner_flow.uuid][i]
-
                             # oポートの中継
-                            origin_tubes = [Tube(Port('o', 'mcmd'), step)]
-                            new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
-                            self.context.detadst_o_ports[f.uuid].append((original_last_point, new_point))
-
-                            # データデストの出力を親フローに繋げる)
-                            if not self.is_root:
-                                port = Port(new_point.id, 'mcmd')
-                                f.o_ports.append(port)
-                                self._update_point(point=new_point, target=Tube(port, None))
-
+                            self._relay_o_port(f, step, original_last_point)
                         for i in range(len(self.context.detadst_u_ports[inner_flow.uuid])):
                             original_last_point, last_point = self.context.detadst_u_ports[inner_flow.uuid][i]
-
                             # uポートの中継
-                            origin_tubes = [Tube(Port('u', 'frame'), step)]
-                            new_point = self._insert_point(f, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
-                            self.context.detadst_u_ports[f.uuid].append((original_last_point, new_point))
-
-                            # データデストの出力を親フローに繋げる)
-                            if not self.is_root:
-                                port = Port(new_point.id, 'frame')
-                                f.o_ports.append(port)
-                                self._update_point(point=new_point, target=Tube(port, None))
-
-
+                            self._relay_u_port(f, step, original_last_point)
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
@@ -452,11 +408,9 @@ class FlowJsonLink:
             last_point = None
             activity_point = None
             for p in f.points:
-                if p.o_runnable is None:
-                    continue
-                if p.o_runnable.is_flow:
-                    continue
-                if len(p.o_runnable.runnable.o_ports) != 2:
+                if p.o_runnable is None or \
+                   p.o_runnable.is_flow or \
+                   len(p.o_runnable.runnable.o_ports) != 2:
                     continue
                 if p.o_port.name == 'o':
                     last_point = p
@@ -464,35 +418,50 @@ class FlowJsonLink:
                     activity_point = p
 
             if last_point is None or activity_point is None:
-                raise Exception('No out point of saver found !!')
+                raise Exception('Both saver outputs,[o,u] is required !')
             
-            # # Activity Stepを付加する
-            # self.context.activity_data_dest_appender.do_append(f, activity_point, last_point, start_time)
-            # # Runsコマンドを付加する
-            # self.context.runs_command_appender.do_append(f, last_point, start_time)
-
             # データデストの出力を親フローに繋げる
             o_port = Port('o', 'mcmd')
             u_port = Port('u', 'frame')
-
-            f.o_ports.append(o_port)
-            f.o_ports.append(u_port)
-            
-            self._update_point(point=last_point, target=Tube(o_port, None))
-            self._update_point(point=activity_point, target=Tube(u_port, None))
-
-            print('>> f.is_datadst')    
+            self._open_flow_out_port(f, o_port, last_point)
+            self._open_flow_out_port(f, u_port, activity_point)
 
         return f
 
-    # def _find_step_by_o_port(self, steps, port):
-    #     for step in steps:
-    #         if not step.is_flow:
-    #             continue
-    #         for o_port in step.runnable.o_ports:
-    #             if o_port.name == port.name:
-    #                 return step
-    #     raise Exception('No step found in flow!')
+    def _relay_o_port(self, flow, step, out_point):
+        """
+        フローの'o'ポートを親フローに中継する
+        """
+        # oポートの中継
+        origin_tubes = [Tube(Port('o', 'mcmd'), step)]
+        new_point = self._insert_point(flow, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
+        self.context.detadst_o_ports[flow.uuid].append((out_point, new_point))
+
+        # データデストの出力を親フローに繋げる)
+        if not self.is_root:
+            port = Port(new_point.id, 'mcmd')
+            self._open_flow_out_port(f, port, new_point)
+
+    def _relay_u_port(self, flow, step, out_point):
+        """
+        フローの'u'ポートを親フローに中継する
+        """
+        # uポートの中継
+        origin_tubes = [Tube(Port('u', 'frame'), step)]
+        new_point = self._insert_point(flow, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
+        self.context.detadst_u_ports[flow.uuid].append((out_point, new_point))
+
+        # データデストの出力を親フローに繋げる)
+        if not self.is_root:
+            port = Port(new_point.id, 'frame')
+            self._open_flow_out_port(f, port, new_point)
+
+    def _open_flow_out_port(self, flow, out_point, out_port):
+        """
+        指定するPointを出力PointとするPortを、フローに設定する
+        """
+        flow.o_ports.append(out_point)
+        self._update_point(point=out_port, target=Tube(out_point, None))
 
     def _pick_last_points(self, lasts, points):
         # プレビューなど、lastsが指定されている場合
@@ -519,22 +488,18 @@ class FlowJsonLink:
                     ret.append(point.id)
         return ret
 
-    def _make_flow(self, label, json_str):
-
-        # JSONを読み込む
-        json_obj = json.loads(json_str)
-
+    def _make_flow(self, label, flow_data):
         flow = Flow(label)
 
         # portを読む
-        ports = json_obj['ports']
+        ports = flow_data['ports']
         flow.i_ports = self._parse_ports(ports[0])
         flow.o_ports = self._parse_ports(ports[1])
 
         # flowを更新する
-        if 'nodes' in json_obj:
-            self._update_flow_by_runnable(flow, json_obj['nodes'])
-            self._update_flow_by_other_than_runnable(flow, json_obj['nodes'])
+        if 'nodes' in flow_data:
+            self._update_flow_by_runnable(flow, flow_data['nodes'])
+            self._update_flow_by_other_than_runnable(flow, flow_data['nodes'])
 
         return flow
 
@@ -591,6 +556,48 @@ class FlowJsonLink:
                 [self._update_point(point=dst_point, target=Tube(o_port, None))
                  for o_port in flow.o_ports if o_port.name == dst_point.id]
 
+    def _update_flow_by_other_than_runnable(self, flow, nodes):
+        """
+        指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
+        """
+        # 実行に関係ないnodeのtype群
+        except_type_list = ['note']
+
+        for node in nodes:
+            # pointにdatumを入れていく
+            if not self._is_runnable_node(node) and not node['type'] in except_type_list:
+                
+                target_points = [point for point in flow.points if point.id == node['id']]
+                if len(target_points) < 1:
+                    continue
+
+                target_point = target_points[0]
+                target_point.cache = node.get('makeCache')
+                target_point.label = node.get('label')
+
+                # Storeの場合、Storeオブジェクトをpointに格納する
+                if self._is_store_node(node):
+                    self._put_store(node.get('uuid'), target_point)
+
+                # データの取得先の設定
+                # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
+                if not (len(flow.i_ports) > 0 and target_point.is_first):
+                    if self._is_value_node(node):
+                        # nodeのvalue属性はテストで用いるためだけに存在する
+                        # テストコードからvalue属性を無くした後、この分岐は削除したい
+                        if isinstance(node['value'], list):
+                            from kskp.store import List
+                            target_point.datum = List(node['value'])
+                        else:
+                            target_point.datum = node['value']
+                    elif node.get('uuid') is not None:
+                        # uuidが既に振られている場合は、loaderから取ってくるようにする
+                        # self._put_loader(node.get('uuid'), target_point, flow, Folder)
+                        self.folder_data_source_prepender.do_prepend(flow, target_point, node.get('uuid'))
+                        # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
+                        target_point.cache = False
+        return flow
+
     def _get_port_by_name(self, runnable_ports, port_name):
         """
         指定したport_nameをもつportを取得する。
@@ -642,48 +649,6 @@ class FlowJsonLink:
             point.update_target(target)
 
         return point
-
-    def _update_flow_by_other_than_runnable(self, flow, nodes):
-        """
-        指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
-        """
-        # 実行に関係ないnodeのtype群
-        except_type_list = ['note']
-
-        for node in nodes:
-            # pointにdatumを入れていく
-            if not self._is_runnable_node(node) and not node['type'] in except_type_list:
-                
-                target_points = [point for point in flow.points if point.id == node['id']]
-                if len(target_points) < 1:
-                    continue
-
-                target_point = target_points[0]
-                target_point.cache = node.get('makeCache')
-                target_point.label = node.get('label')
-
-                # Storeの場合、Storeオブジェクトをpointに格納する
-                if self._is_store_node(node):
-                    self._put_store(node.get('uuid'), target_point)
-
-                # データの取得先の設定
-                # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
-                if not (len(flow.i_ports) > 0 and target_point.is_first):
-                    if self._is_value_node(node):
-                        # nodeのvalue属性はテストで用いるためだけに存在する
-                        # テストコードからvalue属性を無くした後、この分岐は削除したい
-                        if isinstance(node['value'], list):
-                            from kskp.store import List
-                            target_point.datum = List(node['value'])
-                        else:
-                            target_point.datum = node['value']
-                    elif node.get('uuid') is not None:
-                        # uuidが既に振られている場合は、loaderから取ってくるようにする
-                        # self._put_loader(node.get('uuid'), target_point, flow, Folder)
-                        self.folder_data_source_prepender.do_prepend(flow, target_point, node.get('uuid'))
-                        # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
-                        target_point.cache = False
-        return flow
 
     def _is_value_node(self, node):
         """
@@ -774,13 +739,13 @@ class FlowUuidLink(FlowJsonLink):
     UUIDを元にFlowを返却するリンク
     """
 
-    def __init__(self, flow_uuid, context, last_ids=[], preview_args={}):
+    def __init__(self, flow_uuid, context, preview_args={}):
         self.flow_uuid = flow_uuid
         flow_link = FlowLink(flow_uuid)
         flow_data = flow_link.resolve()
         flow_label = flow_link.resolve_label()
 
-        super().__init__(flow_label, json.dumps(flow_data), context, last_ids, preview_args)
+        super().__init__(flow_label, flow_data, context, preview_args)
 
         # super().__init__より下に記述すること
         is_preview =  len(self.last_ids) > 0
