@@ -189,11 +189,11 @@ class Flow(Datum):
         #         for t_tube in p.target:
         #             if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran:
         #                 last_sub_flows.add(t_tube.runnable)
-        last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
-                          if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
+        # last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
+        #                   if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
 
         # lastsと出力のないサブフローを纏める
-        last_steps.update(last_sub_flows)
+        # last_steps.update(last_sub_flows)
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -261,12 +261,7 @@ class Flow(Datum):
             # それぞれのpointに結果を格納する
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
-                try:
-                    output_point.datum = result.pop(output_point.o_port.name)
-                except Exception as e:
-                    import pprint
-                    pprint.pprint(result)
-                    raise e
+                output_point.datum = result.pop(output_point.o_port.name)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
