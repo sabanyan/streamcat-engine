@@ -262,9 +262,11 @@ class FlowLinkContext():
         self.runs_command_appender = RunsCommandAppender()
         self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
 
-        # {flow_uuid:, [(original_last_point:, points: )]}
-        self.detadst_o_ports = {}
-        self.detadst_u_ports = {}
+        # {flow_uuid:, [(original_last_point:, points: ,port_name:)]}
+        self.detadst_o_points = {}
+        self.detadst_u_points = {}
+        # ポート名の接尾語(ポート名が被らないようにするため)
+        self.port_suffix_num = 0
 
 class FlowJsonLink:
     """
@@ -308,8 +310,8 @@ class FlowJsonLink:
     def resolve(self):
         f = self._make_flow(self.label, self.flow_data)
 
-        self.context.detadst_o_ports[f.uuid] = []
-        self.context.detadst_u_ports[f.uuid] = []
+        self.context.detadst_o_points[f.uuid] = []
+        self.context.detadst_u_points[f.uuid] = []
 
         for p in f.points:
             for p_target in p.target:
@@ -328,15 +330,15 @@ class FlowJsonLink:
                     # データデスト以外のサブフローの場合
                     inner_flow = step.runnable
                     # フローが'o','u'の出力ポートを持っている場合
-                    if inner_flow.uuid in self.context.detadst_o_ports:
-                        for i in range(len(self.context.detadst_o_ports[inner_flow.uuid])):
-                            original_last_point, last_point = self.context.detadst_o_ports[inner_flow.uuid][i]
+                    if inner_flow.uuid in self.context.detadst_o_points:
+                        for i in range(len(self.context.detadst_o_points[inner_flow.uuid])):
+                            original_last_point, last_point, port_name = self.context.detadst_o_points[inner_flow.uuid][i]
                             # oポートの中継
-                            self._relay_o_port(f, step, original_last_point)
-                        for i in range(len(self.context.detadst_u_ports[inner_flow.uuid])):
-                            original_last_point, last_point = self.context.detadst_u_ports[inner_flow.uuid][i]
+                            self._relay_o_port(f, step, original_last_point, port_name)
+                        for i in range(len(self.context.detadst_u_points[inner_flow.uuid])):
+                            original_last_point, last_point, port_name = self.context.detadst_u_points[inner_flow.uuid][i]
                             # uポートの中継
-                            self._relay_u_port(f, step, original_last_point)
+                            self._relay_u_port(f, step, original_last_point, port_name)
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
@@ -379,13 +381,13 @@ class FlowJsonLink:
 
                     if first_last_point.o_runnable.is_flow:
                         # ↓どちらかのFor文しか通らない、いまいちなコード
-                        for detadst_o_points in self.context.detadst_o_ports[f.uuid]:
+                        for detadst_o_points in self.context.detadst_o_points[f.uuid]:
                             if detadst_o_points[1] == first_last_point:
                                 # Runsコマンドを付加する
                                 last_point = self.context.runs_command_appender.do_append(f, first_last_point, start_time)
                                 point_is_input_datadest = True
 
-                        for detadst_u_points in self.context.detadst_u_ports[f.uuid]:
+                        for detadst_u_points in self.context.detadst_u_points[f.uuid]:
                             if detadst_u_points[1] == first_last_point:
                                 # Activity Stepを付加する
                                 original_last_point = detadst_u_points[0]
@@ -428,32 +430,44 @@ class FlowJsonLink:
 
         return f
 
-    def _relay_o_port(self, flow, step, out_point):
+    def _relay_o_port(self, flow, step, out_point, port_name=None):
         """
         フローの'o'ポートを親フローに中継する
         """
         # oポートの中継
-        origin_tubes = [Tube(Port('o', 'mcmd'), step)]
+        if port_name is None:
+            port_name = 'o_' + str(self.context.port_suffix_num)
+            self.context.port_suffix_num += 1
+            # データデスト空の入力ポート名は'o'固定
+            origin_tubes = [Tube(Port('o', 'frame'), step)]
+        else:
+            origin_tubes = [Tube(Port(port_name, 'mcmd'), step)]
         new_point = self._insert_point(flow, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
-        self.context.detadst_o_ports[flow.uuid].append((out_point, new_point))
+        self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_name))
 
         # データデストの出力を親フローに繋げる)
         if not self.is_root:
-            port = Port('o', 'mcmd')
+            port = Port(port_name, 'mcmd')
             self._open_flow_out_port(flow, port, new_point)
 
-    def _relay_u_port(self, flow, step, out_point):
+    def _relay_u_port(self, flow, step, out_point, port_name=None):
         """
         フローの'u'ポートを親フローに中継する
         """
         # uポートの中継
-        origin_tubes = [Tube(Port('u', 'frame'), step)]
+        if port_name is None:
+            port_name = 'u_' + str(self.context.port_suffix_num)
+            self.context.port_suffix_num += 1
+            # データデスト空の入力ポート名は'u'固定
+            origin_tubes = [Tube(Port('u', 'frame'), step)]
+        else:
+            origin_tubes = [Tube(Port(port_name, 'frame'), step)]
         new_point = self._insert_point(flow, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)])
-        self.context.detadst_u_ports[flow.uuid].append((out_point, new_point))
+        self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_name))
 
         # データデストの出力を親フローに繋げる)
         if not self.is_root:
-            port = Port('u', 'frame')
+            port = Port(port_name, 'frame')
             self._open_flow_out_port(flow, port, new_point)
 
     def _open_flow_out_port(self, flow, out_point, out_port):
