@@ -439,8 +439,8 @@ class FlowJsonLink:
 
         # データデストの出力を親フローに繋げる)
         if not self.is_root:
-            port = Port(new_point.id, 'mcmd')
-            self._open_flow_out_port(f, port, new_point)
+            port = Port('o', 'mcmd')
+            self._open_flow_out_port(flow, port, new_point)
 
     def _relay_u_port(self, flow, step, out_point):
         """
@@ -453,8 +453,8 @@ class FlowJsonLink:
 
         # データデストの出力を親フローに繋げる)
         if not self.is_root:
-            port = Port(new_point.id, 'frame')
-            self._open_flow_out_port(f, port, new_point)
+            port = Port('u', 'frame')
+            self._open_flow_out_port(flow, port, new_point)
 
     def _open_flow_out_port(self, flow, out_point, out_port):
         """
