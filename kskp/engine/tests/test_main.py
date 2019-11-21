@@ -576,10 +576,10 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
 
     # @unittest.skip
-    def test_simple_flow_two_commands_preview(self):
+    def test_simple_flow_two_commands_vis(self):
         """
         mコマンド２個のフロー実行
-        真ん中のdatumでプレビューする
+        真ん中のdatumでVisする
         """
         add_cmd = {
           "type": "command",
@@ -610,8 +610,8 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd)
         json_flow['nodes'].append(add_datum)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d1": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -621,20 +621,20 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_three_commands_preview(self):
+    def test_simple_flow_three_commands_vis(self):
         """
         mコマンド３個のフロー実行
-        ２個目のdatumでプレビューする
+        ２個目のdatumでVisする
         """
         add_cmd_1 = {
           "type": "command",
@@ -692,8 +692,8 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d2": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -703,13 +703,13 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
@@ -793,10 +793,10 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
 
     # @unittest.skip
-    def test_simple_flow_three_commands_preview_d2(self):
+    def test_simple_flow_three_commands_vis_d2(self):
         """
         mコマンド３個のフロー実行（逆Y字の分岐）
-        片方（d2）をプレビュー
+        片方（d2）をVis
         """
         add_cmd_1 = {
           "type": "command",
@@ -854,8 +854,8 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_cmd_2)
         json_flow['nodes'].append(add_datum_2)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d2": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -865,13 +865,13 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
@@ -982,13 +982,13 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
 
     # @unittest.skip
-    def test_simple_flow_preview_d2_two_outputs(self):
+    def test_simple_flow_vis_d2_two_outputs(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフロープレビュー
+        mコマンド１個（２つのoutputを持つ）のフローVis
         oだけのテスト（d2）
         """
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d2": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -998,24 +998,24 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(self.flow_data_outputs['label'], self.flow_data_outputs, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], self.flow_data_outputs, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_preview_d3_two_outputs(self):
+    def test_simple_flow_vis_d3_two_outputs(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフロープレビュー
+        mコマンド１個（２つのoutputを持つ）のフローVis
         uだけのテスト（d3）
         """
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d3": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1025,13 +1025,13 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(self.flow_data_outputs['label'], self.flow_data_outputs, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(self.flow_data_outputs['label'], self.flow_data_outputs, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
@@ -1099,9 +1099,9 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d4'].uuid)
 
     # @unittest.skip
-    def test_long_flow_preview_d2_two_outputs(self):
+    def test_long_flow_vis_d2_two_outputs(self):
         """
-        mコマンド2個（２つのoutputを持つ）のフロープレビュー
+        mコマンド2個（２つのoutputを持つ）のフローVis
         oだけのテスト（d3）
         """
 
@@ -1144,8 +1144,8 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d3": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1155,19 +1155,19 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d3': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_long_flow_preview_d3_two_outputs(self):
+    def test_long_flow_vis_d3_two_outputs(self):
         """
-        mコマンド2個（２つのoutputを持つ）のフロープレビュー
+        mコマンド2個（２つのoutputを持つ）のフローVis
         uだけのテスト（d4）
         """
         add_datum_1 = {
@@ -1209,8 +1209,8 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['nodes'].append(add_datum_1)
         json_flow['nodes'].append(add_datum_2)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d4": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1220,13 +1220,13 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args)
+        flow_link = FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
@@ -1429,10 +1429,10 @@ class ExecuteTestCase(unittest.TestCase):
     # そもそもNodeのvalue属性は仕様にない実装である。
     # テストコードの再利用を試みたがSquareCommandはNysolModuleを受け付けないしで、断念
     @unittest.skip
-    def test_simple_flow_preview_include_two_subflows(self):
+    def test_simple_flow_vis_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
-        真ん中のdatumでプレビューする
+        真ん中のdatumでVisする
         """
 
         json_mainflow = {
@@ -1486,8 +1486,8 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub1', sub_uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "dd2": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1497,12 +1497,12 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        activity = execute(FlowJsonLink('メインフロー', json_mainflow, FlowLinkContext(), preview_args), {}, {})
-        lasts = convert_from_activity_preview(activity)
+        activity = execute(FlowJsonLink('メインフロー', json_mainflow, FlowLinkContext(), vis_args), {}, {})
+        lasts = convert_from_activity_vis(activity)
         correct = {'dd2': [['256']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
         # 後片付け
@@ -1581,13 +1581,13 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd3'].uuid)
 
     # @unittest.skip
-    def test_simple_flow_preview_dd2_include_branch_output_subflows(self):
+    def test_simple_flow_vis_dd2_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
         mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
 
-        片方のdatum(dd2)をプレビューする
+        片方のdatum(dd2)をVisする
         """
 
         json_mainflow = {
@@ -1635,8 +1635,8 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "dd2": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1646,25 +1646,25 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        activity = execute(FlowJsonLink('メインフロー', json_mainflow, FlowLinkContext(), preview_args), {}, {})
-        lasts = convert_from_activity_preview(activity)
+        activity = execute(FlowJsonLink('メインフロー', json_mainflow, FlowLinkContext(), vis_args), {}, {})
+        lasts = convert_from_activity_vis(activity)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_simple_flow_preview_dd3_include_branch_output_subflows(self):
+    def test_simple_flow_vis_dd3_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
         mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
 
-        片方のdatum(dd3)をプレビューする
+        片方のdatum(dd3)をVisする
         """
 
         json_mainflow = {
@@ -1712,8 +1712,8 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "dd3": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1723,12 +1723,12 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        activity = execute(FlowJsonLink('メインフロー', json_mainflow, FlowLinkContext(), preview_args), {}, {})
-        lasts = convert_from_activity_preview(activity)
+        activity = execute(FlowJsonLink('メインフロー', json_mainflow, FlowLinkContext(), vis_args), {}, {})
+        lasts = convert_from_activity_vis(activity)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
         # 後片付け
@@ -1864,13 +1864,13 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd5'].uuid)
 
     # @unittest.skip
-    def test_complex_flow_preview_include_branch_output_subflowss(self):
+    def test_complex_flow_vis_include_branch_output_subflowss(self):
         """
         outputが２つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
         mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
         さらにメインフローで結果をそれぞれmcutしている
-        dd5をプレビュー
+        dd5をVis
         """
 
         json_mainflow = {
@@ -1974,8 +1974,8 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "dd5": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -1985,21 +1985,21 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        activity = execute(FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args), {}, {})
-        lasts = convert_from_activity_preview(activity)
+        activity = execute(FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args), {}, {})
+        lasts = convert_from_activity_vis(activity)
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_complex_flow_two_preview_include_branch_output_subflowss(self):
+    def test_complex_flow_two_vis_include_branch_output_subflowss(self):
         """
-        おまけ（プレビューを２つしてみた。）
+        おまけ（Visを２つしてみた。）
         outputが２つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
         mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
@@ -2107,8 +2107,8 @@ class ExecuteTestCase(unittest.TestCase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         create_flow('sub2', sub_uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "dd2": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -2125,12 +2125,12 @@ class ExecuteTestCase(unittest.TestCase):
           }
         }
 
-        activity = execute(FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), preview_args), {}, {})
-        lasts = convert_from_activity_preview(activity)
+        activity = execute(FlowJsonLink(json_flow['label'], json_flow, FlowLinkContext(), vis_args), {}, {})
+        lasts = convert_from_activity_vis(activity)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
         # 後片付け
@@ -2917,11 +2917,11 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
 
     # @unittest.skip
-    def test_simple_flow_preview_use_nmcmd(self):
+    def test_simple_flow_vis_use_nmcmd(self):
         """
-        mコマンド２個のフロープレビュー
+        mコマンド２個のフローVis
         確認したいことはnm.cmdの動作（mchkcsvを実行している）
-        nm.cmdから出るものをプレビューするテスト
+        nm.cmdから出るものをVisするテスト
         """
         add_cmd = {
           "type": "command",
@@ -3309,9 +3309,9 @@ def convert_from_activity(activity):
     """
     return {point.id : frame for point, frame in activity.result}
 
-def convert_from_activity_preview(activity):
+def convert_from_activity_vis(activity):
     """
     execute()の戻り値であるActivityから
-    pointのidとpreviewのDictに置き換える
+    pointのidとvisのDictに置き換える
     """
-    return {point.id : preview.result['reader'] for point, preview in activity.result}
+    return {point.id : vis.result['reader'] for point, vis in activity.result}

@@ -75,9 +75,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Library.load_frame(frame_uuid).remove_reference_only()
 
     # @unittest.skip
-    def test_ni_flow_preview(self):
+    def test_ni_flow_vis(self):
         """
-        NI様のフローのプレビュー実行テスト
+        NI様のフローのVis実行テスト
         """
         flow_json = None
         # テストデータ登録
@@ -96,8 +96,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "new e9c09a48-901a-45d7-8bf3-91a323801277": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -108,12 +108,12 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
 
         # テスト
-        # 正しいPreviewが得られるか
+        # 正しいVisが得られるか
         self.assertIn("new e9c09a48-901a-45d7-8bf3-91a323801277", lasts)
 
         # 後片付け
@@ -292,10 +292,10 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             Library.delete_frame(cache)
 
     # @unittest.skip
-    def test_ryudo_flow_preview(self):
+    def test_ryudo_flow_vis(self):
         """
-        デモ用のフロープレビュー（粒度分布計）
-        プレビューデータは適当
+        デモ用のフローVis（粒度分布計）
+        Visデータは適当
         """
         flow_json = None
         # テストデータ登録
@@ -317,8 +317,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d14": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -329,9 +329,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
 
         # テスト
         self.assertIn("d14", lasts)
@@ -481,10 +481,10 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
             Library.delete_frame(cache)
 
     # @unittest.skip
-    def test_shindo_flow_preview(self):
+    def test_shindo_flow_vis(self):
         """
-        デモ用のフロープレビュー（振動データ）
-        プレビューデータは適当
+        デモ用のフローVis（振動データ）
+        Visデータは適当
         """
         flow_json = None
         # テストデータ登録
@@ -514,8 +514,8 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
-        # Preview Args
-        preview_args = {
+        # Vis Args
+        vis_args = {
           "d12": {
             "args": {
               "visualizer" : "csvtohtmltable",
@@ -526,9 +526,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         }
 
         # 単純な実行結果のテスト
-        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), preview_args)
+        flow_link = FlowUuidLink(flow.uuid, FlowLinkContext(flow.uuid), vis_args)
         activity = execute(flow_link, {}, {})
-        lasts = convert_from_activity_preview(activity)
+        lasts = convert_from_activity_vis(activity)
 
         # テスト
         self.assertIn("d12", lasts)
@@ -595,9 +595,9 @@ def convert_from_activity(activity):
     """
     return {point.id : frame for point, frame in activity.result}
 
-def convert_from_activity_preview(activity):
+def convert_from_activity_vis(activity):
     """
     execute()の戻り値であるActivityから
-    pointのidとpreviewのDictに置き換える
+    pointのidとvisのDictに置き換える
     """
-    return {point.id : preview.result['reader'] for point, preview in activity.result}
+    return {point.id : vis.result['reader'] for point, vis in activity.result}

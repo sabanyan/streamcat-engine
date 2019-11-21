@@ -296,7 +296,7 @@ class Flow(Datum):
         # 例：
         # サブフローのo_portsが
         # [{"label": "出力1", "nodeId": "d3", "type": "frame"}, {"label": "出力2", "nodeId": "d4", "type": "frame"}]
-        # の様に2つあって、プレビューなどによって片方（例えばd3）だけ使う様な場合、
+        # の様に2つあって、/vizsなどによって片方（例えばd3）だけ使う様な場合、
         # d4をtarget.portとするpointは存在しない（使わないpointは切り捨てている）ので、ここを通ることになる。
 
         # なので、ここで例外を出すと正常に最後まで実行できなくなる。
@@ -320,6 +320,8 @@ class Flow(Datum):
         for point in self.points:
             if point.id == point_id:
                 return point
+        import pprint
+        pprint.pprint(self.points) 
         raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
 
     def get_module_list(self):
