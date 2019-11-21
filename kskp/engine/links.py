@@ -107,20 +107,20 @@ class CacheDataDestAppender(FolderDataDestAppender):
         saver = CommandLink("cachesaver").resolve()
         self._put_saver(point, f, folder_store, saver, start_time)
 
-class PreviewDataDestAppender():
-    def __init__(self, flow_uuid, preview_args={}):
-        self.preview_args = preview_args
+class VisDataDestAppender():
+    def __init__(self, flow_uuid, vis_args={}):
+        self.vis_args = vis_args
 
     def do_append(self, f, point, start_time):
         """
         RowRangeコマンドを付加する
         ToListコマンドを付加する
         """
-        if 'args' not in self.preview_args[point.id]:
+        if 'args' not in self.vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
 
         # RowRange Stepへの引数を作成する
-        rowrange_args = self.preview_args[point.id]['args']
+        rowrange_args = self.vis_args[point.id]['args']
 
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
@@ -155,10 +155,10 @@ class PreviewDataDestAppender():
         """
         Visualizerコマンドを付加する
         """
-        if 'args' not in self.preview_args[original_last_point.id]:
+        if 'args' not in self.vis_args[original_last_point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください.')
 
-        visualizer_args = self.preview_args[original_last_point.id]['args']
+        visualizer_args = self.vis_args[original_last_point.id]['args']
         if 'visualizer' not in visualizer_args:
             raise Exception('visualizer属性を指定してください')
         visualizer_cmd_name = visualizer_args['visualizer']
@@ -166,7 +166,7 @@ class PreviewDataDestAppender():
         visualizer_step = self._make_step(visualizer_args, visualizer_cmd)
         visualizer_point = Point(point.id + '_v', [Tube(Port('o', 'datum'), visualizer_step)], None, [Tube(None, None)])
 
-        # プレビューPointにVisualizerフローを繋げる
+        # VisPointにVisualizerフローを繋げる
         # point.id = str(uuid.uuid4())
         point.target = [Tube(Port('i', 'frame'), visualizer_step)]
 
@@ -272,18 +272,18 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, label, flow_data, context, preview_args={}):
+    def __init__(self, label, flow_data, context, vis_args={}):
         self.label = label
         self.flow_data = flow_data
         self.is_root = False
         # self.last_ids = last_ids
-        self.last_ids = preview_args.keys()
+        self.last_ids = vis_args.keys()
 
         self.folder_data_source_prepender = FolderDataSourcePrepender()
 
         self.folder_data_dest_appender = FolderDataDestAppender(None)
 
-        self.preview_data_dest_appender = PreviewDataDestAppender(None, preview_args)
+        self.vis_data_dest_appender = VisDataDestAppender(None, vis_args)
 
         self.cache_data_dest_appender = CacheDataDestAppender(None)
 
@@ -299,7 +299,7 @@ class FlowJsonLink:
             # 実行を行う場合、サブフロー内で余分な処理が走らないように
             # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
 
-            # メインフローでプレビュー時、どのdstsを通るかを求める
+            # メインフローで/vizs時、どのdstsを通るかを求める
             dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.last_ids)
             # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
             if len(dst_ids) > 0:
@@ -343,15 +343,15 @@ class FlowJsonLink:
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
         # self.last_idsには
-        # メインフローの場合 ： プレビューするdatumのid群
+        # メインフローの場合 ： /vizsするdatumのid群
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
-        # プレビューしない場合はメインフローのlastのid群を使って絞り込みを行う。
+        # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
         last_ids = self._pick_last_points(f.lasts, f.points)
 
         # 実行するのに必要なpointを取得する
-        is_preview = len(self.last_ids) > 0
-        f.points = self._pick_necessary_points(f, last_ids, is_preview)
+        is_vis = len(self.last_ids) > 0
+        f.points = self._pick_necessary_points(f, last_ids, is_vis)
 
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
@@ -365,13 +365,13 @@ class FlowJsonLink:
         if self.is_root:
             # lasts出力処理（メインフローの場合のみ）
             for first_last_point in [point for point in f.points if point.is_last]:
-                if is_preview:
+                if is_vis:
                     # Visualizerコマンドのための前処理コマンドを付加する
-                    last_point = self.preview_data_dest_appender.do_append(f, first_last_point, start_time)
+                    last_point = self.vis_data_dest_appender.do_append(f, first_last_point, start_time)
                     # Runsコマンドを付加する
                     last_point = self.context.runs_command_appender.do_append(f, last_point, start_time)
                     # Visualizeコマンドを付加する
-                    visualizer_point = self.preview_data_dest_appender.do_append_after_runs(f, last_point, start_time, first_last_point)
+                    visualizer_point = self.vis_data_dest_appender.do_append_after_runs(f, last_point, start_time, first_last_point)
                     # Activity Stepを付加する
                     self.context.activity_data_dest_appender.do_append(f, visualizer_point, first_last_point, start_time)
 
@@ -478,7 +478,7 @@ class FlowJsonLink:
         self._update_point(point=out_port, target=Tube(out_point, None))
 
     def _pick_last_points(self, lasts, points):
-        # プレビューなど、lastsが指定されている場合
+        # /vizsなど、lastsが指定されている場合
         if len(self.last_ids) > 0:
             return self.last_ids 
 
@@ -579,37 +579,38 @@ class FlowJsonLink:
 
         for node in nodes:
             # pointにdatumを入れていく
-            if not self._is_runnable_node(node) and not node['type'] in except_type_list:
+            if self._is_runnable_node(node) or node['type'] in except_type_list:
+                continue
                 
-                target_points = [point for point in flow.points if point.id == node['id']]
-                if len(target_points) < 1:
-                    continue
+            target_points = [point for point in flow.points if point.id == node['id']]
+            if len(target_points) < 1:
+                continue
 
-                target_point = target_points[0]
-                target_point.cache = node.get('makeCache')
-                target_point.label = node.get('label')
+            target_point = target_points[0]
+            target_point.cache = node.get('makeCache')
+            target_point.label = node.get('label')
 
-                # Storeの場合、Storeオブジェクトをpointに格納する
-                if self._is_store_node(node):
-                    self._put_store(node.get('uuid'), target_point)
+            # Storeの場合、Storeオブジェクトをpointに格納する
+            if self._is_store_node(node):
+                self._put_store(node.get('uuid'), target_point)
 
-                # データの取得先の設定
-                # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
-                if not (len(flow.i_ports) > 0 and target_point.is_first):
-                    if self._is_value_node(node):
-                        # nodeのvalue属性はテストで用いるためだけに存在する
-                        # テストコードからvalue属性を無くした後、この分岐は削除したい
-                        if isinstance(node['value'], list):
-                            from kskp.store import List
-                            target_point.datum = List(node['value'])
-                        else:
-                            target_point.datum = node['value']
-                    elif node.get('uuid') is not None:
-                        # uuidが既に振られている場合は、loaderから取ってくるようにする
-                        # self._put_loader(node.get('uuid'), target_point, flow, Folder)
-                        self.folder_data_source_prepender.do_prepend(flow, target_point, node.get('uuid'))
-                        # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
-                        target_point.cache = False
+            # データの取得先の設定
+            # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
+            if not (len(flow.i_ports) > 0 and target_point.is_first):
+                if self._is_value_node(node):
+                    # nodeのvalue属性はテストで用いるためだけに存在する
+                    # テストコードからvalue属性を無くした後、この分岐は削除したい
+                    if isinstance(node['value'], list):
+                        from kskp.store import List
+                        target_point.datum = List(node['value'])
+                    else:
+                        target_point.datum = node['value']
+                elif node.get('uuid') is not None:
+                    # uuidが既に振られている場合は、loaderから取ってくるようにする
+                    # self._put_loader(node.get('uuid'), target_point, flow, Folder)
+                    self.folder_data_source_prepender.do_prepend(flow, target_point, node.get('uuid'))
+                    # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
+                    target_point.cache = False
         return flow
 
     def _get_port_by_name(self, runnable_ports, port_name):
@@ -700,7 +701,7 @@ class FlowJsonLink:
         """
         return self._is_runnable_node(node) and datum_id in list(node['dsts'].values())
 
-    def _pick_necessary_points(self, flow, last_ids, is_preview):
+    def _pick_necessary_points(self, flow, last_ids, is_vis):
         """
         実行するのに必要なpointを取得する
         """
@@ -709,8 +710,8 @@ class FlowJsonLink:
         for id in last_ids:
             lasts_point = flow.select_point_by_id(id)
             # if len(flow.o_ports) == 0:
-            if self.is_root and is_preview:
-                # 今はプレビュー対象のdatumで終わるように、プレビュー対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+            if self.is_root and is_vis:
+                # 今は/vizs対象のdatumで終わるように、/vizs対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
                 lasts_point.target = [Tube(None, None)]
 
             # lasts_pointの上に繋がっているpointsを取得する
@@ -721,7 +722,7 @@ class FlowJsonLink:
 
     def _search_necessary_point(self, points, current_point):
         """
-        プレビューするdatumを作成するために必要なPointを絞り込む
+        /vizsするdatumを作成するために必要なPointを絞り込む
         既にdatumを持つpointに当たるか、origin.runnableを持たないpointに当たるまで登る
 
         1. 指定されたstep_idをもつpointのidを始点にする（current_pointのこと）
@@ -753,18 +754,18 @@ class FlowUuidLink(FlowJsonLink):
     UUIDを元にFlowを返却するリンク
     """
 
-    def __init__(self, flow_uuid, context, preview_args={}):
+    def __init__(self, flow_uuid, context, vis_args={}):
         self.flow_uuid = flow_uuid
         flow_link = FlowLink(flow_uuid)
         flow_data = flow_link.resolve()
         flow_label = flow_link.resolve_label()
 
-        super().__init__(flow_label, flow_data, context, preview_args)
+        super().__init__(flow_label, flow_data, context, vis_args)
 
         # super().__init__より下に記述すること
-        is_preview =  len(self.last_ids) > 0
-        if is_preview:
-            self.preview_data_dest_appender = PreviewDataDestAppender(flow_uuid, preview_args)
+        is_vis =  len(self.last_ids) > 0
+        if is_vis:
+            self.vis_data_dest_appender = VisDataDestAppender(flow_uuid, vis_args)
         else:
             self.folder_data_dest_appender = FolderDataDestAppender(flow_uuid)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_uuid)
