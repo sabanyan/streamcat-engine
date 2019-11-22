@@ -272,20 +272,20 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, label, flow_data, context, vis_args={}):
-        self.label = label
-        self.flow_data = flow_data
+    def __init__(self, flow, context, vis_args={}):
+        self.label = flow.label
+        self.flow_data = flow.flow_data
         self.is_root = False
         # self.last_ids = last_ids
         self.last_ids = vis_args.keys()
 
         self.folder_data_source_prepender = FolderDataSourcePrepender()
 
-        self.folder_data_dest_appender = FolderDataDestAppender(None)
+        self.folder_data_dest_appender = FolderDataDestAppender(flow.uuid)
 
-        self.vis_data_dest_appender = VisDataDestAppender(None, vis_args)
+        self.vis_data_dest_appender = VisDataDestAppender(flow.uuid, vis_args)
 
-        self.cache_data_dest_appender = CacheDataDestAppender(None)
+        self.cache_data_dest_appender = CacheDataDestAppender(flow.uuid)
 
         self.context = context
             
