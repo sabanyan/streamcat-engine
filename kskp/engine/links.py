@@ -755,12 +755,9 @@ class FlowUuidLink(FlowJsonLink):
     """
 
     def __init__(self, flow_uuid, context, vis_args={}):
-        self.flow_uuid = flow_uuid
-        flow_link = FlowLink(flow_uuid)
-        flow_data = flow_link.resolve()
-        flow_label = flow_link.resolve_label()
-
-        super().__init__(flow_label, flow_data, context, vis_args)
+        from kskp.store import Flow
+        flow = Flow.find_by_uuid(flow_uuid)
+        super().__init__(flow, context, vis_args)
 
         # super().__init__より下に記述すること
         is_vis =  len(self.last_ids) > 0
