@@ -567,14 +567,15 @@ def write_data_to_json(path, data):
     """
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
-def create_data(file_path_obj, data=None):
+def create_data(file_path_obj):
     """
     テストデータ作成用
     frameのuuidが返る
     """
-    if data is not None:
-        nm.mread(i=data, o=file_path_obj.as_posix()).run()
-    frame = Library.save_frame(root.uuid, str(uuid.uuid4()), file_path_obj)
+    with file_path_obj.open('rb') as f:
+        frame = Frame(root.uuid, file_path_obj.name, f)
+        frame.save()
+
     print(file_path_obj)
     return frame.uuid
 
