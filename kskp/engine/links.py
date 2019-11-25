@@ -1,16 +1,8 @@
-import functools
-import json
 import uuid
 
-from pathlib import Path
-
-from kskp.engine import Flow, Step, Point, Tube
-from kskp.store import Port, FlowLink, Library, Folder
-from kskp.store.commands import CommandLink
-
-root = Library.load_root()
-result_folder = Library.load_result_folder()
-cache_folder = Library.load_cache_folder()
+from kskp.store import Port
+from kskp.store.commands import CommandLink, SCommand
+from kskp.engine import Step, Point, Tube
 
 class FolderDataSourcePrepender():
     def __init__(self):
@@ -19,9 +11,9 @@ class FolderDataSourcePrepender():
         pass
 
     def do_prepend(self, f, point, frame_uuid):
-        from kskp.store import Folder
+        from kskp.store import Library, Folder
 
-        folder_store = Folder.convert_to_folder(result_folder)
+        folder_store = Library.load_result_folder()
         self._put_loader(frame_uuid, point, f, folder_store)
 
     def _put_loader(self, frame_uuid, target_point, f, store):
@@ -49,10 +41,9 @@ class FolderDataDestAppender():
         self.flow_uuid = flow_uuid
 
     def do_append(self, f, point, start_time):
-        from kskp.store import Folder
+        from kskp.store import Library, Folder
 
-        # folder_store = Library.load_result_folder()
-        folder_store = Folder.convert_to_folder(result_folder)
+        folder_store = Library.load_result_folder()
         saver = CommandLink("saver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
@@ -100,10 +91,9 @@ class FolderDataDestAppender():
 
 class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, f, point, start_time):
-        from kskp.store import Folder
+        from kskp.store import Library, Folder
 
-        # folder_store = Library.load_result_folder()
-        folder_store = Folder.convert_to_folder(cache_folder)
+        folder_store = Library.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
         self._put_saver(point, f, folder_store, saver, start_time)
 
@@ -196,6 +186,7 @@ class ActivityDataDestAppender():
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
         self.activity_step = Step(str(uuid.uuid4()), activity_cmd, activity_args)
+        self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -259,6 +250,7 @@ class FlowLinkContext():
     FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
     """
     def __init__(self, flow_uuid=None):
+        self.flow_uuid = flow_uuid
         self.runs_command_appender = RunsCommandAppender()
         self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
 
@@ -503,6 +495,7 @@ class FlowJsonLink:
         return ret
 
     def _make_flow(self, label, flow_data):
+        from kskp.engine import Flow
         flow = Flow(label)
 
         # portを読む
@@ -530,8 +523,20 @@ class FlowJsonLink:
             if not self._is_runnable_node(node):
                 continue
 
+            # CommandまたはFlowを取得する
+            cmd_or_flow = self._node2link(node).resolve()
+            
+            if isinstance(cmd_or_flow, SCommand):
+                # SCommand共通引数を作成する
+                args = {'flow_uuid':self.context.flow_uuid, 'activity_uuid':self.context.activity_data_dest_appender.activity_uuid}
+                # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
+                args.update(node['args'])
+            else:
+                # MCommandに不要な引数を設定するとエラーになる
+                args = node['args']
+
             # runnableのインスタンス化を行う
-            step = Step(node['id'], self._node2link(node).resolve(), node['args'])
+            step = Step(node['id'], cmd_or_flow, args)
             flow.substeps.append(step)
 
             srcs = node['srcs']
