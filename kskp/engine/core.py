@@ -335,8 +335,7 @@ class Flow(Datum):
         for point in self.points:
             if point.id == point_id:
                 return point
-        import pprint
-        pprint.pprint(self.points) 
+ 
         raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
 
     def get_module_list(self):
