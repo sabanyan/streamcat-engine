@@ -101,7 +101,7 @@ class VisDataDestAppender():
     def __init__(self, flow_uuid, vis_args={}):
         self.vis_args = vis_args
 
-    def do_append(self, f, point, start_time):
+    def do_append(self, f, point):
         """
         RowRangeコマンドを付加する
         ToListコマンドを付加する
@@ -137,11 +137,11 @@ class VisDataDestAppender():
 
         return tolist_point
 
-    def do_append_after_runs(self, f, point, start_time, original_last_point):
-        visualizer_step, visualizer_point = self._put_visualizer(f, point, original_last_point, start_time)
+    def do_append_after_runs(self, f, point, original_last_point):
+        visualizer_step, visualizer_point = self._put_visualizer(f, point, original_last_point)
         return visualizer_point
 
-    def _put_visualizer(self, f, point, original_last_point, start_time):
+    def _put_visualizer(self, f, point, original_last_point):
         """
         Visualizerコマンドを付加する
         """
@@ -192,7 +192,7 @@ class ActivityDataDestAppender():
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = set()
 
-    def do_append(self, f, point, original_last_point, start_time):
+    def do_append(self, f, point, original_last_point):
         # Activity Stepのargsにpointを追加する
         port_name = str(self.next_port_no)
         self.activity_step.args['points'][port_name] = original_last_point
@@ -227,7 +227,7 @@ class RunsCommandAppender():
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
-    def do_append(self, f, point, start_time):
+    def do_append(self, f, point):
         # RunsCommandに繋げるPointを作成する
         port_name = str(self.next_port_no)
         point_id = point.id + '_runs'
@@ -251,6 +251,9 @@ class FlowLinkContext():
     """
     def __init__(self, flow_uuid=None):
         self.flow_uuid = flow_uuid
+        # 処理の開始時刻を取得する
+        from datetime import datetime, timezone
+        self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.runs_command_appender = RunsCommandAppender()
         self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
 
@@ -345,27 +348,23 @@ class FlowJsonLink:
         is_vis = len(self.last_ids) > 0
         f.points = self._pick_necessary_points(f, last_ids, is_vis)
 
-        # 処理の開始時刻を取得する
-        from datetime import datetime, timezone
-        start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
-
         # キャッシュ作成処理
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
-            self.cache_data_dest_appender.do_append(f, point, start_time)
+            self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
 
         if self.is_root:
             # lasts出力処理（メインフローの場合のみ）
             for first_last_point in [point for point in f.points if point.is_last]:
                 if is_vis:
                     # Visualizerコマンドのための前処理コマンドを付加する
-                    last_point = self.vis_data_dest_appender.do_append(f, first_last_point, start_time)
+                    last_point = self.vis_data_dest_appender.do_append(f, first_last_point)
                     # Runsコマンドを付加する
-                    last_point = self.context.runs_command_appender.do_append(f, last_point, start_time)
+                    last_point = self.context.runs_command_appender.do_append(f, last_point)
                     # Visualizeコマンドを付加する
-                    visualizer_point = self.vis_data_dest_appender.do_append_after_runs(f, last_point, start_time, first_last_point)
+                    visualizer_point = self.vis_data_dest_appender.do_append_after_runs(f, last_point, first_last_point)
                     # Activity Stepを付加する
-                    self.context.activity_data_dest_appender.do_append(f, visualizer_point, first_last_point, start_time)
+                    self.context.activity_data_dest_appender.do_append(f, visualizer_point, first_last_point)
 
                 else:
 
@@ -376,23 +375,23 @@ class FlowJsonLink:
                         for detadst_o_points in self.context.detadst_o_points[f.uuid]:
                             if detadst_o_points[1] == first_last_point:
                                 # Runsコマンドを付加する
-                                last_point = self.context.runs_command_appender.do_append(f, first_last_point, start_time)
+                                last_point = self.context.runs_command_appender.do_append(f, first_last_point)
                                 point_is_input_datadest = True
 
                         for detadst_u_points in self.context.detadst_u_points[f.uuid]:
                             if detadst_u_points[1] == first_last_point:
                                 # Activity Stepを付加する
                                 original_last_point = detadst_u_points[0]
-                                self.context.activity_data_dest_appender.do_append(f, first_last_point, original_last_point, start_time)
+                                self.context.activity_data_dest_appender.do_append(f, first_last_point, original_last_point)
                                 point_is_input_datadest = True
 
                     if not point_is_input_datadest:
                         # Saverコマンドを付加する
-                        last_point, activity_point = self.folder_data_dest_appender.do_append(f, first_last_point, start_time)
+                        last_point, activity_point = self.folder_data_dest_appender.do_append(f, first_last_point, self.context.start_time)
                         # Activity Stepを付加する
-                        self.context.activity_data_dest_appender.do_append(f, activity_point, first_last_point, start_time)
+                        self.context.activity_data_dest_appender.do_append(f, activity_point, first_last_point)
                         # Runsコマンドを付加する
-                        last_point = self.context.runs_command_appender.do_append(f, last_point, start_time)
+                        last_point = self.context.runs_command_appender.do_append(f, last_point)
 
 
         elif f.is_datadst:
@@ -528,7 +527,10 @@ class FlowJsonLink:
             
             if isinstance(cmd_or_flow, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow_uuid':self.context.flow_uuid, 'activity_uuid':self.context.activity_data_dest_appender.activity_uuid}
+                args = {'flow_uuid'    : self.context.flow_uuid,
+                        'flow_label'   : self.label,
+                        'start_time'   : self.context.start_time,
+                        'activity_uuid': self.context.activity_data_dest_appender.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(node['args'])
             else:

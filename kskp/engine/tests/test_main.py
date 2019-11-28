@@ -11,7 +11,7 @@ from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowLinkContext
 from kskp.core import Datum
-from kskp.store import Library, FLOW_PATH, Frame, Command, Port, STORE_DIR, Database, DatabaseConn
+from kskp.store import Library, Frame, Command, Port, STORE_DIR, Database, DatabaseConn
 from kskp.store import List, Flow
 
 root = Library.load_root()

@@ -9,7 +9,7 @@ from pathlib import Path
 from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowLinkContext
-from kskp.store import Library, FLOW_PATH, Folder, Frame, Command, Port, Datum, STORE_DIR
+from kskp.store import Library, Folder, Frame, Command, Port, Datum, STORE_DIR
 
 root = Library.load_root()
 
