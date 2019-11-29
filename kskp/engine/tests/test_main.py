@@ -905,7 +905,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -931,7 +931,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_one_side_o(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -961,7 +961,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_one_side_u(self):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
@@ -991,7 +991,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_vis_d2_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフローVis
@@ -1018,7 +1018,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_vis_d3_two_outputs(self):
         """
         mコマンド１個（２つのoutputを持つ）のフローVis
@@ -1046,7 +1046,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_execute_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフロー実行
@@ -1111,7 +1111,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(lasts['d4'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_vis_d2_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフローVis
@@ -1178,7 +1178,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_long_flow_vis_d3_two_outputs(self):
         """
         mコマンド2個（２つのoutputを持つ）のフローVis
@@ -1244,7 +1244,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 正しいVisが得られるか
         self.assertDictEqual(lasts, correct)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_no_inputs_command(self):
         """
         mコマンド１個（1つもinputを持たない）のフロー実行
@@ -1276,7 +1276,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_use_mnrcommon(self):
         """
         mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
@@ -1306,7 +1306,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
         Library.delete_frame(lasts['d3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_include_subflow(self):
         """
         サブフローを１個をもつフローを実行する
@@ -1376,7 +1376,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
@@ -1530,7 +1530,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1603,7 +1603,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_vis_dd2_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1681,7 +1681,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_vis_dd3_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1760,7 +1760,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_complex_flow_execute_include_branch_output_subflows(self):
+    # def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -1774,7 +1774,18 @@ class ExecuteTestCase(unittest.TestCase):
             "params": [],
             "ports": [
                 [],
-                []
+                [
+                  {
+                    "type": "frame",
+                    "label": "ラベル",
+                    "nodeId": "dd4"
+                  },
+                  {
+                    "type": "frame",
+                    "label": "ラベル",
+                    "nodeId": "dd5"
+                  }
+                ]
             ],
             "nodes": [
                 {
@@ -1889,7 +1900,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd4'].uuid)
         Library.delete_frame(lasts['dd5'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_vis_include_branch_output_subflowss(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -2023,7 +2034,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_two_vis_include_branch_output_subflowss(self):
         """
         おまけ（Visを２つしてみた。）
@@ -2164,7 +2175,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_generate_one_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2262,7 +2273,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2360,7 +2371,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -2514,7 +2525,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
         サブフローが１つのフローを実行する
@@ -2587,7 +2598,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
         """
         サブフローが１つのフローを実行する
@@ -2661,7 +2672,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
@@ -2698,7 +2709,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d1'].uuid)
         Library.delete_frame(frame_uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_data_source_from_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2786,7 +2797,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(frame_uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_subflow_execute_by_append_inputs(self):
         """
         1つのサブフローを実行する
@@ -2826,7 +2837,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(lasts['d4'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_subflow_execute_by_append_inputs_and_args(self):
         """
         1つのサブフローを実行する
@@ -2902,7 +2913,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_use_nmcmd(self):
         """
         mコマンド２個のフロー実行
@@ -2949,7 +2960,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_vis_use_nmcmd(self):
         """
         mコマンド２個のフローVis
@@ -2997,7 +3008,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_use_mchkcsv_create_cache(self):
         """
         mコマンド1個のフロー実行
@@ -3050,7 +3061,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_outputs_pcmd(self):
         """
         独自コマンド１個（２つのoutputを持つ）のフロー実行
