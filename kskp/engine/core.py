@@ -158,7 +158,7 @@ class Flow(Datum):
         # 実行準備が整ったstepのリストを取得する
         invokable_steps = self.search_invokable_steps()
 
-        print('invokable_steps1', invokable_steps, '\n')
+        # print('invokable_steps1', invokable_steps, '\n')
 
         # 実行できるrunnableがある限りは動き続ける
         while len(invokable_steps) > 0:
@@ -166,12 +166,12 @@ class Flow(Datum):
             # stepのうち、実行準備が整ったものを実行する
             self.run_invokable_steps(invokable_steps, args)
 
-            print('invokable_steps2', invokable_steps, self.points, '\n')
+            # print('invokable_steps2', invokable_steps, self.points, '\n')
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self.search_invokable_steps()
 
-            print('invokable_steps3', invokable_steps, self.points, '\n')
+            # print('invokable_steps3', invokable_steps, self.points, '\n')
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -273,7 +273,7 @@ class Flow(Datum):
 
             # 実行開始
             result = job.start()
-            print('result of job.start():', result)
+            # print('result of job.start():', result)
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
             output_points = {point for point in self.points if point.o_runnable == step}
@@ -368,10 +368,6 @@ class Flow(Datum):
         # for activity in self.lasts.values():
         for activity in [p.datum for p in self.points]:
             if isinstance(activity, Activity):
-                
-                import pprint
-                pprint.pprint('activity') 
-
                 return activity
         # 自身が持っていない場合、サブフローを探しに行く
         # (データデストのみを用いている場合)
@@ -476,13 +472,6 @@ class Point:
         """
         return any(t_tube.runnable is None and t_tube.port is None for t_tube in self.target)
 
-    # @property
-    # def is_out(self):
-    #     """
-    #     サブフローの終端かどうか
-    #     """
-    #     return any(t_tube.runnable is None and t_tube.port is not None for t_tube in self.target)
-
     @property
     def is_first(self):
         """
@@ -496,13 +485,6 @@ class Point:
         rootのフローの始端かどうか
         """
         return self.o_runnable is None and self.o_port is None
-
-    # @property
-    # def is_in(self):
-    #     """
-    #     サブフローの始端かどうか
-    #     """
-    #     return self.o_runnable is None and self.o_port is not None
 
     @property
     def is_cache(self):
