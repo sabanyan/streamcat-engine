@@ -74,6 +74,7 @@ class FolderDataDestAppender():
 
         # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:
+            print('aaaa')
             saver_point.target = point.target
         # pointの向き先を変更する
         point.target = [Tube(Port('i', 'frame'), saver_step)]
@@ -361,10 +362,10 @@ class FlowJsonLink:
         # pprint.pprint('_pick_necessary_points:')
         # pprint.pprint(f.points)
 
-        # キャッシュ作成処理
-        cache_points = [point for point in f.points if point.is_cache]
-        for point in cache_points:
-            self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
+        # # キャッシュ作成処理
+        # cache_points = [point for point in f.points if point.is_cache]
+        # for point in cache_points:
+        #     self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
 
         if self.is_root:
             # lasts出力処理（メインフローの場合のみ）
@@ -432,9 +433,16 @@ class FlowJsonLink:
             self._open_flow_out_port(f, o_port, out_point)
             self._open_flow_out_port(f, u_port, activity_point)
 
-        # import pprint
-        # pprint.pprint('resolve:')
-        # pprint.pprint(f.points)
+        # キャッシュ作成処理
+        # is_outかつis_cacheなPointにも対応できるよう
+        # データデストを付加した後にキャッシュデータデストを付加すること
+        cache_points = [point for point in f.points if point.is_cache]
+        for point in cache_points:
+            self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
+
+        import pprint
+        pprint.pprint('resolve:')
+        pprint.pprint(f.points)
 
         return f
 
@@ -580,7 +588,7 @@ class FlowJsonLink:
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
-                [self._update_point(point=src_point, is_out=(self.is_root and src_point.is_out) or False, origin=Tube(i_port, None))
+                [self._update_point(point=src_point, origin=Tube(i_port, None))
                  for i_port in flow.i_ports if i_port.name == src_point.id]
 
             for d_port_name, d_node_id in dsts.items():
@@ -600,7 +608,7 @@ class FlowJsonLink:
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにtargetを置き換える
                 # (is_outは出力Pointの目印として用いるので、Falseにする)
-                [self._update_point(point=dst_point, is_out=(self.is_root and dst_point.is_out) or False, target=Tube(o_port, None))
+                [self._update_point(point=dst_point, target=Tube(o_port, None))
                  for o_port in flow.o_ports if o_port.name == dst_point.id]
 
 

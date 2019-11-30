@@ -1331,7 +1331,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d2'].uuid)
         Library.delete_frame(lasts['d3'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_include_subflow(self):
         """
         サブフローを１個をもつフローを実行する
@@ -1403,7 +1403,7 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub_uuid))
         Library.delete_frame(lasts['dd3'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
@@ -1559,7 +1559,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -1791,7 +1791,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    @unittest.skip
+    # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -2207,7 +2207,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         self.assertTrue(delete_flow(sub_uuid))
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_generate_one_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2306,7 +2306,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
         """
         mコマンド３個のフロー実行
@@ -2405,7 +2405,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
         """
         outputが２つのサブフローをもつフローを実行する
@@ -2561,7 +2561,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
         サブフローが１つのフローを実行する
@@ -2637,7 +2637,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd2'].uuid)
         Library.delete_frame(lasts['dd3'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
         """
         サブフローが１つのフローを実行する
@@ -2843,7 +2843,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(frame_uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_subflow_execute_by_append_inputs(self):
         """
         1つのサブフローを実行する
@@ -2883,7 +2883,7 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(lasts['d4'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_subflow_execute_by_append_inputs_and_args(self):
         """
         1つのサブフローを実行する
@@ -2958,7 +2958,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d1'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_use_nmcmd(self):
         """
         mコマンド２個のフロー実行
@@ -3055,7 +3055,7 @@ class ExecuteTestCase(unittest.TestCase):
         # 後片付け
         Library.delete_frame(lasts['d2'].uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_use_mchkcsv_create_cache(self):
         """
         mコマンド1個のフロー実行
@@ -3079,7 +3079,7 @@ class ExecuteTestCase(unittest.TestCase):
         # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
         json_flow = copy.deepcopy(self.flow_data_use_mchkcsv)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
-        flow = Library.save_flow(root.uuid, 'test', self.flow_data_use_mchkcsv)
+        flow = Library.save_flow(root.uuid, 'test', json_flow)
 
         flow_link = FlowJsonLink(flow, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
@@ -3110,7 +3110,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_two_outputs_pcmd(self):
         """
         独自コマンド１個（２つのoutputを持つ）のフロー実行
@@ -3129,7 +3129,7 @@ class ExecuteTestCase(unittest.TestCase):
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = Flow(None, self.flow_data_outputs_pcmd['label'], self.flow_data_outputs_pcmd)
+        flow = Flow(None, json_flow['label'], json_flow)
         flow_link = FlowJsonLink(flow, FlowLinkContext())
 
         activity = execute(flow_link, {}, {})
@@ -3156,7 +3156,7 @@ class ExecuteTestCase(unittest.TestCase):
     # mselrowのFIFOの関係で、nm.runs()でフリーズする。
     # だが、そもそもそのようなフローはフローエディタでは作成不可能なので
     # このテストは無効である
-    @unittest.skip
+    @unittest.skip('無効')
     def test_simple_flow_execute_two_outputs_pcmd_one_side_o(self):
         """
         独自コマンド１個（２つのoutputを持つ）のフロー実行
