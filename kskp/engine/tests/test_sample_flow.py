@@ -57,6 +57,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Flow.update_data(flow.uuid, 'test', flow_json, '1')
         flow = Library.load_flow(flow.uuid)
 
+        # 出力ポートを設定する
+        
+
         # 単純な実行結果のテスト
         flow_link = FlowJsonLink(flow, FlowLinkContext(flow.uuid))
         activity = execute(flow_link, {}, {})
@@ -74,7 +77,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         Library.delete_frame(uuid)
         Library.load_frame(frame_uuid).remove_reference_only()
 
-    # @unittest.skip
+    @unittest.skip
     def test_ni_flow_vis(self):
         """
         NI様のフローのVis実行テスト
@@ -120,7 +123,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         delete_flow(main_uuid)
         Library.load_frame(frame_uuid).remove_reference_only()
 
-    # @unittest.skip
+    @unittest.skip
     def test_ni_flow_execute_generate_caches(self):
         """
         NI様のフローの実行テスト
@@ -143,6 +146,9 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
                     node['makeCache'] = True
                     node['cacheCreatedAt'] = ""
         update_flow_node_uuid(flow_json, 'i', frame_uuid)
+
+        # 出力ポートを設定する
+
 
         # uuidを更新する
         from kskp.store import Flow
@@ -179,7 +185,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    # @unittest.skip
+    @unittest.skip
     def test_ryudo_flow_execute(self):
         """
         デモ用のフロー実行（粒度分布計）
@@ -225,7 +231,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         for result in result_uuids:
             Library.delete_frame(result)
 
-    # @unittest.skip
+    @unittest.skip
     def test_ryudo_flow_cache(self):
         """
         デモ用のフロー実行（粒度分布計）
@@ -291,7 +297,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         for cache in cache_uuids:
             Library.delete_frame(cache)
 
-    # @unittest.skip
+    @unittest.skip
     def test_ryudo_flow_vis(self):
         """
         デモ用のフローVis（粒度分布計）
@@ -342,7 +348,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         self.assertTrue(delete_flow(sub2_uuid))
         Library.load_frame(frame_uuid).remove_reference_only()
 
-    # @unittest.skip
+    @unittest.skip
     def test_shindo_flow_execute(self):
         """
         デモ用のフロー実行（振動データ）
@@ -402,7 +408,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         for result in result_uuids:
             Library.delete_frame(result)
 
-    # @unittest.skip
+    @unittest.skip
     def test_shindo_flow_cache(self):
         """
         デモ用のフロー実行（振動データ）
@@ -480,7 +486,7 @@ class ExecuteSampleFlowTestCase(unittest.TestCase):
         for cache in cache_uuids:
             Library.delete_frame(cache)
 
-    # @unittest.skip
+    @unittest.skip
     def test_shindo_flow_vis(self):
         """
         デモ用のフローVis（振動データ）

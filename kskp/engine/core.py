@@ -266,7 +266,7 @@ class Flow(Datum):
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
-            print('context in run_invokable_steps:', step.runnable.context)
+            # print('context in run_invokable_steps:', step.runnable.context)
 
             # jobを作る
             job = Job(step, inputs)
