@@ -74,7 +74,6 @@ class FolderDataDestAppender():
 
         # lastsじゃない場合は追加したpointを次のstepに繋げる
         if not point.is_last:
-            print('aaaa')
             saver_point.target = point.target
         # pointの向き先を変更する
         point.target = [Tube(Port('i', 'frame'), saver_step)]
@@ -234,6 +233,14 @@ class RunsCommandAppender():
         point_id = point.id + '_runs'
         runs_point = Point(point_id, [Tube(Port(port_name, 'datum?'), self.runs_step)], None, [Tube(None, None)])
 
+        # lastsじゃない場合は追加したpointを次のstepに繋げる
+        
+        import pprint
+        pprint.pprint(point) 
+        
+        if not point.is_last:
+            runs_point.target = point.target
+
         # ここでRunsCommandを繋げる
         point.target = [Tube(Port(port_name, 'mcmd'), self.runs_step)]
 
@@ -243,6 +250,9 @@ class RunsCommandAppender():
         f.points.append(runs_point)
 
         self.next_port_no += 1
+
+        import pprint  
+        pprint.pprint(runs_point)
 
         return runs_point
 
@@ -306,10 +316,6 @@ class FlowJsonLink:
     def resolve(self):
         f = self._make_flow(self.label, self.flow_data)
 
-        import pprint
-        pprint.pprint('self._make_flow:')
-        pprint.pprint(f.outs)
-
         self.context.detadst_o_points[f.uuid] = []
         self.context.detadst_u_points[f.uuid] = []
 
@@ -350,17 +356,9 @@ class FlowJsonLink:
         # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
         last_ids = self._pick_out_points(f.outs, f.points)
 
-        # import pprint
-        # pprint.pprint('f.outs:')
-        # pprint.pprint(f.outs)   
-
         # 実行するのに必要なpointを取得する
         is_vis = len(self.last_ids) > 0
         f.points = self._pick_necessary_points(f, last_ids, is_vis)
-
-        # import pprint
-        # pprint.pprint('_pick_necessary_points:')
-        # pprint.pprint(f.points)
 
         # # キャッシュ作成処理
         # cache_points = [point for point in f.points if point.is_cache]
@@ -439,10 +437,6 @@ class FlowJsonLink:
         cache_points = [point for point in f.points if point.is_cache]
         for point in cache_points:
             self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
-
-        import pprint
-        pprint.pprint('resolve:')
-        pprint.pprint(f.points)
 
         return f
 
