@@ -10,9 +10,6 @@ class Job:
 
         self.errors = []
 
-        # 実行を終了したらTrueにするフラグ
-        self.already_ran = False
-
     def start(self):
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
@@ -58,7 +55,6 @@ class Step:
         self.id = step_id
         self.runnable = runnable
         self.args = args
-        self.already_ran = False
 
     def __repr__(self):
         return self.id
@@ -166,7 +162,7 @@ class Flow(Datum):
             # stepのうち、実行準備が整ったものを実行する
             self.run_invokable_steps(invokable_steps, args)
 
-            # print('invokable_steps2', invokable_steps, self.points, '\n')
+            # print('invokable_steps2', '\n')  
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self.search_invokable_steps()
@@ -182,7 +178,7 @@ class Flow(Datum):
         """
 
         input_points = [p for p in self.points if p.is_for_input]
-        # print('aaa', input_points, inputs)
+
         for input_point in input_points:
             input_point.datum = inputs[input_point.o_port.name]
 
@@ -200,23 +196,6 @@ class Flow(Datum):
         #         if t_tube.runnable is None and p.datum is None:
         #             last_steps.add(p.o_runnable)
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
-
-        # import pprint
-        # pprint.pprint('last_steps:')
-        # pprint.pprint(self.points)
-
-        # 未実行かつ出力のないサブフローを集める
-        # last_sub_flows = set()
-        # for p in self.points:
-        #     if not p.is_last:
-        #         for t_tube in p.target:
-        #             if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran:
-        #                 last_sub_flows.add(t_tube.runnable)
-        # last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
-        #                   if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
-
-        # lastsと出力のないサブフローを纏める
-        # last_steps.update(last_sub_flows)
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -242,7 +221,7 @@ class Flow(Datum):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.o_runnable is not None)
+        return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.datum is None and a.o_runnable is not None)
 
     def run_invokable_steps(self, steps, flow_args):
         """
@@ -251,6 +230,7 @@ class Flow(Datum):
         """
 
         for step in steps:
+
             # flow変数を使ってargsを書き換える
             if len(flow_args) > 0:
                 step.replace_args(flow_args)
@@ -266,28 +246,21 @@ class Flow(Datum):
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
-            # print('context in run_invokable_steps:', step.runnable.context)
 
             # jobを作る
             job = Job(step, inputs)
 
             # 実行開始
             result = job.start()
-            # print('result of job.start():', result)
+
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
             output_points = {point for point in self.points if point.o_runnable == step}
-
-            # 実行を終了したフラグをたてる
-            step.already_ran = True
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result.pop(output_point.o_port.name)
-
-                # import pprint  
-                # pprint.pprint(output_point.datum)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
