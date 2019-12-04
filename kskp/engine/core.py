@@ -17,7 +17,6 @@ class Job:
         try:
             return self.step.runnable.run(self.step.args, self.inputs)
         except Exception as e:
-            print(repr(e))
             self.errors.append(e)
             raise
 
@@ -40,7 +39,6 @@ class Job:
             import nysol.mcmd as nm
             nm.runs(last_modules, msg='on')
         except Exception as e:
-            print(repr(e))
             self.errors.append(e)
             raise
 
@@ -79,22 +77,37 @@ class Step:
         FIXME?: フロー変数を書き換えるのはStep以外でもいいが、
         早めに書き換えたかったので、とりあえずStepに記載してある
         """
-        import re
+        
         # TODO: 正規表現やreplace対象を外に出す。
         for param, value in flow_args.items():
-            for step_param, step_value in self.args.items():
-                # ネスト深くなるので、continueを利用してネストを浅くした
-                if not isinstance(step_value, str):
-                    continue
+            for step_param, step_value in self.args.items():                
+                if isinstance(step_value, str):
+                    # 文字列の場合は通常通り置換を行う
+                    self.replace_arg_internal(self.args, param, value, step_param, step_value)
+                elif isinstance(step_value, list):
+                    # リストの場合は、リストの要素それぞれに対して置換を行う
+                    for list_value in step_value:
+                        for list_value_dict_key, list_value_dict_val in list_value.items():
+                            self.replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
 
+    def replace_arg_internal(self, args, param, value, step_param, step_value):
+        """
+        特定のargのペア（いわゆるオプションのキー名と値）に
+        変数名（e.g. @[variable]）が入っている場合には、
+        実際に与えられた値で置き換える
 
-                for r in re.finditer(r'@\[(\S*?)\]', step_value):
-                    if r is None:
-                        continue
+        param/value 親フローに与えられた値、いわば「実引数」
+        args/step_param/step_value それぞれのstepに与えられた「仮引数」        
+        """
+        import re        
+        for r in re.finditer(r'@\[(\S*?)\]', step_value):
+            if r is None:
+                continue
 
-                    for g in r.groups():
-                        if param == g:
-                            self.args[step_param] = self.args[step_param].replace(f'@[{g}]', value)
+            for g in r.groups():
+                if param == g:
+                    args[step_param] = args[step_param].replace(f'@[{g}]', value)
+
 
 class Flow(Datum):
     def __init__(self, label):

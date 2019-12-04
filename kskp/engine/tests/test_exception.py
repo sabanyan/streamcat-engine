@@ -16,6 +16,7 @@ def do_something(first_pow):
     #     return ex
     return i
 
+@unittest.skip
 class ErrorHandlingTestCase(unittest.TestCase):
     @unittest.skip
     def test_concurrent_errors(self):
