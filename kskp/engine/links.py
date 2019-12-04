@@ -69,14 +69,15 @@ class FolderDataDestAppender():
 
         saver_step = self._make_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
-        saver_point = Point(point.id, [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
+        saver_point = Point(point.id + '_saver', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
 
-        # lastsじゃない場合は追加したpointを次のstepに繋げる
-        if not point.is_last:
-            saver_point.target = point.target
-        # pointの向き先を変更する
-        point.target = [Tube(Port('i', 'frame'), saver_step)]
+        if point.is_last:
+            # lastsの場合は、pointをruns_stepに繋げるだけ
+            point.target = [Tube(Port('i', 'frame'), saver_step)]
+        else:
+            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
+            point.target.append(Tube(Port('i', 'frame'), saver_step))
 
         f.substeps.append(saver_step)
         f.points.extend([saver_point, store_point])
@@ -87,7 +88,7 @@ class FolderDataDestAppender():
         """
         saverコマンドのstepを作成する
         """
-        return Step(str(uuid.uuid4()), cmd, args)
+        return Step(str(uuid.uuid4()) + str(type(cmd)), cmd, args)
 
 class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, f, point, start_time):
@@ -185,7 +186,7 @@ class ActivityDataDestAppender():
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
-        self.activity_step = Step(str(uuid.uuid4()), activity_cmd, activity_args)
+        self.activity_step = Step(str(uuid.uuid4()) + '_activity', activity_cmd, activity_args)
         self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self.next_port_no = 0
@@ -221,7 +222,7 @@ class RunsCommandAppender():
         # Runsコマンドを取得する
         runs_cmd = CommandLink("runs").resolve()
         # Runsステップを作成する
-        self.runs_step = Step(str(uuid.uuid4()), runs_cmd, {})
+        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {})
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -233,14 +234,6 @@ class RunsCommandAppender():
         point_id = point.id + '_runs'
         runs_point = Point(point_id, [Tube(Port(port_name, 'datum?'), self.runs_step)], None, [Tube(None, None)])
 
-        # lastsじゃない場合は追加したpointを次のstepに繋げる
-        
-        import pprint
-        pprint.pprint(point) 
-        
-        if not point.is_last:
-            runs_point.target = point.target
-
         # ここでRunsCommandを繋げる
         point.target = [Tube(Port(port_name, 'mcmd'), self.runs_step)]
 
@@ -250,9 +243,6 @@ class RunsCommandAppender():
         f.points.append(runs_point)
 
         self.next_port_no += 1
-
-        import pprint  
-        pprint.pprint(runs_point)
 
         return runs_point
 
@@ -359,11 +349,6 @@ class FlowJsonLink:
         # 実行するのに必要なpointを取得する
         is_vis = len(self.last_ids) > 0
         f.points = self._pick_necessary_points(f, last_ids, is_vis)
-
-        # # キャッシュ作成処理
-        # cache_points = [point for point in f.points if point.is_cache]
-        # for point in cache_points:
-        #     self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
 
         if self.is_root:
             # lasts出力処理（メインフローの場合のみ）
@@ -601,9 +586,10 @@ class FlowJsonLink:
 
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにtargetを置き換える
-                # (is_outは出力Pointの目印として用いるので、Falseにする)
-                [self._update_point(point=dst_point, target=Tube(o_port, None))
-                 for o_port in flow.o_ports if o_port.name == dst_point.id]
+                # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にtarget変数が必要なので、何もしない)
+                if not self.is_root:
+                    [self._update_point(point=dst_point, target=Tube(o_port, None))
+                    for o_port in flow.o_ports if o_port.name == dst_point.id]
 
 
     def _update_flow_by_other_than_runnable(self, flow, nodes):
