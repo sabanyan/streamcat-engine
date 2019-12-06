@@ -3244,6 +3244,424 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d3'].uuid)
         Library.delete_frame(frame_uuid)
 
+
+    def test_two_outputs_on_onepath(self):
+        """
+        一つの経路上に二つの出力ポイントがある場合
+        """
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "mcuta", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None,
+              "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            }, 
+            {
+              "id": "d2", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d2", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c2", 
+              "args": {
+                "f": "*"
+              }, 
+              "dsts": {
+                "o": "d2"
+              }, 
+              "srcs": {
+                "i": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              },
+              {
+                "type": "frame", 
+                "label": "d2", 
+                "nodeId": "d2"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2019-11-14 11:34:32", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, FlowLinkContext())
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
+
+        # frameデータは2つ生成されているか
+        self.assertEqual(2, len(lasts))
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d1 = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        result_d1 = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(correct_d1, result_d1)
+        result_d2 = get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(correct_d1, result_d2)
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+        Library.delete_frame(lasts['d2'].uuid)
+
+
+    def test_output_on_source_point(self):
+        """
+        データソースポイントが出力ポイントとなる場合
+        """
+        flow_data = {
+          "label": "q", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None,
+              "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+              "label": "testData", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1",
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {
+                "a": "add,add1", 
+                "c": "1,2", 
+                "precision": 10
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "size": {
+                "width": 38, 
+                "height": 38
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "計算", 
+              "commandId": "mcal", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "testData", 
+                "nodeId": "d"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2019-12-04 13:54:46", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, FlowLinkContext())
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
+
+        # frameデータは2つ生成されているか
+        self.assertEqual(1, len(lasts))
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        result_d = get_frame_by_uuid(lasts['d'].uuid)
+        self.assertEqual(correct_d, result_d)
+
+        # 後片付け
+        Library.delete_frame(lasts['d'].uuid)
+
+
+    def test_output_with_cache(self):
+        """
+        出力ポイントがキャッシュONの場合
+        """
+        flow_data = {
+          "label": "q", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+                "uuid": None,
+                "value": [["顧客", "数量", "金額"],
+                          ["A", 1, 10],
+                          ["A", 2, 20],
+                          ["B", 1, 30],
+                          ["B", 3, 40],
+                          ["B", 1, 50]],
+              "label": "testData", 
+              "makeCache": True, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": True, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {
+                "a": "add,add1", 
+                "c": "1,2", 
+                "precision": 10
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "error": {}, 
+              "label": "計算", 
+              "commandId": "mcal", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "testData", 
+                "nodeId": "d"
+              }, 
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2019-12-04 13:54:46", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, FlowLinkContext())
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
+
+        # frameデータは2つ生成されているか
+        self.assertEqual(2, len(lasts))
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(Library.load_frame(lasts['d'].uuid))
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        result_d = get_frame_by_uuid(lasts['d'].uuid)
+        self.assertEqual(correct_d, result_d)
+        correct_d1 = [['A','1','10','1','2'], ['A','2','20','1','2'], ['B','1','30','1','2'], ['B','3','40','1','2'], ['B','1','50','1','2']]
+        result_d1 = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(correct_d1, result_d1)
+
+        # 後片付け
+        Library.delete_frame(lasts['d'].uuid)
+        Library.delete_frame(lasts['d1'].uuid)
+
+    
+    def test_one_output_from_branch(self):
+        """
+        二股出力コマンドのうち一つだけを出力ポイントに指定した場合
+        """
+        flow_data ={
+          "label": "p", 
+          "nodes": [
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "d4", 
+              "size": {
+                "width": 38, 
+                "height": 38
+              }, 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d4", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c4", 
+              "args": {
+                "c": "${金額} > 30"
+              }, 
+              "dsts": {
+                "o": "d1", 
+                "u": "d4"
+              }, 
+              "size": {
+                "width": 38, 
+                "height": 38
+              }, 
+              "srcs": {
+                "i": "d2"
+              }, 
+              "type": "command", 
+              "label": "条件式による行選択", 
+              "commandId": "msel", 
+              "srcsOrder": [
+                "i"
+              ]
+            }, 
+            {
+              "id": "d2", 
+              "type": "frame", 
+              "uuid": None,
+              "value": [["顧客", "数量", "金額"],
+                        ["A", 1, 10],
+                        ["A", 2, 20],
+                        ["B", 1, 30],
+                        ["B", 3, 40],
+                        ["B", 1, 50]],
+              "label": "testData", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2019-11-28 10:43:57", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, FlowLinkContext())
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity(activity)
+
+        # frameデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+        # DBにframeデータが生成されている
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d1 = [['B','3','40'], ['B','1','50']]
+        result_d1 = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(correct_d1, result_d1)
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
+        
 @unittest.skip('古いので失敗する。改修予定')
 class ExecuteTestCase2(unittest.TestCase):
 
