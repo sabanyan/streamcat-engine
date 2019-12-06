@@ -72,12 +72,7 @@ class FolderDataDestAppender():
         saver_point = Point(point.id + '_saver', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
 
-        if point.is_last:
-            # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.target = [Tube(Port('i', 'frame'), saver_step)]
-        else:
-            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.target.append(Tube(Port('i', 'frame'), saver_step))
+        self.switch_target(point, saver_step, saver_point)
 
         f.substeps.append(saver_step)
         f.points.extend([saver_point, store_point])
@@ -90,6 +85,17 @@ class FolderDataDestAppender():
         """
         return Step(str(uuid.uuid4()) + str(type(cmd)), cmd, args)
 
+    # TODO: 解りづらい関数化
+    # engineのリファクタリングで見直し予定
+    def switch_target(self, point, saver_step, saver_point):
+        if point.is_last:
+            # lastsの場合は、pointをruns_stepに繋げるだけ
+            point.target = [Tube(Port('i', 'frame'), saver_step)]
+        else:
+            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
+            point.target.append(Tube(Port('i', 'frame'), saver_step))
+
+
 class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, f, point, start_time):
         from kskp.store import Library, Folder
@@ -97,6 +103,17 @@ class CacheDataDestAppender(FolderDataDestAppender):
         folder_store = Library.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
         self._put_saver(point, f, folder_store, saver, start_time)
+
+    def switch_target(self, point, saver_step, saver_point):
+        if point.is_last:
+            # lastsの場合は、pointをruns_stepに繋げるだけ
+            point.target = [Tube(Port('i', 'frame'), saver_step)]
+        else:
+            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
+            tmp_target = point.target.pop()
+            point.target.append(Tube(Port('i', 'frame'), saver_step))
+            saver_point.target = [tmp_target]
+            
 
 class VisDataDestAppender():
     def __init__(self, flow_uuid, vis_args={}):
@@ -272,8 +289,7 @@ class FlowJsonLink:
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
-        # self.last_ids = last_ids
-        self.last_ids = vis_args.keys()
+        self.vis_ids = vis_args.keys()
 
         self.folder_data_source_prepender = FolderDataSourcePrepender()
 
@@ -296,7 +312,7 @@ class FlowJsonLink:
             # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
 
             # メインフローで/vizs時、どのdstsを通るかを求める
-            dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.last_ids)
+            dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.vis_ids)
             # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
             if len(dst_ids) > 0:
                 ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
@@ -339,7 +355,7 @@ class FlowJsonLink:
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
-        # self.last_idsには
+        # self.vis_idsには
         # メインフローの場合 ： /vizsするdatumのid群
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
@@ -347,13 +363,13 @@ class FlowJsonLink:
         last_ids = self._pick_out_points(f.outs, f.points)
 
         # 実行するのに必要なpointを取得する
-        is_vis = len(self.last_ids) > 0
+        is_vis = len(self.vis_ids) > 0
         f.points = self._pick_necessary_points(f, last_ids, is_vis)
 
         if self.is_root:
             # lasts出力処理（メインフローの場合のみ）
-            for first_out_point in [point for point in f.points if point.is_out]:
-                if is_vis:
+            if is_vis:
+                for first_out_point in [f.select_point_by_id(pid) for pid in self.vis_ids]:
                     # Visualizerコマンドのための前処理コマンドを付加する
                     out_point = self.vis_data_dest_appender.do_append(f, first_out_point)
                     # Runsコマンドを付加する
@@ -363,11 +379,12 @@ class FlowJsonLink:
                     # Activity Stepを付加する
                     self.context.activity_data_dest_appender.do_append(f, visualizer_point, first_out_point)
 
-                else:
+            else:
 
+                for first_out_point in [point for point in f.points if point.is_out]:
                     point_is_input_datadest = False
 
-                    if first_out_point.o_runnable.is_flow:
+                    if first_out_point.o_runnable is not None and first_out_point.o_runnable.is_flow:
                         # ↓どちらかのFor文しか通らない、いまいちなコード
                         for detadst_o_points in self.context.detadst_o_points[f.uuid]:
                             if detadst_o_points[1] == first_out_point:
@@ -392,8 +409,6 @@ class FlowJsonLink:
 
 
         elif f.is_datadst:
-            # データデストの場合はその中のLastsにRunsコマンドを付加する
-
             # 2出力StepのCommandの出力Pointを取得する
             out_point = None
             activity_point = None
@@ -416,12 +431,12 @@ class FlowJsonLink:
             self._open_flow_out_port(f, o_port, out_point)
             self._open_flow_out_port(f, u_port, activity_point)
 
+
         # キャッシュ作成処理
         # is_outかつis_cacheなPointにも対応できるよう
         # データデストを付加した後にキャッシュデータデストを付加すること
-        cache_points = [point for point in f.points if point.is_cache]
-        for point in cache_points:
-            self.cache_data_dest_appender.do_append(f, point, self.context.start_time)
+        for cache_point in [point for point in f.points if point.is_cache]:
+            self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
 
         return f
 
@@ -474,8 +489,8 @@ class FlowJsonLink:
 
     def _pick_out_points(self, outs, points):
         # /vizsなど、lastsが指定されている場合
-        if len(self.last_ids) > 0:
-            return self.last_ids 
+        if len(self.vis_ids) > 0:
+            return self.vis_ids 
 
         # 出力のないサブフローの入力ポイントを集める
         # (入力ポイントを出力のないサブフローに渡すため)
@@ -752,7 +767,7 @@ class FlowJsonLink:
             # if len(flow.o_ports) == 0:
             if self.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
-                lasts_point.target = [Tube(None, None)]
+                # lasts_point.target = [Tube(None, None)]
                 lasts_point.is_out = True
 
             # lasts_pointの上に繋がっているpointsを取得する
@@ -801,7 +816,7 @@ class FlowUuidLink(FlowJsonLink):
         super().__init__(flow, context, vis_args)
 
         # super().__init__より下に記述すること
-        is_vis =  len(self.last_ids) > 0
+        is_vis =  len(self.vis_ids) > 0
         if is_vis:
             self.vis_data_dest_appender = VisDataDestAppender(flow_uuid, vis_args)
         else:
