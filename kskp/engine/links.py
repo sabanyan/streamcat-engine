@@ -61,7 +61,6 @@ class FolderDataDestAppender():
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
         args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if self.flow_uuid is not None else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        from datetime import datetime, timezone
         args['flow_label'] = f.label if f.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
         args['point'] = point
@@ -110,9 +109,9 @@ class CacheDataDestAppender(FolderDataDestAppender):
             point.target = [Tube(Port('i', 'frame'), saver_step)]
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            tmp_target = point.target.pop()
-            point.target.append(Tube(Port('i', 'frame'), saver_step))
-            saver_point.target = [tmp_target]
+            tmp_targets = point.target
+            point.target = [Tube(Port('i', 'frame'), saver_step)]
+            saver_point.target = tmp_targets
             
 
 class VisDataDestAppender():
@@ -145,8 +144,7 @@ class VisDataDestAppender():
         point_id = point.id + '_tolist'
         tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
 
-        # point.id = str(uuid.uuid4())
-        point.target = [Tube(Port('i', 'frame'), rowrange_step)]
+        self.switch_target(point, rowrange_step)
 
         f.substeps.append(rowrange_step)
         f.substeps.append(tolist_step)
@@ -154,6 +152,14 @@ class VisDataDestAppender():
         f.points.append(tolist_point)
 
         return tolist_point
+
+    def switch_target(self, point, rowrange_step):
+        if point.is_last:
+            # lastsの場合は、pointをruns_stepに繋げるだけ
+            point.target = [Tube(Port('i', 'frame'), rowrange_step)]
+        else:
+            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
+            point.target.append(Tube(Port('i', 'frame'), rowrange_step))
 
     def do_append_after_runs(self, f, point, original_out_point):
         visualizer_step, visualizer_point = self._put_visualizer(f, point, original_out_point)
@@ -267,8 +273,10 @@ class FlowLinkContext():
     """
     FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
     """
-    def __init__(self, flow_uuid=None):
+    def __init__(self, flow_uuid, flow_label):
         self.flow_uuid = flow_uuid
+        self.flow_label = flow_label
+
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
         self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
@@ -285,7 +293,7 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, flow, context, vis_args={}):
+    def __init__(self, flow, vis_args={}, context=None):
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
@@ -299,23 +307,29 @@ class FlowJsonLink:
 
         self.cache_data_dest_appender = CacheDataDestAppender(flow.uuid)
 
-        self.context = context
+        if context is None:
+            self.context = FlowLinkContext(flow.uuid, flow.label)
+        else:
+            self.context = context
             
     def _node2link(self, node):
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            ret = FlowUuidLink(node['uuid'], self.context)
+            # ret = FlowUuidLink(node['uuid'], {}, self.context)
+            from kskp.store import Flow
+            flow = Flow.find_by_uuid(node['uuid'])
+            ret = FlowJsonLink(flow, {}, self.context)
 
-            # かなりの力技・・・。
-            # 実行を行う場合、サブフロー内で余分な処理が走らないように
-            # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
+            # # かなりの力技・・・。
+            # # 実行を行う場合、サブフロー内で余分な処理が走らないように
+            # # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
 
-            # メインフローで/vizs時、どのdstsを通るかを求める
-            dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.vis_ids)
-            # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
-            if len(dst_ids) > 0:
-                ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
+            # # メインフローで/vizs時、どのdstsを通るかを求める
+            # dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.vis_ids)
+            # # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
+            # if len(dst_ids) > 0:
+            #     ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
 
         return ret
 
@@ -360,7 +374,7 @@ class FlowJsonLink:
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
         # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
-        last_ids = self._pick_out_points(f.outs, f.points)
+        last_ids = self._pick_out_points(f, f.outs, f.points)
 
         # 実行するのに必要なpointを取得する
         is_vis = len(self.vis_ids) > 0
@@ -448,7 +462,7 @@ class FlowJsonLink:
         if port_name is None:
             port_name = 'o_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
-            # データデスト空の入力ポート名は'o'固定
+            # データデストからの入力ポート名は'o'固定
             origin_tubes = [Tube(Port('o', 'frame'), step)]
         else:
             origin_tubes = [Tube(Port(port_name, 'mcmd'), step)]
@@ -487,15 +501,19 @@ class FlowJsonLink:
         flow.o_ports.append(out_point)
         self._update_point(point=out_port, target=Tube(out_point, None))
 
-    def _pick_out_points(self, outs, points):
+    def _pick_out_points(self, f, outs, points):
         # /vizsなど、lastsが指定されている場合
         if len(self.vis_ids) > 0:
             return self.vis_ids 
 
+        # データデストの場合はoutsはないのでlastsを返す
+        if f.is_datadst:
+            return f.lasts
+
         # 出力のないサブフローの入力ポイントを集める
         # (入力ポイントを出力のないサブフローに渡すため)
         ret = self._pick_points_of_no_output_subflow(points)
-        # lastsを集める
+        # outsを集める
         ret.extend(outs.keys())
         return ret
 
@@ -547,7 +565,7 @@ class FlowJsonLink:
             if isinstance(cmd_or_flow, SCommand):
                 # SCommand共通引数を作成する
                 args = {'flow_uuid'    : self.context.flow_uuid,
-                        'flow_label'   : self.label,
+                        'flow_label'   : self.context.flow_label,
                         'start_time'   : self.context.start_time,
                         'activity_uuid': self.context.activity_data_dest_appender.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
@@ -803,31 +821,3 @@ class FlowJsonLink:
         store = Store.find_by_uuid(store_uuid)
         # StoreにDatabaseを設定する
         store_point.datum = store
-
-
-class FlowUuidLink(FlowJsonLink):
-    """
-    UUIDを元にFlowを返却するリンク
-    """
-
-    def __init__(self, flow_uuid, context, vis_args={}):
-        from kskp.store import Flow
-        flow = Flow.find_by_uuid(flow_uuid)
-        super().__init__(flow, context, vis_args)
-
-        # super().__init__より下に記述すること
-        is_vis =  len(self.vis_ids) > 0
-        if is_vis:
-            self.vis_data_dest_appender = VisDataDestAppender(flow_uuid, vis_args)
-        else:
-            self.folder_data_dest_appender = FolderDataDestAppender(flow_uuid)
-        self.cache_data_dest_appender = CacheDataDestAppender(flow_uuid)
-        # self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
-
-    def node2link(self, node):
-        if node['type'] == 'command':
-            ret = CommandLink(node['commandId'])
-        elif node['type'] == 'flow':
-            ret = FlowUuidLink(node['uuid'], self.context)
-
-        return ret

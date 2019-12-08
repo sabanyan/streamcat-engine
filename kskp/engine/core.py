@@ -1,6 +1,3 @@
-import json
-import uuid
-
 from kskp.store import Datum
 
 class Job:
