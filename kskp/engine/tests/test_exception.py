@@ -16,7 +16,7 @@ def do_something(first_pow):
     #     return ex
     return i
 
-@unittest.skip
+@unittest.skip('例外処理の実装待ち?')
 class ErrorHandlingTestCase(unittest.TestCase):
     @unittest.skip
     def test_concurrent_errors(self):
