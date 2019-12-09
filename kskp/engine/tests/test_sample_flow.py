@@ -13,6 +13,7 @@ from kskp.store import Library, Folder, Frame, Command, Port, Datum, STORE_DIR
 
 root = Library.load_root()
 
+@unittest.skip('フローが大きすぎてどこが出力ポイントかわからない')
 class ExecuteSampleFlowTestCase(unittest.TestCase):
     """
     実際のフローを実行するテスト
