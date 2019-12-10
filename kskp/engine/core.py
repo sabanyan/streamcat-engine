@@ -1,6 +1,3 @@
-import json
-import uuid
-
 from kskp.store import Datum
 
 class Job:
@@ -9,9 +6,6 @@ class Job:
         self.inputs = inputs
 
         self.errors = []
-
-        # 実行を終了したらTrueにするフラグ
-        self.already_ran = False
 
     def start(self):
         try:
@@ -33,6 +27,7 @@ class Job:
             last_modules.extend(module_list)
 
             # import pprint
+            # pprint.pprint('runs :')  
             # pprint.pprint(last_modules)
 
             # 実行
@@ -57,7 +52,6 @@ class Step:
         self.id = step_id
         self.runnable = runnable
         self.args = args
-        self.already_ran = False
 
     def __repr__(self):
         return self.id
@@ -120,13 +114,7 @@ class Flow(Datum):
         self.points = []
         self.substeps = []
 
-        # TODO:FrameStoreは外部にあるべき？
-        # contextに'framestore'というキーを作ってそこに入れる？
-        # それともこのままでいい？
-        from kskp.store import FrameStore, ModuleStore
-        self.cache_store = FrameStore()
-        self.lasts_store = FrameStore()
-
+        from kskp.store import ModuleStore
         self.module_store = ModuleStore()
 
     @property
@@ -141,18 +129,8 @@ class Flow(Datum):
         return {p.id: p.datum for p in self.points if p.is_last}
 
     @property
-    def results(self):
-        """
-        最後にできる結果
-        """
-        return self.lasts_store.data
-
-    @property
-    def caches(self):
-        """
-        作成したキャッシュ
-        """
-        return self.cache_store.data
+    def outs(self):
+        return {p.id: p.datum for p in self.points if p.is_out}
 
     @property
     def is_datadst(self):
@@ -161,7 +139,7 @@ class Flow(Datum):
         """
         # いい条件が思い浮かばない,,,
         has_store = any (p for p in self.points if p.is_store)
-        return len(self.o_ports) == 0 and len(self.lasts) == 1 and has_store
+        return len(self.i_ports) == 1 and len(self.lasts) == 2 and has_store
 
     def run(self, args, inputs):
         """
@@ -173,7 +151,7 @@ class Flow(Datum):
         # 実行準備が整ったstepのリストを取得する
         invokable_steps = self.search_invokable_steps()
 
-        # print('invokable_steps1', self.points)
+        # print('invokable_steps1', invokable_steps, '\n')
 
         # 実行できるrunnableがある限りは動き続ける
         while len(invokable_steps) > 0:
@@ -181,12 +159,12 @@ class Flow(Datum):
             # stepのうち、実行準備が整ったものを実行する
             self.run_invokable_steps(invokable_steps, args)
 
-            # print('invokable_steps2', invokable_steps, self.points)
+            # print('invokable_steps2', '\n')  
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self.search_invokable_steps()
 
-            # print('invokable_steps3', invokable_steps, self.points)
+            # print('invokable_steps3', invokable_steps, self.points, '\n')
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self.make_outputs()
@@ -197,7 +175,7 @@ class Flow(Datum):
         """
 
         input_points = [p for p in self.points if p.is_for_input]
-        # print('aaa', input_points, inputs)
+
         for input_point in input_points:
             input_point.datum = inputs[input_point.o_port.name]
 
@@ -215,13 +193,6 @@ class Flow(Datum):
         #         if t_tube.runnable is None and p.datum is None:
         #             last_steps.add(p.o_runnable)
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
-
-        # 未実行かつ出力のないサブフローを集める
-        last_sub_flows = {t_tube.runnable for p in self.points if not p.is_last for t_tube in p.target\
-                          if len(t_tube.runnable.runnable.o_ports) == 0 and not t_tube.runnable.already_ran}
-
-        # lastsと出力のないサブフローを纏める
-        last_steps.update(last_sub_flows)
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -247,7 +218,7 @@ class Flow(Datum):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.o_runnable is not None)
+        return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.datum is None and a.o_runnable is not None)
 
     def run_invokable_steps(self, steps, flow_args):
         """
@@ -256,6 +227,7 @@ class Flow(Datum):
         """
 
         for step in steps:
+
             # flow変数を使ってargsを書き換える
             if len(flow_args) > 0:
                 step.replace_args(flow_args)
@@ -266,44 +238,31 @@ class Flow(Datum):
             for p in self.points:
                 for t_tube in p.target:
                     if t_tube.runnable == step:
-                        # content（datumのラップ対象、生nysol_moduleなど）を渡すか、datumを渡すかで悩んでいる
-                        # datumを渡すと受け手側で必ずinputs['i'].contentみたいにとり出させるのが煩わしかったのでcontent渡している
-                        # commandがpointのcontentを知っているのも気持ち悪いし。。。
-                        inputs[t_tube.port.name] = p.datum.content if isinstance(p.datum, Datum) else p.datum
+                        # コマンドのinputs引数に値を格納する
+                        inputs[t_tube.port.name] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
-            # print('context in run_invokable_steps:', step.runnable.context)
 
             # jobを作る
             job = Job(step, inputs)
 
             # 実行開始
             result = job.start()
-            # print('result of job.start():', result)
+
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
             output_points = {point for point in self.points if point.o_runnable == step}
-
-            # 実行を終了したフラグをたてる
-            step.already_ran = True
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result.pop(output_point.o_port.name)
-                self.put_datum_in_store(output_point.id, output_point.datum)
-                # print('output_point:', output_point)
-
-            # stepがデータデストの場合は、データデスト内のlastsを取得する
-            if step.is_datadst:
-                for last_frame in step.runnable.lasts.values():
-                    self.put_datum_in_store(step.id, last_frame)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
             # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
-            from kskp.store import RunfuncCommand
+            from kskp.depo.std.commands import RunfuncCommand
             if isinstance(step.runnable, RunfuncCommand):
                 for value in result.values():
                     self.module_store.append(value.content)
@@ -317,16 +276,6 @@ class Flow(Datum):
         # result = {port.name: self.get_output_point(port).datum.run() for port in self.o_ports}
         # print('make_outputs result:', result)
         # return result
-
-    def put_datum_in_store(self, id, datum):
-        """
-        Cacheなどを後で保存処理を行うためにstoreに入れておく
-        """
-        from kskp.store import Cache, Frame
-        if isinstance(datum, Cache):
-            self.cache_store.append(id, datum)
-        elif isinstance(datum, Frame):
-            self.lasts_store.append(id, datum)
 
     def get_output_point(self, o_port):
         """
@@ -343,7 +292,7 @@ class Flow(Datum):
         # 例：
         # サブフローのo_portsが
         # [{"label": "出力1", "nodeId": "d3", "type": "frame"}, {"label": "出力2", "nodeId": "d4", "type": "frame"}]
-        # の様に2つあって、プレビューなどによって片方（例えばd3）だけ使う様な場合、
+        # の様に2つあって、/vizsなどによって片方（例えばd3）だけ使う様な場合、
         # d4をtarget.portとするpointは存在しない（使わないpointは切り捨てている）ので、ここを通ることになる。
 
         # なので、ここで例外を出すと正常に最後まで実行できなくなる。
@@ -367,6 +316,8 @@ class Flow(Datum):
         for point in self.points:
             if point.id == point_id:
                 return point
+ 
+        raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
 
     def get_module_list(self):
         """
@@ -378,9 +329,27 @@ class Flow(Datum):
 
         return self.module_store.module_list
 
+    def find_activity(self):
+        """
+        Activity Stepをメインフローから再帰的に探し出す
+        """
+        from kskp.store import Activity
+        # 自身がActivityを持っている場合
+        # for activity in self.lasts.values():
+        for activity in [p.datum for p in self.points]:
+            if isinstance(activity, Activity):
+                return activity
+        # 自身が持っていない場合、サブフローを探しに行く
+        # (データデストのみを用いている場合)
+        for substep in self.substeps:
+            if substep.is_flow :
+                result = substep.runnable.find_activity()
+                if result is not None:
+                    return result
+        # Activityが見つからなかった場合
+        return None
+
     def dtor(self):
-        self.cache_store.save()
-        self.lasts_store.save()
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.store import Command
@@ -394,7 +363,7 @@ class Point:
     o->iの順番なので注意
     """
 
-    def __init__(self, point_id, origin_tubes, datum, target_tubes, cache=False):
+    def __init__(self, point_id, origin_tubes, datum, target_tubes, is_in=False, is_out=False, cache=False):
         self.id = point_id
         self.label = ''
 
@@ -402,6 +371,11 @@ class Point:
         self.datum = datum
         self.target = target_tubes
 
+        # フローの入力ポートか
+        self.is_in = is_in
+        # フローの出力ポートか
+        self.is_out = is_out
+        
         self.cache = cache
 
     def __repr__(self):
@@ -428,6 +402,10 @@ class Point:
             return f"{self.id}<{dom_o} -> {cod_i}>"
         else:
             return f"{self.id}<{dom_o} -({self.datum})-> {cod_i}>"
+
+    def __hash__(self):
+        # PointをDictのキーとして扱う場合同じインスタンスで同じとみなす
+        return id(self)
 
     @property
     def is_for_input(self):
@@ -465,13 +443,6 @@ class Point:
         return any(t_tube.runnable is None and t_tube.port is None for t_tube in self.target)
 
     @property
-    def is_out(self):
-        """
-        サブフローの終端かどうか
-        """
-        return any(t_tube.runnable is None and t_tube.port is not None for t_tube in self.target)
-
-    @property
     def is_first(self):
         """
         フローの始端のものかどうか（サブ、rootどちらでも良い）
@@ -484,13 +455,6 @@ class Point:
         rootのフローの始端かどうか
         """
         return self.o_runnable is None and self.o_port is None
-
-    @property
-    def is_in(self):
-        """
-        サブフローの始端かどうか
-        """
-        return self.o_runnable is None and self.o_port is not None
 
     @property
     def is_cache(self):
@@ -527,6 +491,9 @@ class Tube:
     def __init__(self, port, runnable):
         self.port = port
         self.runnable = runnable
+
+    def __repr__(self):
+        return f'({self.port.name}, {str(self.runnable)})'
 
     @property
     def is_None(self):
