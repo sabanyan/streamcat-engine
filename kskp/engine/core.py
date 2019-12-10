@@ -262,7 +262,7 @@ class Flow(Datum):
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
             # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
-            from kskp.depo.commands import RunfuncCommand
+            from kskp.depo.std.commands import RunfuncCommand
             if isinstance(step.runnable, RunfuncCommand):
                 for value in result.values():
                     self.module_store.append(value.content)

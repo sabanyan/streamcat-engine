@@ -1,7 +1,7 @@
 import uuid
 
 from kskp.store import Port
-from kskp.depo.commands import CommandLink, SCommand
+from kskp.depo.std.commands import CommandLink, SCommand
 from kskp.engine import Step, Point, Tube
 
 class FolderDataSourcePrepender():
