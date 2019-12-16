@@ -3110,7 +3110,7 @@ class ExecuteTestCase(unittest.TestCase):
         for uuid in cache_uuids:
             Library.delete_frame(uuid)
 
-    # @unittest.skip
+    @unittest.skip('selrow無くなったので、、')
     def test_simple_flow_execute_two_outputs_pcmd(self):
         """
         独自コマンド１個（２つのoutputを持つ）のフロー実行
