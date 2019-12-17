@@ -126,6 +126,11 @@ class VisDataDestAppender():
         if 'args' not in self.vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
 
+        # Cp932からUTF-8への変換コマンドを作成する
+        # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
+        wincp932 = CommandLink('windows_cp932_csv_read').resolve()
+        wincp932_step = self._make_step({}, wincp932)
+
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
 
@@ -137,6 +142,9 @@ class VisDataDestAppender():
         tolist_cmd = CommandLink('to_list').resolve()
         tolist_step = self._make_step({}, tolist_cmd)
 
+        # Cp932 Stepを繋げる
+        point_id = point.id + '_wincp932'
+        wincp932_point = Point(point_id, [Tube(Port('o', 'frame'), wincp932_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
         # RowRange Stepを繋げる
         point_id = point.id + '_rowrange'
         rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
@@ -144,22 +152,24 @@ class VisDataDestAppender():
         point_id = point.id + '_tolist'
         tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
 
-        self.switch_target(point, rowrange_step)
+        self.switch_target(point, wincp932_step)
 
+        f.substeps.append(wincp932_step)
         f.substeps.append(rowrange_step)
         f.substeps.append(tolist_step)
+        f.points.append(wincp932_point)
         f.points.append(rowrange_point)
         f.points.append(tolist_point)
 
         return tolist_point
 
-    def switch_target(self, point, rowrange_step):
+    def switch_target(self, point, step):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.target = [Tube(Port('i', 'frame'), rowrange_step)]
+            point.target = [Tube(Port('i', 'frame'), step)]
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.target.append(Tube(Port('i', 'frame'), rowrange_step))
+            point.target.append(Tube(Port('i', 'frame'), step))
 
     def do_append_after_runs(self, f, point, original_out_point):
         visualizer_step, visualizer_point = self._put_visualizer(f, point, original_out_point)
