@@ -128,11 +128,15 @@ class VisDataDestAppender():
 
         # Cp932からUTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
-        wincp932 = CommandLink('windows_cp932_csv_read').resolve()
-        wincp932_step = self._make_step({}, wincp932)
+        convtoutf8 = CommandLink('convtoutf8').resolve()
+        convtoutf8_step = self._make_step({}, convtoutf8)
 
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
+
+        # MchkCsv Stepを作成する
+        mchkcsv_cmd = CommandLink('mchkcsv').resolve()
+        mchkcsv_step = self._make_step({}, mchkcsv_cmd)
 
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
@@ -142,23 +146,28 @@ class VisDataDestAppender():
         tolist_cmd = CommandLink('to_list').resolve()
         tolist_step = self._make_step({}, tolist_cmd)
 
-        # Cp932 Stepを繋げる
-        point_id = point.id + '_wincp932'
-        wincp932_point = Point(point_id, [Tube(Port('o', 'frame'), wincp932_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
+        # ConvToUtf8 Stepを繋げる
+        point_id = point.id + '_convtoutf8'
+        convtoutf8_point = Point(point_id, [Tube(Port('o', 'frame'), convtoutf8_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
         # RowRange Stepを繋げる
         point_id = point.id + '_rowrange'
-        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
+        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), mchkcsv_step)])
+        # MchkCsv Stepを繋げる
+        point_id = point.id + '_mchkcsv'
+        mchkcsv_point = Point(point_id, [Tube(Port('o', 'frame'), mchkcsv_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
         # ToListコマンドを繋げる
         point_id = point.id + '_tolist'
         tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
 
-        self.switch_target(point, wincp932_step)
+        self.switch_target(point, convtoutf8_step)
 
-        f.substeps.append(wincp932_step)
+        f.substeps.append(convtoutf8_step)
         f.substeps.append(rowrange_step)
+        f.substeps.append(mchkcsv_step)
         f.substeps.append(tolist_step)
-        f.points.append(wincp932_point)
+        f.points.append(convtoutf8_point)
         f.points.append(rowrange_point)
+        f.points.append(mchkcsv_point)
         f.points.append(tolist_point)
 
         return tolist_point
