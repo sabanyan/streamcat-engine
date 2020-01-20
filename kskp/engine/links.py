@@ -251,11 +251,11 @@ class ActivityDataDestAppender():
         return activity_point
 
 class RunsCommandAppender():
-    def __init__(self):
+    def __init__(self, dlog_name):
         # Runsコマンドを取得する
         runs_cmd = CommandLink("runs").resolve()
         # Runsステップを作成する
-        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {})
+        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {'dlog':dlog_name})
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -290,8 +290,8 @@ class FlowLinkContext():
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
         self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
-        self.runs_command_appender = RunsCommandAppender()
         self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
+        self.runs_command_appender = RunsCommandAppender(str(self.activity_data_dest_appender.activity_uuid))
 
         # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
         self.detadst_o_points = {}
