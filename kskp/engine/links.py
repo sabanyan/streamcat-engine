@@ -126,21 +126,20 @@ class VisDataDestAppender():
         if 'args' not in self.vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
 
-        # Cp932からUTF-8への変換コマンドを作成する
+        # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
         convtoutf8 = CommandLink('convtoutf8').resolve()
         convtoutf8_step = self._make_step({}, convtoutf8)
 
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
+        # RowRange Stepを作成する
+        rowrange_cmd = CommandLink('rowrange').resolve()
+        rowrange_step = self._make_step(rowrange_args, rowrange_cmd)
 
         # MchkCsv Stepを作成する
         mchkcsv_cmd = CommandLink('mchkcsv').resolve()
         mchkcsv_step = self._make_step({}, mchkcsv_cmd)
-
-        # RowRange Stepを作成する
-        rowrange_cmd = CommandLink('rowrange').resolve()
-        rowrange_step = self._make_step(rowrange_args, rowrange_cmd)
 
         # ToList Stepを作成する 
         tolist_cmd = CommandLink('to_list').resolve()
