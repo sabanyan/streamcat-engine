@@ -251,11 +251,11 @@ class ActivityDataDestAppender():
         return activity_point
 
 class RunsCommandAppender():
-    def __init__(self, dlog_name):
+    def __init__(self, dlog_path):
         # Runsコマンドを取得する
         runs_cmd = CommandLink("runs").resolve()
         # Runsステップを作成する
-        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {'dlog':dlog_name})
+        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {'dlog':dlog_path})
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -283,7 +283,7 @@ class FlowLinkContext():
     """
     FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
     """
-    def __init__(self, flow_uuid, flow_label):
+    def __init__(self, flow_uuid, flow_label, dlog_root):
         self.flow_uuid = flow_uuid
         self.flow_label = flow_label
 
@@ -291,7 +291,9 @@ class FlowLinkContext():
         from datetime import datetime, timezone
         self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
-        self.runs_command_appender = RunsCommandAppender(str(self.activity_data_dest_appender.activity_uuid))
+
+        dlog_path = dlog_root + str(self.activity_data_dest_appender.activity_uuid)
+        self.runs_command_appender = RunsCommandAppender(dlog_path)
 
         # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
         self.detadst_o_points = {}
@@ -303,7 +305,7 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, flow, vis_args={}, context=None):
+    def __init__(self, flow, vis_args={}, context=None, dlog_root='./logs/'):
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
@@ -318,7 +320,7 @@ class FlowJsonLink:
         self.cache_data_dest_appender = CacheDataDestAppender(flow.uuid)
 
         if context is None:
-            self.context = FlowLinkContext(flow.uuid, flow.label)
+            self.context = FlowLinkContext(flow.uuid, flow.label, dlog_root)
         else:
             self.context = context
             
