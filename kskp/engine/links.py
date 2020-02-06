@@ -101,7 +101,10 @@ class CacheDataDestAppender(FolderDataDestAppender):
 
         folder_store = Library.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
-        self._put_saver(point, f, folder_store, saver, start_time)
+        saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
+
+        f.points.append(saver_point2)
+        return saver_point, saver_point2
 
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
@@ -468,7 +471,10 @@ class FlowJsonLink:
         # is_outかつis_cacheなPointにも対応できるよう
         # データデストを付加した後にキャッシュデータデストを付加すること
         for cache_point in [point for point in f.points if point.is_cache]:
-            self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            # Cache Stepを付加する
+            out_point, activity_point = self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            # Activity Stepを付加する
+            self.context.activity_data_dest_appender.do_append(f, activity_point, cache_point)
 
         return f
 

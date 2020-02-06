@@ -2304,7 +2304,8 @@ class ExecuteTestCase(unittest.TestCase):
         delete_flow(flow.uuid)
         Library.delete_frame(lasts['d3'].uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+                Library.delete_frame(uuid)
 
     # @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
@@ -2403,7 +2404,8 @@ class ExecuteTestCase(unittest.TestCase):
         delete_flow(flow.uuid)
         Library.delete_frame(lasts['d3'].uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+                Library.delete_frame(uuid)
 
     # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
@@ -2559,7 +2561,8 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd4'].uuid)
         Library.delete_frame(lasts['dd5'].uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+              Library.delete_frame(uuid)
 
     # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
@@ -3108,7 +3111,8 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d1'].uuid)
         Library.delete_frame(frame_uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+              Library.delete_frame(uuid)
 
     @unittest.skip('selrow無くなったので、、')
     def test_simple_flow_execute_two_outputs_pcmd(self):
