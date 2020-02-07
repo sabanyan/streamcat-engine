@@ -4311,6 +4311,99 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertEqual(lasts['d1'][0][0], '# CSVファイル診断 ')
         self.assertEqual(lasts['d1'][102][0], '#-------------------------------------------------------------')
 
+    def test_vizs_with_cache_on(self):
+        """
+        キャッシュONのポイントをプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['A', 'B', 'C'],
+            ['A', 1, 10],
+            ['B', 2, 20]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              # "uuid": frame_uuid, 
+              "uuid": None,
+              "label": "d1", 
+              "makeCache": True, 
+              "dataSource": "csv", 
+              # "cacheCreatedAt": "2020-02-07 09:02:00"
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],
+            [{
+              "type": "frame", 
+              "label": "d1", 
+              "nodeId": "d1"
+            }]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10'],['B','2','20']]}
+        self.assertDictEqual(lasts, correct)
+
+
 @unittest.skip('古いので失敗する。改修予定')
 class ExecuteTestCase2(unittest.TestCase):
 
