@@ -101,7 +101,10 @@ class CacheDataDestAppender(FolderDataDestAppender):
 
         folder_store = Library.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
-        self._put_saver(point, f, folder_store, saver, start_time)
+        saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
+
+        f.points.append(saver_point2)
+        return saver_point, saver_point2
 
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
@@ -126,39 +129,47 @@ class VisDataDestAppender():
         if 'args' not in self.vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
 
-        # Cp932からUTF-8への変換コマンドを作成する
+        # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
-        wincp932 = CommandLink('windows_cp932_csv_read').resolve()
-        wincp932_step = self._make_step({}, wincp932)
+        convtoutf8 = CommandLink('convtoutf8').resolve()
+        convtoutf8_step = self._make_step({}, convtoutf8)
 
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
-
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
         rowrange_step = self._make_step(rowrange_args, rowrange_cmd)
+
+        # MchkCsv Stepを作成する
+        mchkcsv_cmd = CommandLink('mchkcsv').resolve()
+        mchkcsv_step = self._make_step({}, mchkcsv_cmd)
 
         # ToList Stepを作成する 
         tolist_cmd = CommandLink('to_list').resolve()
         tolist_step = self._make_step({}, tolist_cmd)
 
-        # Cp932 Stepを繋げる
-        point_id = point.id + '_wincp932'
-        wincp932_point = Point(point_id, [Tube(Port('o', 'frame'), wincp932_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
+        # ConvToUtf8 Stepを繋げる
+        point_id = point.id + '_convtoutf8'
+        convtoutf8_point = Point(point_id, [Tube(Port('o', 'frame'), convtoutf8_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
         # RowRange Stepを繋げる
         point_id = point.id + '_rowrange'
-        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
+        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), mchkcsv_step)])
+        # MchkCsv Stepを繋げる
+        point_id = point.id + '_mchkcsv'
+        mchkcsv_point = Point(point_id, [Tube(Port('o', 'frame'), mchkcsv_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
         # ToListコマンドを繋げる
         point_id = point.id + '_tolist'
         tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
 
-        self.switch_target(point, wincp932_step)
+        self.switch_target(point, convtoutf8_step)
 
-        f.substeps.append(wincp932_step)
+        f.substeps.append(convtoutf8_step)
         f.substeps.append(rowrange_step)
+        f.substeps.append(mchkcsv_step)
         f.substeps.append(tolist_step)
-        f.points.append(wincp932_point)
+        f.points.append(convtoutf8_point)
         f.points.append(rowrange_point)
+        f.points.append(mchkcsv_point)
         f.points.append(tolist_point)
 
         return tolist_point
@@ -460,7 +471,10 @@ class FlowJsonLink:
         # is_outかつis_cacheなPointにも対応できるよう
         # データデストを付加した後にキャッシュデータデストを付加すること
         for cache_point in [point for point in f.points if point.is_cache]:
-            self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            # Cache Stepを付加する
+            out_point, activity_point = self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            # Activity Stepを付加する
+            self.context.activity_data_dest_appender.do_append(f, activity_point, cache_point)
 
         return f
 

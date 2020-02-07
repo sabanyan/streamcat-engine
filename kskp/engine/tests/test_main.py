@@ -2304,7 +2304,8 @@ class ExecuteTestCase(unittest.TestCase):
         delete_flow(flow.uuid)
         Library.delete_frame(lasts['d3'].uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+                Library.delete_frame(uuid)
 
     # @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
@@ -2403,7 +2404,8 @@ class ExecuteTestCase(unittest.TestCase):
         delete_flow(flow.uuid)
         Library.delete_frame(lasts['d3'].uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+                Library.delete_frame(uuid)
 
     # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
@@ -2559,7 +2561,8 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['dd4'].uuid)
         Library.delete_frame(lasts['dd5'].uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+              Library.delete_frame(uuid)
 
     # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
@@ -3108,7 +3111,8 @@ class ExecuteTestCase(unittest.TestCase):
         Library.delete_frame(lasts['d1'].uuid)
         Library.delete_frame(frame_uuid)
         for uuid in cache_uuids:
-            Library.delete_frame(uuid)
+            if Frame.exists(uuid):
+              Library.delete_frame(uuid)
 
     @unittest.skip('selrow無くなったので、、')
     def test_simple_flow_execute_two_outputs_pcmd(self):
@@ -3789,6 +3793,617 @@ class ExecuteTestCase(unittest.TestCase):
         self.assertDictEqual(lasts, correct)
 
 
+    def test_vizs_duplicate_column_frame(self):
+        """
+        同じ列名を持つデータでもプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['顧客', '顧客', '顧客'],
+            ['A', 1, 10],
+            ['A', 2, 20],
+            ['B', 1, 30],
+            ['B', 3, 40],
+            ['B', 1, 50]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'duplicate.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],[]], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+
+    def test_vizs_empty_column_frame(self):
+        """
+        空列名を持つデータでもプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['顧客', None, ''],
+            ['A', 1, 10],
+            ['A', 2, 20],
+            ['B', 1, 30],
+            ['B', 3, 40],
+            ['B', 1, 50]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'empty.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],[]], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+    def test_vizs_percent_column_frame(self):
+        """
+        %名を持つデータでもプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['A%', '%B%', '%C'],
+            ['A', 1, 10],
+            ['A', 2, 20],
+            ['B', 1, 30],
+            ['B', 3, 40],
+            ['B', 1, 50]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'percent.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],[]], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+    def test_vizs_jag_csv_file(self):
+        """
+        ギザギザなCSVファイルもプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['A', 'B', 'C'],
+            ['A', 1, 10],
+            ['A', 2],
+            ['B'],
+            ['B', 3, 40],
+            ['B', 1]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'jag.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],[]], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d': [['A','1','10'], ['A','2',''],['B','',''], ['B','3','40'], ['B','1','']]}
+        self.assertDictEqual(lasts, correct)
+
+    def test_vizs_win_file(self):
+        """
+        Windows形式ファイルもプレビューできる
+        """
+        MY_TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
+        frame_uuid = create_data2(Path(MY_TESTDATA_DIR) / '漢字読み.csv')
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],[]], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d': [['宇宙','そら','B'], ['宇宙','コスモ','A'],['強敵','とも','C'], ['刑事','デカ','C']]}
+        self.assertDictEqual(lasts, correct)
+
+
+    def test_vizs_mchkcsv(self):
+        """
+        mchkcsvによるCSVチェックの結果をプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['A%', 'A%', None],
+            ['A', 1, 10],
+            ['A', 2, 20],
+            ['B', 1, 30],
+            ['B', 3, 40],
+            ['B', 1, 50]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'mchkcsv_data.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "diagl": True
+              },
+              "srcs": {
+                "i": "d"
+              },
+              "dsts": {
+                "o": "d1"
+              },
+              "type": "command", 
+              "label": "c1", 
+              "commandId": "mchkcsv", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],[]], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        # 出力結果が大きいので文字数カウントで確認する
+        self.assertEqual(len(lasts['d1']), 103)
+        self.assertEqual(lasts['d1'][0][0], '# CSVファイル診断 ')
+        self.assertEqual(lasts['d1'][102][0], '#-------------------------------------------------------------')
+
+    def test_vizs_with_cache_on(self):
+        """
+        キャッシュONのポイントをプレビューできる
+        """
+        # テストデータ作成
+        data = [
+            ['A', 'B', 'C'],
+            ['A', 1, 10],
+            ['B', 2, 20]
+        ]
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
+
+        flow_data = {
+          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
+          "label": "vis", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid,
+              "label": "testData.csv", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {
+                "f": "*"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "列選択", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              # "uuid": frame_uuid, 
+              "uuid": None,
+              "label": "d1", 
+              "makeCache": True, 
+              "dataSource": "csv", 
+              # "cacheCreatedAt": "2020-02-07 09:02:00"
+              "cacheCreatedAt": None
+            }
+          ], 
+          "ports":[[],
+            [{
+              "type": "frame", 
+              "label": "d1", 
+              "nodeId": "d1"
+            }]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-01-22 16:11:00", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
+        flow = Flow(None, self.flow_data['label'], flow_data)
+        flow_link = FlowJsonLink(flow, vis_args)
+        activity = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(activity)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10'],['B','2','20']]}
+        self.assertDictEqual(lasts, correct)
+
+
 @unittest.skip('古いので失敗する。改修予定')
 class ExecuteTestCase2(unittest.TestCase):
 
@@ -3935,9 +4550,25 @@ def create_data(file_path_obj, data=None):
     テストデータ作成用
     frameのuuidが返る
     """
+    # if data is not None:
+    #     nm.mread(i=data, o=file_path_obj.as_posix()).run()
     if data is not None:
-        nm.mread(i=data, o=file_path_obj.as_posix()).run()
+        with file_path_obj.open('w') as f:
+            import csv
+            writer = csv.writer(f, lineterminator='\n')
+            writer.writerows(data)
+
     frame = Library.save_frame(root.uuid, str(uuid.uuid4()), file_path_obj)
+    return frame.uuid
+
+def create_data2(file_path_obj):
+    """
+    テストデータ作成用
+    frameのuuidが返る
+    """
+    with file_path_obj.open('rb') as f:
+        frame = Frame(root.uuid, file_path_obj.name, f)
+        frame.save()
     return frame.uuid
 
 def update_flow_node_uuid(flow_json, node_id, uuid):
