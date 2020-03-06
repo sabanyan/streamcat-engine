@@ -605,14 +605,14 @@ class FlowJsonLink:
             srcs = node['srcs']
             dsts = node['dsts']
 
-            self._replace_multi_inputs(step, srcs)
+            i_ports = self._replace_multi_inputs(step.runnable.i_ports, srcs)
 
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
                 # 定義上に存在しないポート名がsrcsに存在していないかの確認
-                src_port = self._get_port_by_name(step.runnable.i_ports, s_port_name)
+                src_port = self._get_port_by_name(i_ports, s_port_name)
                 if src_port is None:
-                    raise Exception(f"指定しているport名({s_port_name})がrunnable {node['id']}の定義しているポート群({step.runnable.i_ports})に存在しません")
+                    raise Exception(f"指定しているport名({s_port_name})がrunnable {node['id']}の定義しているポート群({i_ports})に存在しません")
 
                 # out/inポートフラグの取得
                 is_in = self._is_in_point(flow, s_node_id)
@@ -716,13 +716,17 @@ class FlowJsonLink:
                 return runnable_port
         return None
 
-    def _replace_multi_inputs(self, step, srcs):
+    def _replace_multi_inputs(self, i_ports, srcs):
         """
         *のportをport群に変換する
         """
-        for src_port in step.runnable.i_ports:
+        ret = []
+        for src_port in i_ports:
             if src_port.name == '*':
-                step.runnable.i_ports = [Port(p, 'frame') for p in srcs.keys()]
+                ret.extend([Port(p, 'frame') for p in srcs.keys()])
+            else:
+                ret.append(src_port)
+        return ret
 
     def _upsert_point(self, flow, point_id, is_in, is_out, target, origin):
         """
