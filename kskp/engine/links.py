@@ -609,6 +609,10 @@ class FlowJsonLink:
 
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
+                # 可変長引数で入力PointがNoneになる場合に備える
+                if s_node_id is None:
+                    raise Exception(f"コマンド({node['label']})の入力({s_port_name})が指定されていません")
+
                 # 定義上に存在しないポート名がsrcsに存在していないかの確認
                 src_port = self._get_port_by_name(i_ports, s_port_name)
                 if src_port is None:
@@ -628,6 +632,9 @@ class FlowJsonLink:
                  for i_port in flow.i_ports if i_port.name == src_point.id]
 
             for d_port_name, d_node_id in dsts.items():
+                if d_node_id is None:
+                    raise Exception(f"コマンド({node['label']})の出力({d_port_name})が指定されていません")
+
                 # 定義上に存在しないポート名がdstsに存在していないかの確認
                 dst_port = self._get_port_by_name(step.runnable.o_ports, d_port_name)
                 if dst_port is None:

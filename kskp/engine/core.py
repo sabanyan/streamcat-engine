@@ -364,6 +364,9 @@ class Point:
     """
 
     def __init__(self, point_id, origin_tubes, datum, target_tubes, is_in=False, is_out=False, cache=False):
+        if point_id is None:
+            raise Exception('point_idにNoneは指定できません')
+
         self.id = point_id
         self.label = ''
 
