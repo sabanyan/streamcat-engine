@@ -4539,11 +4539,11 @@ def get_frame_by_uuid(uuid, header=True):
 
     return result
 
-def write_data_to_json(path, data):
-    """
-    データをJSONとしてファイルに書き込むヘルパー
-    """
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+# def write_data_to_json(path, data):
+#     """
+#     データをJSONとしてファイルに書き込むヘルパー
+#     """
+#     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def create_data(file_path_obj, data=None):
     """
