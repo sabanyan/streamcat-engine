@@ -4403,6 +4403,109 @@ class ExecuteTestCase(unittest.TestCase):
         correct = {'d1': [['A','1','10'],['B','2','20']]}
         self.assertDictEqual(lasts, correct)
 
+    def test_msim_with_params(self):
+        """
+        msimとmsummaryコマンドは引数にstr list型を持つが、
+        フロー変数の置き換え処理でエラーにならないことを検証する
+        """
+        data = [
+            ['A', 'B', 'C'],
+            ['A', 1, 10],
+            ['B', 2, 20]
+        ]
+
+        frame_uuid = create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
+
+        flow_data = {
+          "uuid": "f1426e63-4a78-4cd7-8811-09ba89b185ae", 
+          "label": "err", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": frame_uuid, 
+              "label": "testData", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {
+                "a": "fld1,fld2", 
+                "c": [
+                  "covar"
+                ], 
+                "f": "@[new_param1],@[new_param2]", 
+                "bufcount": 10
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "二変数間の類似度の計算", 
+              "commandId": "msim", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [
+            {
+              "name": "new_param1", 
+              "type": "string", 
+              "label": "new_param1"
+            }, 
+            {
+              "name": "new_param2", 
+              "type": "string", 
+              "label": "new_param2"
+            }
+          ], 
+          "creator": "開発用", 
+          "createdAt": "2020-03-16 17:15:22", 
+          "projectId": None, 
+          "description": "", 
+          "projectName": "test"
+        }
+
+        flow = Flow(None, flow_data['label'], flow_data)
+        activity = execute(FlowJsonLink(flow), {"new_param1":"B", "new_param2":"C"}, {})
+        lasts = convert_from_activity(activity)
+
+        # frameデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+        # DBにframeデータが生成されている
+        self.assertIsNotNone(Library.load_frame(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d1 = [['B', 'C', '2.5']]
+        result_d1 = get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(correct_d1, result_d1)
+
+        # 後片付け
+        Library.delete_frame(lasts['d1'].uuid)
 
 @unittest.skip('古いので失敗する。改修予定')
 class ExecuteTestCase2(unittest.TestCase):
