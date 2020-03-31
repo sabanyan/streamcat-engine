@@ -81,8 +81,14 @@ class Step:
                 elif isinstance(step_value, list):
                     # リストの場合は、リストの要素それぞれに対して置換を行う
                     for list_value in step_value:
-                        for list_value_dict_key, list_value_dict_val in list_value.items():
-                            self.replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
+                        if isinstance(list_value, dict):
+                            # リストの要素がDictの場合
+                            for list_value_dict_key, list_value_dict_val in list_value.items():
+                                self.replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
+                        else:
+                            # リストの要素がDict以外の場合(msimとmsummary)
+                            for list_value_dict_val in list_value:
+                                self.replace_arg_internal(list_value, param, value, step_param, list_value_dict_val)                       
 
     def replace_arg_internal(self, args, param, value, step_param, step_value):
         """
@@ -364,6 +370,9 @@ class Point:
     """
 
     def __init__(self, point_id, origin_tubes, datum, target_tubes, is_in=False, is_out=False, cache=False):
+        if point_id is None:
+            raise Exception('point_idにNoneは指定できません')
+
         self.id = point_id
         self.label = ''
 
