@@ -101,7 +101,10 @@ class CacheDataDestAppender(FolderDataDestAppender):
 
         folder_store = Library.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
-        self._put_saver(point, f, folder_store, saver, start_time)
+        saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
+
+        f.points.append(saver_point2)
+        return saver_point, saver_point2
 
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
@@ -126,39 +129,47 @@ class VisDataDestAppender():
         if 'args' not in self.vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
 
-        # Cp932からUTF-8への変換コマンドを作成する
+        # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
-        wincp932 = CommandLink('windows_cp932_csv_read').resolve()
-        wincp932_step = self._make_step({}, wincp932)
+        convtoutf8 = CommandLink('convtoutf8').resolve()
+        convtoutf8_step = self._make_step({}, convtoutf8)
 
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
-
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
         rowrange_step = self._make_step(rowrange_args, rowrange_cmd)
+
+        # MchkCsv Stepを作成する
+        mchkcsv_cmd = CommandLink('mchkcsv').resolve()
+        mchkcsv_step = self._make_step({}, mchkcsv_cmd)
 
         # ToList Stepを作成する 
         tolist_cmd = CommandLink('to_list').resolve()
         tolist_step = self._make_step({}, tolist_cmd)
 
-        # Cp932 Stepを繋げる
-        point_id = point.id + '_wincp932'
-        wincp932_point = Point(point_id, [Tube(Port('o', 'frame'), wincp932_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
+        # ConvToUtf8 Stepを繋げる
+        point_id = point.id + '_convtoutf8'
+        convtoutf8_point = Point(point_id, [Tube(Port('o', 'frame'), convtoutf8_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
         # RowRange Stepを繋げる
         point_id = point.id + '_rowrange'
-        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
+        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), mchkcsv_step)])
+        # MchkCsv Stepを繋げる
+        point_id = point.id + '_mchkcsv'
+        mchkcsv_point = Point(point_id, [Tube(Port('o', 'frame'), mchkcsv_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
         # ToListコマンドを繋げる
         point_id = point.id + '_tolist'
         tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
 
-        self.switch_target(point, wincp932_step)
+        self.switch_target(point, convtoutf8_step)
 
-        f.substeps.append(wincp932_step)
+        f.substeps.append(convtoutf8_step)
         f.substeps.append(rowrange_step)
+        f.substeps.append(mchkcsv_step)
         f.substeps.append(tolist_step)
-        f.points.append(wincp932_point)
+        f.points.append(convtoutf8_point)
         f.points.append(rowrange_point)
+        f.points.append(mchkcsv_point)
         f.points.append(tolist_point)
 
         return tolist_point
@@ -460,7 +471,10 @@ class FlowJsonLink:
         # is_outかつis_cacheなPointにも対応できるよう
         # データデストを付加した後にキャッシュデータデストを付加すること
         for cache_point in [point for point in f.points if point.is_cache]:
-            self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            # Cache Stepを付加する
+            out_point, activity_point = self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            # Activity Stepを付加する
+            self.context.activity_data_dest_appender.do_append(f, activity_point, cache_point)
 
         return f
 
@@ -591,14 +605,18 @@ class FlowJsonLink:
             srcs = node['srcs']
             dsts = node['dsts']
 
-            self._replace_multi_inputs(step, srcs)
+            i_ports = self._replace_multi_inputs(step.runnable.i_ports, srcs)
 
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
+                # 可変長引数で入力PointがNoneになる場合に備える
+                if s_node_id is None:
+                    raise Exception(f"コマンド({node['label']})の入力({s_port_name})が指定されていません")
+
                 # 定義上に存在しないポート名がsrcsに存在していないかの確認
-                src_port = self._get_port_by_name(step.runnable.i_ports, s_port_name)
+                src_port = self._get_port_by_name(i_ports, s_port_name)
                 if src_port is None:
-                    raise Exception(f"指定しているport名({s_port_name})がrunnable {node['id']}の定義しているポート群({step.runnable.i_ports})に存在しません")
+                    raise Exception(f"指定しているport名({s_port_name})がrunnable {node['id']}の定義しているポート群({i_ports})に存在しません")
 
                 # out/inポートフラグの取得
                 is_in = self._is_in_point(flow, s_node_id)
@@ -614,6 +632,9 @@ class FlowJsonLink:
                  for i_port in flow.i_ports if i_port.name == src_point.id]
 
             for d_port_name, d_node_id in dsts.items():
+                if d_node_id is None:
+                    raise Exception(f"コマンド({node['label']})の出力({d_port_name})が指定されていません")
+
                 # 定義上に存在しないポート名がdstsに存在していないかの確認
                 dst_port = self._get_port_by_name(step.runnable.o_ports, d_port_name)
                 if dst_port is None:
@@ -702,13 +723,17 @@ class FlowJsonLink:
                 return runnable_port
         return None
 
-    def _replace_multi_inputs(self, step, srcs):
+    def _replace_multi_inputs(self, i_ports, srcs):
         """
         *のportをport群に変換する
         """
-        for src_port in step.runnable.i_ports:
+        ret = []
+        for src_port in i_ports:
             if src_port.name == '*':
-                step.runnable.i_ports = [Port(p, 'frame') for p in srcs.keys()]
+                ret.extend([Port(p, 'frame') for p in srcs.keys()])
+            else:
+                ret.append(src_port)
+        return ret
 
     def _upsert_point(self, flow, point_id, is_in, is_out, target, origin):
         """
