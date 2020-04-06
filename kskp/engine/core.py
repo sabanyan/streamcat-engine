@@ -111,7 +111,7 @@ class Step:
 
 class Flow(Datum):
     def __init__(self, label):
-        super().__init__(None, Datum.FLOW_TYPE, label)
+        super().__init__(None, None, Datum.FLOW_TYPE, label)
 
         self.i_ports = []
         self.o_ports = []
