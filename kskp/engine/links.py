@@ -5,15 +5,14 @@ from kskp.depo.std.commands import CommandLink, SCommand
 from kskp.engine import Step, Point, Tube
 
 class FolderDataSourcePrepender():
-    def __init__(self):
+    def __init__(self, session):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        pass
+        self._session = session
 
     def do_prepend(self, f, point, frame_uuid):
-        from kskp.store import Library, Folder
-
-        folder_store = Library.load_result_folder()
+        frame = self._session.data.find_by_uuid(frame_uuid)
+        folder_store = frame.find_parent()
         self._put_loader(frame_uuid, point, f, folder_store)
 
     def _put_loader(self, frame_uuid, target_point, f, store):
@@ -35,15 +34,16 @@ class FolderDataSourcePrepender():
         return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
-    def __init__(self, flow_uuid):
+    def __init__(self, flow_uuid, session):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow_uuid = flow_uuid
+        self._session = session
 
     def do_append(self, f, point, start_time):
-        from kskp.store import Library, Folder
+        from kskp.store import Library
 
-        folder_store = Library.load_result_folder()
+        folder_store = Library.load_result_folder(self._session)
         saver = CommandLink("saver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
@@ -96,10 +96,13 @@ class FolderDataDestAppender():
 
 
 class CacheDataDestAppender(FolderDataDestAppender):
-    def do_append(self, f, point, start_time):
-        from kskp.store import Library, Folder
+    def __init__(self, session):
+        self._session = session
 
-        folder_store = Library.load_cache_folder()
+    def do_append(self, f, point, start_time):
+        from kskp.store import Library
+
+        folder_store = Library.load_cache_folder(self._session)
         saver = CommandLink("cachesaver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
 
@@ -226,7 +229,7 @@ class ActivityDataDestAppender():
         activity_cmd = CommandLink("activity").resolve()
         # Activity Datumを作成する
         from kskp.store import Activity
-        activity = Activity(None, 'activity', flow_uuid)
+        activity = Activity(None, None, 'activity', flow_uuid)
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
@@ -314,19 +317,21 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, flow, vis_args={}, context=None):
+    def __init__(self, flow, session, vis_args={}, context=None):
+        self.session = session
+
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
         self.vis_ids = vis_args.keys()
 
-        self.folder_data_source_prepender = FolderDataSourcePrepender()
+        self.folder_data_source_prepender = FolderDataSourcePrepender(session)
 
-        self.folder_data_dest_appender = FolderDataDestAppender(flow.uuid)
+        self.folder_data_dest_appender = FolderDataDestAppender(flow.uuid, session)
 
         self.vis_data_dest_appender = VisDataDestAppender(flow.uuid, vis_args)
 
-        self.cache_data_dest_appender = CacheDataDestAppender(flow.uuid)
+        self.cache_data_dest_appender = CacheDataDestAppender(session)
 
         if context is None:
             self.context = FlowLinkContext(flow.uuid, flow.label)
@@ -678,7 +683,10 @@ class FlowJsonLink:
 
             # Storeの場合、Storeオブジェクトをpointに格納する
             if self._is_store_node(node):
-                self._put_store(node.get('uuid'), target_point)
+                store = self.session.data.find_by_uuid(node.get('uuid'))
+                # StoreにDatabaseを設定する
+                target_point.datum = store
+                continue
 
             # データの取得先の設定
             # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
