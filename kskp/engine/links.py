@@ -5,13 +5,13 @@ from kskp.depo.std.commands import CommandLink, SCommand
 from kskp.engine import Step, Point, Tube
 
 class FolderDataSourcePrepender():
-    def __init__(self, session):
+    def __init__(self, factory):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        self._session = session
+        self._factory = factory
 
     def do_prepend(self, f, point, frame_uuid):
-        frame = self._session.data.find_by_uuid(frame_uuid)
+        frame = self._factory.data.find_by_uuid(frame_uuid)
         folder_store = frame.find_parent()
         self._put_loader(frame_uuid, point, f, folder_store)
 
@@ -34,16 +34,14 @@ class FolderDataSourcePrepender():
         return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
-    def __init__(self, flow_uuid, session):
+    def __init__(self, flow, factory):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        self.flow_uuid = flow_uuid
-        self._session = session
+        self.flow = flow
+        self._factory = factory
 
     def do_append(self, f, point, start_time):
-        from kskp.store import Library
-
-        folder_store = Library.load_result_folder(self._session)
+        folder_store = self._factory.data.load_result_folder()
         saver = CommandLink("saver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
@@ -59,7 +57,7 @@ class FolderDataDestAppender():
 
         # saverのargs設定
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
-        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if self.flow_uuid is not None else {}
+        args = {'flow_uuid':self.flow.uuid, 'flow':self.flow, 'datum_id':point.id} if self.flow.uuid is not None else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
         args['flow_label'] = f.label if f.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
@@ -96,13 +94,9 @@ class FolderDataDestAppender():
 
 
 class CacheDataDestAppender(FolderDataDestAppender):
-    def __init__(self, session):
-        self._session = session
 
     def do_append(self, f, point, start_time):
-        from kskp.store import Library
-
-        folder_store = Library.load_cache_folder(self._session)
+        folder_store = self._factory.data.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
 
@@ -317,21 +311,21 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, flow, session, vis_args={}, context=None):
-        self.session = session
+    def __init__(self, flow, factory, vis_args={}, context=None):
+        self.factory = factory
 
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
         self.vis_ids = vis_args.keys()
 
-        self.folder_data_source_prepender = FolderDataSourcePrepender(session)
+        self.folder_data_source_prepender = FolderDataSourcePrepender(factory)
 
-        self.folder_data_dest_appender = FolderDataDestAppender(flow.uuid, session)
+        self.folder_data_dest_appender = FolderDataDestAppender(flow, factory)
 
         self.vis_data_dest_appender = VisDataDestAppender(flow.uuid, vis_args)
 
-        self.cache_data_dest_appender = CacheDataDestAppender(session)
+        self.cache_data_dest_appender = CacheDataDestAppender(flow, factory)
 
         if context is None:
             self.context = FlowLinkContext(flow.uuid, flow.label)
@@ -343,9 +337,8 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self.context)
-            from kskp.store import Flow
-            flow = Flow.find_by_uuid(node['uuid'])
-            ret = FlowJsonLink(flow, {}, self.context)
+            flow = self.factory.data.find_by_uuid(node['uuid'])
+            ret = FlowJsonLink(flow, self.factory, {}, self.context)
 
             # # かなりの力技・・・。
             # # 実行を行う場合、サブフロー内で余分な処理が走らないように
@@ -683,7 +676,7 @@ class FlowJsonLink:
 
             # Storeの場合、Storeオブジェクトをpointに格納する
             if self._is_store_node(node):
-                store = self.session.data.find_by_uuid(node.get('uuid'))
+                store = self.factory.data.find_by_uuid(node.get('uuid'))
                 # StoreにDatabaseを設定する
                 target_point.datum = store
                 continue
