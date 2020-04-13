@@ -2,30 +2,6 @@
 # 実ファイルとしてテストデータを持っておくのは色々と面倒なことが起きるので。
 # （別のテストの邪魔をしてそっちのテストが通らなかったり）
 # 小さいフローはテストコードに直接記述してある。
-import json
-from kskp.store import Library
-
-def create_flow(flow_id, uuid):
-    """
-    指定されたidのフローを作成し、そのuuidを返す
-    """
-    root = Library.load_root()
-    flow_json = test_json[flow_id]
-    flow = Library.save_flow(root.uuid, 'test', flow_json)
-    flow.uuid = uuid
-    return flow
-
-def delete_flow(uuid):
-    """
-    TODO: flowをdbに保存するようになったらそのように変更すること！
-    """
-    try:
-        flow = Library.load_flow(uuid)
-        flow.delete()
-    except Exception as e:
-        print(e)
-        return False
-    return True
 
 sub1 = {
     "description": "サブフロー",
