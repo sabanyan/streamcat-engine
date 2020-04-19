@@ -6,7 +6,7 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.store import Command, Port, List, STORE_DIR, Database, DatabaseConn
+from kskp.store import Command, Port, List, Database, DatabaseConn
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
 
@@ -477,7 +477,7 @@ class ExecuteTestCase(TestCaseBase):
         # 親クラスのsetUpClass()を実行する
         TestCaseBase.setUpClass()
         cls.root = cls.factory.data.load_root()
-        cls.TESTDATA_DIR = STORE_DIR / cls.root.path
+        cls.TESTDATA_DIR = cls.root.path
 
 
     @classmethod
@@ -4482,7 +4482,7 @@ class ExecuteTestCase(TestCaseBase):
         result = []
         frame = self.factory.data.find_by_uuid(uuid)
         try:
-          with open(STORE_DIR / frame.path, 'r') as f:
+          with open(frame.path, 'r') as f:
               rows = csv.reader(f)
               if header:
                   header = next(rows)
@@ -4510,7 +4510,7 @@ class ExecuteTestCase(TestCaseBase):
                 writer.writerows(data)
 
         frame = self.root.create_frame(file_path_obj.name, io.BytesIO(b''))
-        frame.add_entry_from_path(file_path_obj)
+        frame.save(file_path=file_path_obj)
         # save()によりreadable=Noneになるため再取得する
         return self.factory.data.find_by_uuid(frame.uuid)
 
