@@ -183,6 +183,9 @@ class Flow(Datum):
         input_points = [p for p in self.points if p.is_for_input]
 
         for input_point in input_points:
+            if input_point.o_port.name not in inputs:
+                # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
+                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.o_port.name})にデータが入力されませんでした')
             input_point.datum = inputs[input_point.o_port.name]
 
     def search_invokable_steps(self):
