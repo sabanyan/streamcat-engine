@@ -557,14 +557,14 @@ class FlowJsonLink:
         flow = Flow(label)
 
         # portを読む
-        ports = flow_data['ports']
+        ports = flow_data.ports
         flow.i_ports = self._parse_ports(ports[0])
         flow.o_ports = self._parse_ports(ports[1])
 
         # flowを更新する
-        if 'nodes' in flow_data:
-            self._update_flow_by_runnable(flow, flow_data['nodes'])
-            self._update_flow_by_other_than_runnable(flow, flow_data['nodes'])
+        if flow_data.has_nodes:
+            self._update_flow_by_runnable(flow, flow_data.nodes)
+            self._update_flow_by_other_than_runnable(flow, flow_data.nodes)
 
         return flow
 
