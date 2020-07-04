@@ -4634,7 +4634,15 @@ class ExecuteTestCase2(unittest.TestCase):
       ]
     }
 
-    database_conn = DatabaseConn("postgresql", "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 5432, "kskp", "kskp", r'J2-pH|%B')
+    conn_json = {
+      'dbms'     : "postgresql",
+      'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
+      'port'     : 5432, 
+      'database' : "kskp", 
+      'user_id'  : "kskp", 
+      'password' : r'J2-pH|%B'
+    }
+    database_conn = DatabaseConn(conn_json)
 
     # @unittest.skip
     def test_simple_flow_execute(self):
