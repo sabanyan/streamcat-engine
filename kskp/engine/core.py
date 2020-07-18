@@ -9,38 +9,38 @@ class Job:
 
     def start(self):
         try:
-            return self.step.runnable.run(self.step.args, self.inputs)
+            return self.step.run(self.inputs)
         except Exception as e:
             self.errors.append(e)
             raise
 
-    def runs(self):
-        """
-        runsを実行する
-        """
-        try:
-            last_modules = []
-            for point_datum in self.step.runnable.results.values():
-                last_modules.append(point_datum.content)
+    # def runs(self):
+    #     """
+    #     runsを実行する
+    #     """
+    #     try:
+    #         last_modules = []
+    #         for point_datum in self.step.runnable.results.values():
+    #             last_modules.append(point_datum.content)
 
-            module_list = self.step.runnable.get_module_list()
-            last_modules.extend(module_list)
+    #         module_list = self.step.runnable.get_module_list()
+    #         last_modules.extend(module_list)
 
-            # import pprint
-            # pprint.pprint('runs :')  
-            # pprint.pprint(last_modules)
+    #         # import pprint
+    #         # pprint.pprint('runs :')  
+    #         # pprint.pprint(last_modules)
 
-            # 実行
-            import nysol.mcmd as nm
-            nm.runs(last_modules, msg='on')
-        except Exception as e:
-            self.errors.append(e)
-            raise
+    #         # 実行
+    #         import nysol.mcmd as nm
+    #         nm.runs(last_modules, msg='on')
+    #     except Exception as e:
+    #         self.errors.append(e)
+    #         raise
 
     def dtor(self):
         if isinstance(self.step.runnable, Flow):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
-            self.step.runnable.dtor()
+            self.step.dtor()
 
             for point in self.step.runnable.points:
                 if point.datum is not None:
@@ -63,6 +63,12 @@ class Step:
     @property
     def is_datadst(self):
         return self.is_flow and self.runnable.is_datadst
+
+    def run(self, inputs):
+        return self.runnable.run(self.args, inputs)
+
+    def dtor(self):
+        self.runnable.dtor()
 
     def replace_args(self, flow_args):
         """
@@ -335,32 +341,32 @@ class Flow(Datum):
 
         return self.module_store.module_list
 
-    def find_activity(self):
-        """
-        Activity Stepをメインフローから再帰的に探し出す
-        """
-        from kskp.store import Activity
-        # 自身がActivityを持っている場合
-        # for activity in self.lasts.values():
-        for activity in [p.datum for p in self.points]:
-            if isinstance(activity, Activity):
-                return activity
-        # 自身が持っていない場合、サブフローを探しに行く
-        # (データデストのみを用いている場合)
-        for substep in self.substeps:
-            if substep.is_flow :
-                result = substep.runnable.find_activity()
-                if result is not None:
-                    return result
-        # Activityが見つからなかった場合
-        return None
+    # def find_activity(self):
+    #     """
+    #     Activity Stepをメインフローから再帰的に探し出す
+    #     """
+    #     from kskp.store import Activity
+    #     # 自身がActivityを持っている場合
+    #     # for activity in self.lasts.values():
+    #     for activity in [p.datum for p in self.points]:
+    #         if isinstance(activity, Activity):
+    #             return activity
+    #     # 自身が持っていない場合、サブフローを探しに行く
+    #     # (データデストのみを用いている場合)
+    #     for substep in self.substeps:
+    #         if substep.is_flow :
+    #             result = substep.runnable.find_activity()
+    #             if result is not None:
+    #                 return result
+    #     # Activityが見つからなかった場合
+    #     return None
 
     def dtor(self):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.store import Command
             if isinstance(substep.runnable, Flow) or isinstance(substep.runnable, Command):
-                substep.runnable.dtor()
+                substep.dtor()
             else:
                 raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')
 
