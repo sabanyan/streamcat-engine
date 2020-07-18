@@ -601,11 +601,11 @@ def convert_from_activity(activity):
     execute()の戻り値であるActivityから
     pointのidとframeのDictに置き換える
     """
-    return {point.id : frame for point, frame in activity.result}
+    return {point.id : frame for point, frame in activity.results}
 
 def convert_from_activity_vis(activity):
     """
     execute()の戻り値であるActivityから
     pointのidとvisのDictに置き換える
     """
-    return {point.id : vis.result['reader'] for point, vis in activity.result}
+    return {point.id : vis.result['reader'] for point, vis in activity.results}
