@@ -430,6 +430,8 @@ class FlowJsonLink:
                             if detadst_o_points[1] == first_out_point:
                                 # Runsコマンドを付加する
                                 out_point = self.context.runs_command_appender.do_append(f, first_out_point)
+                                # Activity Stepを付加する
+                                self.context.activity_data_dest_appender.do_append(f, out_point, first_out_point)
                                 point_is_input_datadest = True
 
                         # データデストの'u'ポートは削除したので、以下の処理を削除する
