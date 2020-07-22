@@ -48,10 +48,15 @@ class Job:
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
 
 class Step:
-    def __init__(self, step_id, runnable, args):
+    def __init__(self, step_id, runnable, args, i_ports=None, o_ports=None, ex_acceptable=False):
         self.id = step_id
         self.runnable = runnable
         self.args = args
+        # 入力データが例外の場合、コマンドに渡すか否か
+        self.ex_acceptable = ex_acceptable
+        # コマンドのPortが'*'の場合、実行時にPortが展開されるので、Stepにもその情報を持たせる
+        self.i_ports = i_ports or runnable.i_ports
+        self.o_ports = o_ports or runnable.o_ports
 
     def __repr__(self):
         return self.id
@@ -65,7 +70,32 @@ class Step:
         return self.is_flow and self.runnable.is_datadst
 
     def run(self, inputs):
-        return self.runnable.run(self.args, inputs)
+        """
+        コマンドを実行する
+        (コマンドの実行で例外が送出されても、最後のコマンドまで実行する)
+        """
+
+        def make_exception_return(o_ports, ex):
+            """
+            全ての出力ポートに例外を格納する
+            """
+            rets = {}
+            for o_port in o_ports:
+                rets[o_port.name] = ex
+            return rets
+
+        try:
+            if not self.ex_acceptable:
+                # 入力データに1つでも例外があれば、全ての出力ポートに例外を格納する
+                for input in inputs.values():
+                    if isinstance(input, Exception):
+                        return make_exception_return(self.o_ports, input)
+            
+            # コマンドを実行する
+            return self.runnable.run(self.args, inputs)
+        except Exception as e:
+            # コマンドのrun()から例外が送出された場合、全ての出力ポートに例外を格納する
+            return make_exception_return(self.o_ports, e)
 
     def dtor(self):
         self.runnable.dtor()
@@ -268,6 +298,8 @@ class Flow(Datum):
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
+                if not output_point.o_port.name in result:
+                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.o_port.name)}が存在しません')
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result.pop(output_point.o_port.name)
 
