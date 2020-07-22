@@ -230,7 +230,7 @@ class ActivityDataDestAppender():
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
-        self.activity_step = Step(str(uuid.uuid4()) + '_activity', activity_cmd, activity_args)
+        self.activity_step = Step(str(uuid.uuid4()) + '_activity', activity_cmd, activity_args, ex_acceptable=True)
         self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self.next_port_no = 0
@@ -251,6 +251,9 @@ class ActivityDataDestAppender():
                                [Tube(Port('o', 'activity'), self.activity_step)],
                                None,
                                [Tube(None, None)])
+
+        # Stepのportsに追加する
+        self.activity_step.i_ports.append(Port(port_name, 'datum'))
 
         if f.uuid not in self._already_step_added:
             f.substeps.append(self.activity_step)
@@ -277,6 +280,10 @@ class RunsCommandAppender():
         port_name = str(self.next_port_no)
         point_id = point.id + '_runs'
         runs_point = Point(point_id, [Tube(Port(port_name, 'datum?'), self.runs_step)], None, [Tube(None, None)])
+
+        # Stepのportsに追加する
+        self.runs_step.i_ports.append(Port(port_name, 'mcmd'))
+        self.runs_step.o_ports.append(Port(port_name, 'datum?'))
 
         # ここでRunsCommandを繋げる
         point.target = [Tube(Port(port_name, 'mcmd'), self.runs_step)]
@@ -430,6 +437,8 @@ class FlowJsonLink:
                             if detadst_o_points[1] == first_out_point:
                                 # Runsコマンドを付加する
                                 out_point = self.context.runs_command_appender.do_append(f, first_out_point)
+                                # Activity Stepを付加する
+                                self.context.activity_data_dest_appender.do_append(f, out_point, first_out_point)
                                 point_is_input_datadest = True
 
                         # データデストの'u'ポートは削除したので、以下の処理を削除する
@@ -603,14 +612,15 @@ class FlowJsonLink:
                 # MCommandに不要な引数を設定するとエラーになる
                 args = node['args']
 
-            # runnableのインスタンス化を行う
-            step = Step(node['id'], cmd_or_flow, args)
-            flow.substeps.append(step)
-
             srcs = node['srcs']
             dsts = node['dsts']
 
-            i_ports = self._replace_multi_inputs(step.runnable.i_ports, srcs)
+            i_ports = self._replace_multi_inputs(cmd_or_flow.i_ports, srcs)
+            o_ports = self._replace_multi_inputs(cmd_or_flow.o_ports, dsts)
+
+            # runnableのインスタンス化を行う
+            step = Step(node['id'], cmd_or_flow, args, i_ports=i_ports, o_ports=o_ports)
+            flow.substeps.append(step)
 
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
