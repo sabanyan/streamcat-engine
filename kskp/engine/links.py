@@ -41,7 +41,8 @@ class FolderDataDestAppender():
         self._factory = factory
 
     def do_append(self, f, point, start_time):
-        folder_store = self._factory.data.load_result_folder()
+        # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
+        folder_store = self.flow.find_parent()
         saver = CommandLink("saver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
