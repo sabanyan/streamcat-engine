@@ -41,7 +41,8 @@ class FolderDataDestAppender():
         self._factory = factory
 
     def do_append(self, f, point, start_time):
-        folder_store = self._factory.data.load_result_folder()
+        # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
+        folder_store = self.flow.find_parent()
         saver = CommandLink("saver").resolve()
         # saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         saver_step, saver_point = self._put_saver(point, f, folder_store, saver, start_time)
@@ -579,8 +580,10 @@ class FlowJsonLink:
 
         # flowを更新する
         if flow_data.has_nodes:
-            self._update_flow_by_runnable(flow, flow_data.nodes)
-            self._update_flow_by_other_than_runnable(flow, flow_data.nodes)
+            # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
+            # そのため、use_exec_auth=Trueを指定する
+            self._update_flow_by_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
+            self._update_flow_by_other_than_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
 
         return flow
 

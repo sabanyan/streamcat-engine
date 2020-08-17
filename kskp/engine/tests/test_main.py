@@ -2268,7 +2268,7 @@ class ExecuteTestCase(TestCaseBase):
         # uuidが書き換わっているかのテスト
         flow = self.factory.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
-        cache_nodes = [node for node in flow_data.nodes if node['id'] in ['d2']]
+        cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['d2']]
         for node in cache_nodes:
             # キャッシュが生成されているか
             self.assertIsNotNone(node['uuid'])
@@ -2367,7 +2367,7 @@ class ExecuteTestCase(TestCaseBase):
         # uuidが書き換わっているかのテスト
         flow = self.factory.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
-        cache_nodes = [node for node in flow_data.nodes if node['id'] in ['d3']]
+        cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['d3']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
             self.assertIsNotNone(self.factory.data.find_by_uuid(node['uuid']))
@@ -2520,7 +2520,7 @@ class ExecuteTestCase(TestCaseBase):
         # uuidが書き換わっているかのテスト
         flow = self.factory.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
-        cache_nodes = [node for node in flow_data.nodes if node['id'] in ['dd2', 'dd5']]
+        cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['dd2', 'dd5']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
             self.assertIsNotNone(self.factory.data.find_by_uuid(node['uuid']))
@@ -3066,7 +3066,7 @@ class ExecuteTestCase(TestCaseBase):
         # uuidが書き換わっているかのテスト
         flow = self.factory.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
-        cache_nodes = [node for node in flow_data.nodes if node['id'] in ['d1']]
+        cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['d1']]
         for node in cache_nodes:
             # キャッシュが生成されているか
             self.assertIsNotNone(node['uuid'])
