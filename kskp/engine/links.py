@@ -302,15 +302,16 @@ class FlowLinkContext():
     """
     FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
     """
-    def __init__(self, flow_uuid, flow_label):
-        self.flow_uuid = flow_uuid
-        self.flow_label = flow_label
+    def __init__(self,flow):
+        self.flow = flow
+        self.flow_uuid = flow.uuid
+        self.flow_label = flow.label
 
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
         self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.runs_command_appender = RunsCommandAppender()
-        self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
+        self.activity_data_dest_appender = ActivityDataDestAppender(self.flow_uuid)
 
         # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
         self.detadst_o_points = {}
@@ -340,7 +341,7 @@ class FlowJsonLink:
         self.cache_data_dest_appender = CacheDataDestAppender(flow, factory)
 
         if context is None:
-            self.context = FlowLinkContext(flow.uuid, flow.label)
+            self.context = FlowLinkContext(flow)
         else:
             self.context = context
             
@@ -605,7 +606,8 @@ class FlowJsonLink:
             
             if isinstance(cmd_or_flow, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow_uuid'    : self.context.flow_uuid,
+                args = {'flow'         : self.context.flow,
+                        'flow_uuid'    : self.context.flow_uuid,
                         'flow_label'   : self.context.flow_label,
                         'start_time'   : self.context.start_time,
                         'activity_uuid': self.context.activity_data_dest_appender.activity_uuid}

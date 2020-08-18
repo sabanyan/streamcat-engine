@@ -583,7 +583,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         # 後片付け
         lasts['d1'].delete()
 
-    @unittest.skip
+    # @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -618,7 +618,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         # 後片付け
         lasts['d1'].delete()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_inputs2(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -665,7 +665,6 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         flow = self.root.create_flow(json_flow['label'], json_flow)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
-        print(lasts)
         lasts = convert_from_activity(lasts)
         correct = {'d1': [['A', '1', '10', '21'],
                           ['A', '2', '20', '21'],
@@ -678,7 +677,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                     ["B", "3", "40"],
                     ["B", "1", "50"],
                     []]}
-        print(lasts)
+        # print(lasts)
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))

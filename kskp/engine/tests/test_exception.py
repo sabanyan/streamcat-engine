@@ -16,7 +16,7 @@ def do_something(first_pow):
     #     return ex
     return i
 
-@unittest.skip('例外処理の実装待ち?')
+# @unittest.skip('例外処理の実装待ち?')
 class ErrorHandlingTestCase(unittest.TestCase):
     @unittest.skip
     def test_concurrent_errors(self):
@@ -67,5 +67,6 @@ class ErrorHandlingTestCase(unittest.TestCase):
         ]
 
         m = McutTest()
+        print("spike!\n")
         with self.assertRaises(MCMDError):
             m.run({'f': 'customer,amuont'}, {'i': dat})
