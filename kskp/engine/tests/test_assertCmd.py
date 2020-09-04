@@ -12,6 +12,8 @@ from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
 
 class ExecuteAssertCmdFlow(TestCaseBase):
+
+    maxDiff = None
     """
     AssertCommandの動作を確認するテストプログラム
     """
@@ -28,12 +30,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
             "id": "i",
             "type": "frame",
             "label": "テストデータ",
-            "value": [["顧客", "数量", "金額"],
-                ["A", 1, 10],
-                ["A", 2, 20],
-                ["B", 1, 30],
-                ["B", 3, 40],
-                ["B", 1, 50]],
+            "value": [["顧客","数量","金額"],
+                ["A",1,10],
+                ["A",2,20],
+                ["B",1,30],
+                ["B",3,40],
+                ["B",1,50]],
             "dataSource": "csv"
             },
             {
@@ -44,37 +46,98 @@ class ExecuteAssertCmdFlow(TestCaseBase):
             "dataSource": "csv"
             },
             {
-                "id": "c1", 
+                "id": "c1",
                 "args": {
                 "dlimit": "1"
-                }, 
+                },
                 "dsts": {
                 "o": "d1"
-                }, 
+                },
                 "size": {
-                "width": 38, 
+                "width": 38,
                 "height": 38
-                }, 
+                },
                 "srcs": {
-                "i": "d1", 
+                "i": "d1",
                 "m": "d"
-                }, 
-                "type": "command", 
-                "error": {}, 
-                "label": "c1", 
-                "invalid": {}, 
+                },
+                "type": "command",
+                "error": {},
+                "label": "c1",
+                "invalid": {},
                 "position": {
-                "x": 276.5, 
+                "x": 276.5,
                 "y": 254
-                }, 
-                "commandId": "assert", 
+                },
+                "commandId": "assert",
                 "srcsOrder": [
-                "i", 
+                "i",
                 "m"
                 ]
             }
         ]
     }
+
+    flow_json_same = {
+        "label": "テストフロ",
+        "params": [],
+        "description": "",
+        "ports": [
+            [],
+            []
+        ],
+        "nodes": [
+            {
+                "id": "i",
+                "type": "frame",
+                "label": "テストデータ",
+                "value": [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["A",2,20],
+                    ["B",1,30],
+                    ["B",3,40],
+                    ["B",1,50]],
+                "dataSource": "csv"
+            },
+            {
+                "type": "frame",
+                "id": "d1",
+                "label": "d1",
+                "uuid": None,
+                "dataSource": "csv"
+            },
+            {
+                "id": "i2",
+                "type": "frame",
+                "label": "テストデータ2",
+                "value": [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["A",2,20],
+                    ["B",1,30],
+                    ["B",3,40],
+                    ["B",1,50]],
+                "dataSource": "csv"
+            },
+            {
+                "id": "c1",
+                "args": {
+                "dlimit": "10"
+                },
+                "dsts": {
+                "o": "d1"
+                },
+                "srcs": {
+                "i": "i",
+                "m": "i2"
+                },
+                "type": "command",
+                "error": {},
+                "label": "c1",
+                "commandId": "assert"
+            }
+        ]
+    }
+
 
     flow_json_inputs = {
         "label": "テストフロ",
@@ -89,12 +152,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客", "数量", "金額"],
-                    ["A", 1, 10],
-                    ["A", 2, 20],
-                    ["B", 1, 30],
-                    ["B", 3, 40],
-                    ["B", 1, 50]],
+                "value": [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["A",2,20],
+                    ["B",1,30],
+                    ["B",3,40],
+                    ["B",1,50]],
                 "dataSource": "csv"
             },
             {
@@ -108,26 +171,26 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i2",
                 "type": "frame",
                 "label": "テストデータ2",
-                "value": [["顧客", "年齢"],
-                    ["A", 21],
-                    ["B", 31]],
+                "value": [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["B",1,30]],
                 "dataSource": "csv"
             },
             {
-                "id": "c1", 
+                "id": "c1",
                 "args": {
                 "dlimit": "10"
-                }, 
+                },
                 "dsts": {
                 "o": "d1"
-                }, 
+                },
                 "srcs": {
-                "i": "i", 
+                "i": "i",
                 "m": "i2"
-                }, 
-                "type": "command", 
-                "error": {}, 
-                "label": "c1", 
+                },
+                "type": "command",
+                "error": {},
+                "label": "c1",
                 "commandId": "assert"
             }
         ]
@@ -148,12 +211,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客", "数量", "金額"],
-                    ["A", 1, 10],
-                    ["A", 2, 20],
-                    ["B", 1, 30],
-                    ["B", 3, 40],
-                    ["B", 1, 50]],
+                "value": [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["A",2,20],
+                    ["B",1,30],
+                    ["B",3,40],
+                    ["B",1,50]],
                 "dataSource": "csv"
             },
             {
@@ -181,20 +244,20 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "dataSource": "csv"
             },
             {
-                "id": "c1", 
+                "id": "c1",
                 "args": {
                 "dlimit": "10"
-                }, 
+                },
                 "dsts": {
                 "o": "d1"
-                }, 
+                },
                 "srcs": {
-                "i": "i", 
+                "i": "i",
                 "m": "i2"
-                }, 
-                "type": "command", 
-                "error": {}, 
-                "label": "c1", 
+                },
+                "type": "command",
+                "error": {},
+                "label": "c1",
                 "commandId": "assert"
             }
         ]
@@ -442,6 +505,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         TestCaseBase.setUpClass()
         cls.root = cls.factory.data.load_root()
         cls.TESTDATA_DIR = cls.root.path
+        maxDiff = None
 
     @classmethod
     def tearDownClass(cls):
@@ -466,12 +530,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客", "数量", "金額"],
-                    ["A", 1, 10],
-                    ["A", 2, 20],
-                    ["B", 1, 30],
-                    ["B", 3, 40],
-                    ["B", 1, 50]],
+                "value": [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["A",2,20],
+                    ["B",1,30],
+                    ["B",3,40],
+                    ["B",1,50]],
                 "dataSource": "csv"
                 },
                 {
@@ -583,7 +647,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         # 後片付け
         lasts['d1'].delete()
 
-    # @unittest.skip
+    @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
@@ -594,20 +658,22 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         flow = self.root.create_flow(json_flow['label'], json_flow)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
-        print(lasts)
+        # print(lasts)
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['A', '1', '10', '21'],
-                          ['A', '2', '20', '21'],
-                          ['B', '1', '30', '31'],
-                          ['B', '3', '40', '31'],
-                          ['B', '1', '50', '31']]}
-        correct = {'d1': [["A", "1", "10"],
-                    ["A", "2", "20"],
-                    ["B", "1", "30"],
-                    ["B", "3", "40"],
-                    ["B", "1", "50"],
-                    []]}
-        print(lasts)
+        correct = {'d1': [['A','1','10','21'],
+                          ['A','2','20','21'],
+                          ['B','1','30','31'],
+                          ['B','3','40','31'],
+                          ['B','1','50','31']]}
+        correct = {'d1': [["顧客","数量","金額"],
+                    ["A",1,10],
+                    ["A",2,20],
+                    ["B",1,30],
+                    ["B",3,40],
+                    ["B",1,50],
+                    ["A",1,10],
+                    ["B",1,30]]}
+        # print(lasts)
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
@@ -629,20 +695,20 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         flow = self.root.create_flow(json_flow['label'], json_flow)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
-        print(lasts)
+        # print(lasts)
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['A', '1', '10', '21'],
-                          ['A', '2', '20', '21'],
-                          ['B', '1', '30', '31'],
-                          ['B', '3', '40', '31'],
-                          ['B', '1', '50', '31']]}
-        correct = {'d1': [["A", "1", "10"],
-                    ["A", "2", "20"],
-                    ["B", "1", "30"],
-                    ["B", "3", "40"],
-                    ["B", "1", "50"],
+        correct = {'d1': [['A','1','10','21'],
+                          ['A','2','20','21'],
+                          ['B','1','30','31'],
+                          ['B','3','40','31'],
+                          ['B','1','50','31']]}
+        correct = {'d1': [["A","1","10"],
+                    ["A","2","20"],
+                    ["B","1","30"],
+                    ["B","3","40"],
+                    ["B","1", "50"],
                     []]}
-        print(lasts)
+        # print(lasts)
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
@@ -659,23 +725,54 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
         """
-        json_flow = copy.deepcopy(self.raal_flow_data)
+        json_flow = copy.deepcopy(self.real_flow_data)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
 
         flow = self.root.create_flow(json_flow['label'], json_flow)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['A', '1', '10', '21'],
-                          ['A', '2', '20', '21'],
-                          ['B', '1', '30', '31'],
-                          ['B', '3', '40', '31'],
-                          ['B', '1', '50', '31']]}
-        correct = {'d1': [["A", "1", "10"],
-                    ["A", "2", "20"],
-                    ["B", "1", "30"],
-                    ["B", "3", "40"],
-                    ["B", "1", "50"],
+        correct = {'d1': [['A','1','10','21'],
+                          ['A','2','20','21'],
+                          ['B','1','30','31'],
+                          ['B','3','40','31'],
+                          ['B','1','50','31']]}
+        correct = {'d1': [["A","1","10"],
+                    ["A","2","20"],
+                    ["B","1","30"],
+                    ["B","3","40"],
+                    ["B","1","50"],
+                    []]}
+        # print(lasts)
+        # テスト
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        result = self.get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+    # @unittest.skip
+    def test_same_execute(self):
+        """
+        mコマンド１個（２つのinputを持つ）のフロー実行
+        """
+        json_flow = copy.deepcopy(self.flow_json_same)
+        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
+
+        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity(lasts)
+        correct = {'d1': [['A','1','10','21'],
+                          ['A','2','20','21'],
+                          ['B','1','30','31'],
+                          ['B','3','40','31'],
+                          ['B','1','50','31']]}
+        correct = {'d1': [["A","1","10"],
+                    ["A","2","20"],
+                    ["B","1","30"],
+                    ["B","3","40"],
+                    ["B","1","50"],
                     []]}
         # print(lasts)
         # テスト

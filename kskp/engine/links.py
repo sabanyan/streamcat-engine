@@ -326,7 +326,7 @@ class FlowJsonLink:
     """
     def __init__(self, flow, factory, vis_args={}, context=None):
         self.factory = factory
-
+    # print(vis_args) -> {'d10': {'args': {'visualizer': 'csvtohtmltable', 'limit': 100}}}
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
@@ -627,6 +627,18 @@ class FlowJsonLink:
             step = Step(node['id'], cmd_or_flow, args, i_ports=i_ports, o_ports=o_ports)
             flow.substeps.append(step)
 
+
+            from kskp.depo.std.commands import AssertCommand
+            # o_pointは一つのみ
+            if isinstance(cmd_or_flow, AssertCommand):
+                args['asserted_point'] = dst_point.id
+                step.ex_acceptable = True
+            print("links.py l.636")
+            print(cmd_or_flow)
+            print(step.ex_acceptable)
+            print()
+
+
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
                 # 可変長引数で入力PointがNoneになる場合に備える
@@ -674,6 +686,8 @@ class FlowJsonLink:
                 if not self.is_root:
                     [self._update_point(point=dst_point, target=Tube(o_port, None))
                     for o_port in flow.o_ports if o_port.name == dst_point.id]
+            
+
 
 
     def _update_flow_by_other_than_runnable(self, flow, nodes):
