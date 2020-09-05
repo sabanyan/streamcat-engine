@@ -628,17 +628,6 @@ class FlowJsonLink:
             flow.substeps.append(step)
 
 
-            from kskp.depo.std.commands import AssertCommand
-            # o_pointは一つのみ
-            if isinstance(cmd_or_flow, AssertCommand):
-                args['asserted_point'] = dst_point.id
-                step.ex_acceptable = True
-            print("links.py l.636")
-            print(cmd_or_flow)
-            print(step.ex_acceptable)
-            print()
-
-
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
                 # 可変長引数で入力PointがNoneになる場合に備える
@@ -686,6 +675,12 @@ class FlowJsonLink:
                 if not self.is_root:
                     [self._update_point(point=dst_point, target=Tube(o_port, None))
                     for o_port in flow.o_ports if o_port.name == dst_point.id]
+            
+                from kskp.depo.std.commands import AssertCommand
+                # AssertCommand用に出力ポイントのidを格納
+                if isinstance(cmd_or_flow, AssertCommand):
+                    args['asserted_point'] = dst_point.id
+                    step.ex_acceptable = True
             
 
 
