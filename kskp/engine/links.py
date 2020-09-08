@@ -326,7 +326,6 @@ class FlowJsonLink:
     """
     def __init__(self, flow, factory, vis_args={}, context=None):
         self.factory = factory
-    # print(vis_args) -> {'d10': {'args': {'visualizer': 'csvtohtmltable', 'limit': 100}}}
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
