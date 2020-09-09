@@ -101,6 +101,9 @@ class Step:
             # TODO: コマンドからの例外は全てCommandExceptionとしたい
             #
 
+            import traceback
+            traceback.print_exc()
+            
             # コマンドのrun()から例外が送出された場合、全ての出力ポートに例外を格納する
             return make_exception_outputs(self.o_ports, cmd_ex=CommandException(e))
 
