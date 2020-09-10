@@ -38,6 +38,10 @@ class Job:
     #         raise
 
     def dtor(self):
+        # Tmpファイルを削除する
+        from kskp.core import Tmp
+        Tmp.remove_files()
+
         if isinstance(self.step.runnable, Flow):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
             self.step.dtor()
@@ -103,7 +107,7 @@ class Step:
 
             import traceback
             traceback.print_exc()
-            
+
             # コマンドのrun()から例外が送出された場合、全ての出力ポートに例外を格納する
             return make_exception_outputs(self.o_ports, cmd_ex=CommandException(e))
 
