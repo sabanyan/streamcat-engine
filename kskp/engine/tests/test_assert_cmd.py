@@ -30,12 +30,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
             "id": "i",
             "type": "frame",
             "label": "テストデータ",
-            "value": [["顧客","数量","金額"],
-                ["A",1,10],
-                ["A",2,20],
-                ["B",1,30],
-                ["B",3,40],
-                ["B",1,50]],
+            "value": [['顧客','数量','金額'],
+                ['A',1,10],
+                ['A',2,20],
+                ['B',1,30],
+                ['B',3,40],
+                ['B',1,50]],
             "dataSource": "csv"
             },
             {
@@ -77,12 +77,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -96,9 +96,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i2",
                 "type": "frame",
                 "label": "テストデータ2",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["B",1,30]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['B',1,30]],
                 "dataSource": "csv"
             },
             {
@@ -134,12 +134,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -153,12 +153,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i2",
                 "type": "frame",
                 "label": "テストデータ2",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -194,12 +194,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -220,9 +220,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i2",
                 "type": "frame",
                 "label": "テストデータ2",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["B",1,30]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['B',1,30]],
                 "dataSource": "csv"
             },
             {
@@ -275,12 +275,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -301,9 +301,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i2",
                 "type": "frame",
                 "label": "テストデータ2",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["B",1,30]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['B',1,30]],
                 "dataSource": "csv"
             },
             {
@@ -356,12 +356,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -592,12 +592,12 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i",
                 "type": "frame",
                 "label": "テストデータ",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["A",2,20],
-                    ["B",1,30],
-                    ["B",3,40],
-                    ["B",1,50]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['A',2,20],
+                    ['B',1,30],
+                    ['B',3,40],
+                    ['B',1,50]],
                 "dataSource": "csv"
             },
             {
@@ -611,9 +611,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
                 "id": "i2",
                 "type": "frame",
                 "label": "テストデータ2",
-                "value": [["顧客","数量","金額"],
-                    ["A",1,10],
-                    ["B",1,30]],
+                "value": [['顧客','数量','金額'],
+                    ['A',1,10],
+                    ['B',1,30]],
                 "dataSource": "csv"
             },
             {
@@ -767,8 +767,6 @@ class ExecuteAssertCmdFlow(TestCaseBase):
               for row in rows:
                   result.append(row)
         except Exception as e:
-          # import pprint
-          # pprint.pprint(f)
           raise e
 
         return result
@@ -776,7 +774,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_simple_assert_command(self):
         """
-        mコマンド１個（２つのinputを持つ）のフローを実行、出力結果をテストする
+        内容が違う２つの入力に対して、assert_commandを一つ配置したフローを実行、出力結果をテストする
         """
         json_flow = copy.deepcopy(self.simple_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
@@ -786,10 +784,10 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d1': [
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','1','A,2,20','B,1,30'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','2','B,1,30','null'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','3','B,3,40','null'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','4','B,1,50','null']
+            ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','2','A,2,20','B,1,30'],
+            ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','3','B,1,30','null'],
+            ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','4','B,3,40','null'],
+            ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','5','B,1,50','null']
         ]}
         # テスト
         # DBにframeデータが生成されているか
@@ -810,7 +808,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_same_execute(self):
         """
-        mコマンド１個（２つのinputを持つ）のフロー実行
+        内容が同じ２つの入力に対して、assert_commandを一つ配置したフローを実行、出力結果をテストする
         """
         json_flow = copy.deepcopy(self.flow_json_same)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
@@ -819,7 +817,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:31:17.329527+00:00','d1','True','False','nothing','nothing','nothing']]}
+        correct = {'d1': [
+            ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:31:17.329527+00:00','d1','True','False','nothing','nothing','nothing']
+        ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
@@ -841,10 +841,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     def test_case_sequential_assert(self):
         """
         assert_commandが２連続で実行されるフローを実行、出力結果をテストする
-        # 現状必ずエラーが発生する
         """
-        
-
         json_flow = copy.deepcopy(self.sequential_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
@@ -853,11 +850,14 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        correct = {'d2': [['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:42:17.489747+00:00','d2','False','False','0','A,1,10','flow_label,flow_uuid,flow_path,parent_uuid,parent_label,date,point_id,is_true,raise_exs,diff_row_number,diff_result,diff_answer'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:42:17.489747+00:00','d2','False','False','1','A,2,20','テストフロ,0b70cdad-3901-4f2c-a47a-3b2507f5a91b,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-10 08:42:17.489747+00:00,d1,False,False,1,"A,2,20","B,1,30"'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:42:17.489747+00:00','d2','False','False','2','B,1,30','テストフロ,0b70cdad-3901-4f2c-a47a-3b2507f5a91b,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-10 08:42:17.489747+00:00,d1,False,False,2,"B,1,30","null"'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:42:17.489747+00:00','d2','False','False','3','B,3,40','テストフロ,0b70cdad-3901-4f2c-a47a-3b2507f5a91b,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-10 08:42:17.489747+00:00,d1,False,False,3,"B,3,40","null"'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 08:42:17.489747+00:00','d2','False','False','4','B,1,50','テストフロ,0b70cdad-3901-4f2c-a47a-3b2507f5a91b,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-10 08:42:17.489747+00:00,d1,False,False,4,"B,1,50","null"']]}
+        correct = {'d2': [
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:34:09.449384+00:00','d2','False','False','0','顧客,数量,金額','flow_label,flow_uuid,flow_path,parent_uuid,parent_label,date,point_id,is_true,raise_exs,diff_row_number,diff_result,diff_answer'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:34:09.449384+00:00','d2','False','False','1','A,1,10','テストフロ,cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-12 02:34:09.449384+00:00,d1,False,False,2,"A,2,20","B,1,30"'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:34:09.449384+00:00','d2','False','False','2','A,2,20','テストフロ,cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-12 02:34:09.449384+00:00,d1,False,False,3,"B,1,30","null"'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:34:09.449384+00:00','d2','False','False','3','B,1,30','テストフロ,cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-12 02:34:09.449384+00:00,d1,False,False,4,"B,3,40","null"'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:34:09.449384+00:00','d2','False','False','4','B,3,40','テストフロ,cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81,/ライブラリ/テストフロ,テストフロ,テストフロ,2020-09-12 02:34:09.449384+00:00,d1,False,False,5,"B,1,50","null"'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:34:09.449384+00:00','d2','False','False','5','B,1,50','null']
+        ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
@@ -868,6 +868,15 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         for number in [1,5]:
             for ans in correct['d2']:
                 ans[number] = result[0][number]
+
+        # 比較するデータ内にタイムスタンプがあるので、文字列を置き換え。
+        # コマンドの動作自体は別のコマンドがしてくれているので、ここではerrorが発生しないことを確認
+        for s in result:
+            s[11]= "Replacement of output information"
+        for s in correct['d2']:
+            s[11]= "Replacement of output information"
+
+        result, correct['d2'] = self.check_equal(result, correct['d2'])
 
         self.assertEqual(result, correct['d2'])
 
@@ -880,22 +889,25 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         assert_commandが並列で2つの島にあるフローを実行、出力結果をテストする
         """
         json_flow = copy.deepcopy(self.double_assert_json)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'},{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
+        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'},{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
         flow = self.root.create_flow(json_flow['label'], json_flow)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        correct = {'d2': [['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d2','False','False','1','A,2,20','B,1,30'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d2','False','False','2','B,1,30','null'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d2','False','False','3','B,3,40','null'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d2','False','False','4','B,1,50','null']],
+        correct = {
         'd1':[
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','1','A,2,20','B,1,30'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','2','B,1,30','null'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','3','B,3,40','null'],
-        ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-10 07:43:16.397353+00:00','d1','False','False','4','B,1,50','null']
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d1','False','False','2','A,2,20','B,1,30'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d1','False','False','3','B,1,30','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d1','False','False','4','B,3,40','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d1','False','False','5','B,1,50','null']
+        ],
+        'd2': [
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d2','False','False','2','A,2,20','B,1,30'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d2','False','False','3','B,1,30','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d2','False','False','4','B,3,40','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:48:02.220128+00:00','d2','False','False','5','B,1,50','null']
         ]}
         # テスト
         # DBにframeデータが生成されているか
@@ -921,12 +933,11 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts['d2'].delete()
 
 
-    @unittest.skip
+    # @unittest.skip
     def test_one_side_error_assert(self):
         """
         assert_commandの入力の一方がエラーのフローを実行、出力結果をテストする
         エラーはnysol_pythonのモジュールから発せられるものを使用する
-        # テスト出力のエラー文章内にタイムスタンプがあるため、正確に比較ができない。
         """
         json_flow = copy.deepcopy(self.one_side_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -937,12 +948,13 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = convert_from_activity(lasts)
 
         correct = {'d2': [
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:39:48.810760+00:00','d2','False','True','0','A,1,10','MCMDError: no data found : /dev/stdin (kgload)'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:39:48.810760+00:00','d2','False','True','1','A,2,20','MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/11 10:39:48; 2020/09/11 10:39:48'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:39:48.810760+00:00','d2','False','True','2','B,1,30','null'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:39:48.810760+00:00','d2','False','True','3','B,3,40','null'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:39:48.810760+00:00','d2','False','True','4','B,1,50','null']
-            ]}
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:00:16.094473+00:00','d2','False','True','0','顧客,数量,金額','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/12 12:00:16; 2020/09/12 12:00:16,)]'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:00:16.094473+00:00','d2','False','True','1','A,1,10','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:00:16.094473+00:00','d2','False','True','2','A,2,20','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:00:16.094473+00:00','d2','False','True','3','B,1,30','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:00:16.094473+00:00','d2','False','True','4','B,3,40','null'],
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:00:16.094473+00:00','d2','False','True','5','B,1,50','null']
+        ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
@@ -953,6 +965,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         for number in [1,5]:
             for ans in correct['d2']:
                 ans[number] = result[0][number]
+        result, correct['d2'] = self.check_equal(result, correct['d2'])
 
         self.assertEqual(result, correct['d2'])
 
@@ -966,7 +979,6 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         assert_commandの入力の両方がエラーのフローを実行、出力結果をテストする
         エラー内容はどちらも同じ
         エラーはnysol_pythonのモジュールから発せられるものを使用する
-        # 実行のたびに出力内容が変わって、テストの成否が変わる。不安定
         """
         json_flow = copy.deepcopy(self.both_same_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -976,7 +988,10 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        correct = {'d2': [['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:45:38.666279+00:00','d2','True','True','nothing','nothing','nothing']]}
+        correct = {
+            'd2': [
+                ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 01:45:38.666279+00:00','d2','True','True','nothing','nothing','nothing']
+        ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
@@ -1009,7 +1024,8 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = convert_from_activity(lasts)
 
         correct = {'d2': [
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 02:08:32.453742+00:00','d2','False','True','None','MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/11 11:08:32; 2020/09/11 11:08:32','MCMDError:#ERROR# parameter a= is mandatory (kgnewrand); kgnewrand;  OUT=0; 2020/09/11 11:08:32; 2020/09/11 11:08:32']]}
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 02:24:50.614058+00:00','d2','False','True','None','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/12 11:24:50; 2020/09/12 11:24:50,)]','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgnewrand); kgnewrand;  OUT=0; 2020/09/12 11:24:50; 2020/09/12 11:24:50,)]']
+        ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
@@ -1020,6 +1036,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         for number in [1,5]:
             for ans in correct['d2']:
                 ans[number] = result[0][number]
+        result, correct['d2'] = self.check_equal(result, correct['d2'])
 
         self.assertEqual(result, correct['d2'])
 
@@ -1036,22 +1053,18 @@ class ExecuteAssertCmdFlow(TestCaseBase):
 
         flow = self.root.create_flow(json_flow['label'], json_flow)
         flow.save()
-        # print(flow)
-        # print(json_flow)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
-        # print("executed")
-        # print(lasts)
         lasts = convert_from_activity(lasts)
-        # print(lasts)
-        correct = {'d1': [
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 02:19:19.212191+00:00','d1','False','True','0','A,1,10','【コマンド：特徴量の計算】【オプション欄：f】指定した項目名は存在しません。random1'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 02:19:19.212191+00:00','d1','False','True','1','A,2,20','null'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 02:19:19.212191+00:00','d1','False','True','2','B,1,30','null'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 02:19:19.212191+00:00','d1','False','True','3','B,3,40','null'],
-            ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-11 02:19:19.212191+00:00','d1','False','True','4','B,1,50','null']
+        correct = {
+            'd1': [
+                ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:32:50.072937+00:00','d1','False','True','0','顧客,数量,金額',"[Exception('【コマンド：特徴量の計算】【オプション欄：f】指定した項目名は存在しません。random1',)]"],
+                ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:32:50.072937+00:00','d1','False','True','1','A,1,10','null'],
+                ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:32:50.072937+00:00','d1','False','True','2','A,2,20','null'],
+                ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:32:50.072937+00:00','d1','False','True','3','B,1,30','null'],
+                ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:32:50.072937+00:00','d1','False','True','4','B,3,40','null'],
+                ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','テストフロ','テストフロ','2020-09-12 03:32:50.072937+00:00','d1','False','True','5','B,1,50','null']
         ]}
-        # print(lasts)
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d1'].uuid))
@@ -1069,7 +1082,23 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts['d1'].delete()
 
 
+    def check_equal(self, result, correct):
+        # MCommandが出すエラーにあるタイムスタンプ部位を取り除く
+        for row in result:
+            if row[10].find('MCMDError') != -1:
+                row[10] = row[10][:-44]
 
+            if row[11].find('MCMDError') != -1:
+                row[11] = row[11][:-44]
+
+        for row in correct:
+            if row[10].find('MCMDError') != -1:
+                row[10] = row[10][:-44]
+
+            if row[11].find('MCMDError') != -1:
+                row[11] = row[11][:-44]
+
+        return result, correct
 
 
 def convert_from_activity(lasts):
