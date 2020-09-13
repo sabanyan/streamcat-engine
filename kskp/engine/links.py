@@ -676,7 +676,7 @@ class FlowJsonLink:
                     for o_port in flow.o_ports if o_port.name == dst_point.id]
             
                 from kskp.depo.std.commands import AssertCommand
-                # AssertCommand用に出力ポイントのidを格納
+                # AssertCommandではエラー出力、出力ポイントの出力を行うため、独自に設定
                 if isinstance(cmd_or_flow, AssertCommand):
                     args['asserted_point'] = dst_point.id
                     step.ex_acceptable = True
