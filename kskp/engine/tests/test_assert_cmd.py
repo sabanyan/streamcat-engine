@@ -749,25 +749,34 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {'d1': [
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','3','A,2,20','B,1,30'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','4','B,1,30',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','5','B,3,40',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','6','B,1,50','']
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {'d1': [
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','3','A,2,20','B,1,30'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','4','B,1,30',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','5','B,3,40',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','6','B,1,50','']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d1'].uuid)
+        results = self.get_frame_by_uuid(lasts['d1'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d1']:
-                ans[number] = result[0][number]
-
-        self.assertEqual(result, correct['d1'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d1']))
+        for result,correct in zip(results, corrects['d1']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d1'].delete()
@@ -784,22 +793,31 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {'d1': [
-            ['テストフロ','0b70cdad-3901-4f2c-a47a-3b2507f5a91b','/ライブラリ/テストフロ','2020-09-10 08:31:17.329527+00:00','d1','True','False','nothing','nothing','nothing']
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {'d1': [
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','True','False','nothing','nothing','nothing']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d1'].uuid)
+        results = self.get_frame_by_uuid(lasts['d1'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d1']:
-                ans[number] = result[0][number]
-
-        self.assertEqual(result, correct['d1'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d1']))
+        for result,correct in zip(results, corrects['d1']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d1'].delete()
@@ -818,36 +836,45 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {'d2': [
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:46:41','d2','False','False','1','顧客,数量,金額','flow_label,flow_uuid,flow_path,date,point_id,is_true,raise_exs,diff_row_number,i_port_diff,m_port_diff'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:46:41','d2','False','False','2','A,1,10','テストフロ,d8549cf2-43b9-4e42-88cb-c5d3a9a21e23,/ライブラリ/テストフロ,2020-09-13 16:46:41,d1,False,False,3,"A,2,20",""'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:46:41','d2','False','False','3','A,2,20','テストフロ,d8549cf2-43b9-4e42-88cb-c5d3a9a21e23,/ライブラリ/テストフロ,2020-09-13 16:46:41,d1,False,False,4,"B,1,30",""'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:46:41','d2','False','False','4','B,1,30','テストフロ,d8549cf2-43b9-4e42-88cb-c5d3a9a21e23,/ライブラリ/テストフロ,2020-09-13 16:46:41,d1,False,False,5,"B,3,40",""'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:46:41','d2','False','False','5','B,3,40','テストフロ,d8549cf2-43b9-4e42-88cb-c5d3a9a21e23,/ライブラリ/テストフロ,2020-09-13 16:46:41,d1,False,False,6,"B,1,50",""'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:46:41','d2','False','False','6','B,1,50','']
+        # # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {'d2': [
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','1','顧客,数量,金額','flow_label,flow_uuid,flow_path,date,point_id,is_true,raise_exs,diff_row_number,i_port_diff,m_port_diff'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','2','A,1,10','テストフロ,00000000-0000-0000-0000-000000000000,/ライブラリ/テストフロ,0000-00-00 00:00:00.000000+00:00,d1,False,False,3,"A,2,20",""'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','3','A,2,20','テストフロ,00000000-0000-0000-0000-000000000000,/ライブラリ/テストフロ,0000-00-00 00:00:00.000000+00:00,d1,False,False,4,"B,1,30",""'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','4','B,1,30','テストフロ,00000000-0000-0000-0000-000000000000,/ライブラリ/テストフロ,0000-00-00 00:00:00.000000+00:00,d1,False,False,5,"B,3,40",""'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','5','B,3,40','テストフロ,00000000-0000-0000-0000-000000000000,/ライブラリ/テストフロ,0000-00-00 00:00:00.000000+00:00,d1,False,False,6,"B,1,50",""'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','6','B,1,50','']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d2'].uuid)
-
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d2']:
-                ans[number] = result[0][number]
+        results = self.get_frame_by_uuid(lasts['d2'].uuid)
 
         # 比較するデータ内にタイムスタンプがあるので、文字列を置き換え。
         # コマンドの動作自体は別のコマンドがしてくれているので、ここではerrorが発生しないことを確認
-        for s in result:
+        for s in results:
             s[9]= "Replacement of output information"
-        for s in correct['d2']:
+        for s in corrects['d2']:
             s[9]= "Replacement of output information"
 
-        result, correct['d2'] = self.check_equal(result, correct['d2'])
+        results, corrects['d2'] = self.check_equal(results, corrects['d2'])
 
-        self.assertEqual(result, correct['d2'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d2']))
+        for result,correct in zip(results, corrects['d2']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d2'].delete()
@@ -865,38 +892,59 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {
         'd1':[
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','3','A,2,20','B,1,30'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','4','B,1,30',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','5','B,3,40',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d1','False','False','6','B,1,50','']
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','3','A,2,20','B,1,30'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','4','B,1,30',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','5','B,3,40',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','False','6','B,1,50','']
         ],
         'd2': [
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d2','False','False','3','A,2,20','B,1,30'],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d2','False','False','4','B,1,30',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d2','False','False','5','B,3,40',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:31:29','d2','False','False','6','B,1,50','']
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','3','A,2,20','B,1,30'],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','4','B,1,30',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','5','B,3,40',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','False','6','B,1,50','']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d1'].uuid))
         self.assertIsNotNone(self.factory.data.exists(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d1'].uuid)
-        result2 = self.get_frame_by_uuid(lasts['d2'].uuid)
+        results = self.get_frame_by_uuid(lasts['d1'].uuid)
+        results2 = self.get_frame_by_uuid(lasts['d2'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d1']:
-                ans[number] = result[0][number]
-        for number in [1,3]:
-            for ans in correct['d2']:
-                ans[number] = result[0][number]
 
-        self.assertEqual(result, correct['d1'])
-        self.assertEqual(result2, correct['d2'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d1']))
+        for result,correct in zip(results, corrects['d1']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
+
+        self.assertEqual(len(results), len(corrects['d2']))
+        for result,correct in zip(results2, corrects['d2']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d1'].delete()
@@ -917,28 +965,38 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {'d2': [
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:54:32','d2','False','True','1','顧客,数量,金額',"[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/13 16:54:32; 2020/09/13 16:54:32,)]"],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:54:32','d2','False','True','2','A,1,10',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:54:32','d2','False','True','3','A,2,20',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:54:32','d2','False','True','4','B,1,30',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:54:32','d2','False','True','5','B,3,40',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:54:32','d2','False','True','6','B,1,50','']
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {'d2': [
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','1','顧客,数量,金額',"[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/13 16:54:32; 2020/09/13 16:54:32,)]"],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','2','A,1,10',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','3','A,2,20',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','4','B,1,30',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','5','B,3,40',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','6','B,1,50','']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d2'].uuid)
+        results = self.get_frame_by_uuid(lasts['d2'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d2']:
-                ans[number] = result[0][number]
-        result, correct['d2'] = self.check_equal(result, correct['d2'])
+        results, corrects['d2'] = self.check_equal(results, corrects['d2'])
 
-        self.assertEqual(result, correct['d2'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d2']))
+        for result,correct in zip(results, corrects['d2']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d2'].delete()
@@ -959,23 +1017,33 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {
             'd2': [
-                ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','2020-09-11 01:45:38.666279+00:00','d2','True','True','nothing','nothing','nothing']
+                ['テストフロ','fa95ec62-5141-44fb-b4b0-f680139b4adc','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','True','True','nothing','nothing','nothing']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d2'].uuid)
+        results = self.get_frame_by_uuid(lasts['d2'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d2']:
-                ans[number] = result[0][number]
 
-        self.assertEqual(result, correct['d2'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d2']))
+        for result,correct in zip(results, corrects['d2']):
+            self.assertEqual(len(result), len(correct))
+            
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d2'].delete()
@@ -995,23 +1063,33 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {'d2': [
-            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','2020-09-12 02:24:50.614058+00:00','d2','False','True','None','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/12 11:24:50; 2020/09/12 11:24:50,)]','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgnewrand); kgnewrand;  OUT=0; 2020/09/12 11:24:50; 2020/09/12 11:24:50,)]']
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {'d2': [
+            ['テストフロ','cb4cf7ad-44de-4df9-a7b7-a4d5a4201d81','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d2','False','True','None','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgNewnumber); kgNewnumber;  OUT=0; 2020/09/12 11:24:50; 2020/09/12 11:24:50,)]','[MCMDError(MCMDError:#ERROR# parameter a= is mandatory (kgnewrand); kgnewrand;  OUT=0; 2020/09/12 11:24:50; 2020/09/12 11:24:50,)]']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d2'].uuid)
+        results = self.get_frame_by_uuid(lasts['d2'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d2']:
-                ans[number] = result[0][number]
-        result, correct['d2'] = self.check_equal(result, correct['d2'])
+        results, corrects['d2'] = self.check_equal(results, corrects['d2'])
 
-        self.assertEqual(result, correct['d2'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d2']))
+        for result,correct in zip(results, corrects['d2']):
+            self.assertEqual(len(result), len(correct))
+
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d2'].delete()
@@ -1029,27 +1107,36 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、assertEqualを行う前で統一する。
-        correct = {
-            'd1': [['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:37:43','d1','False','True','1','顧客,数量,金額',"[Exception('【コマンド：特徴量の計算】【オプション欄：f】指定した項目名は存在しません。random1',)]"],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:37:43','d1','False','True','2','A,1,10',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:37:43','d1','False','True','3','A,2,20',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:37:43','d1','False','True','4','B,1,30',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:37:43','d1','False','True','5','B,3,40',''],
-            ['テストフロ','d8549cf2-43b9-4e42-88cb-c5d3a9a21e23','/ライブラリ/テストフロ','2020-09-13 16:37:43','d1','False','True','6','B,1,50','']
+        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
+        corrects = {
+            'd1': [['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','1','顧客,数量,金額',"[Exception('【コマンド：特徴量の計算】【オプション欄：f】指定した項目名は存在しません。random1',)]"],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','2','A,1,10',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','3','A,2,20',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','4','B,1,30',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','5','B,3,40',''],
+            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','6','B,1,50','']
         ]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.exists(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        result = self.get_frame_by_uuid(lasts['d1'].uuid)
+        results = self.get_frame_by_uuid(lasts['d1'].uuid)
 
-        # 実行日時、uuidを実行結果の出力に統一する
-        for number in [1,3]:
-            for ans in correct['d1']:
-                ans[number] = result[0][number]
-        
-        self.assertEqual(result, correct['d1'])
+        # 出力の一致を確認
+        self.assertEqual(len(results), len(corrects['d1']))
+        for result,correct in zip(results, corrects['d1']):
+            self.assertEqual(len(result), len(correct))
+
+            self.assertEqual(result[0], correct[0])
+            self.assertIsNotNone(result[1])
+            self.assertEqual(result[2], correct[2])
+            self.assertIsNotNone(result[3])
+            self.assertEqual(result[4], correct[4])
+            self.assertEqual(result[5], correct[5])
+            self.assertEqual(result[6], correct[6])
+            self.assertEqual(result[7], correct[7])
+            self.assertEqual(result[8], correct[8])
+            self.assertEqual(result[9], correct[9])
 
         # 後片付け
         lasts['d1'].delete()
