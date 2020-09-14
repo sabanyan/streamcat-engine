@@ -42,9 +42,6 @@ def execute(link, args, inputs, job_complete_handler=None):
         # jobを開始する
         job.start()
 
-        # 実行はRunsCommandで行う
-        # job.runs()
-
         # 後始末をする
         job.dtor()
 

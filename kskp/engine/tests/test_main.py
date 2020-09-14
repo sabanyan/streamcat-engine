@@ -1,13 +1,12 @@
-import os
 import copy
-import uuid
 import unittest
 import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.store import Command, Port, List, Database, DatabaseConn
+from kskp.store import List, Database, DatabaseConn, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
+from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowJsonLink
 
 class ExecuteTestCase(TestCaseBase):
@@ -4473,6 +4472,316 @@ class ExecuteTestCase(TestCaseBase):
         # 後片付け
         lasts['d1'].delete()
 
+    def test_mcmd_error_with_two_outputs(self):
+        """
+        2出力のフローを実行すると、2つのMCMDErrorが取得できること
+        """
+
+        # 2つのMCommandは引数指定が誤っている
+        flow_json = {
+          "label": "エラーフロー", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d", 
+              "invalid": {}, 
+              "position": {
+                "x": 99, 
+                "y": 201
+              }, 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c", 
+              "args": {
+                "I": "1", 
+                "S": "1", 
+                "l": "10"
+              }, 
+              "dsts": {
+                "o": "d"
+              }, 
+              "srcs": {}, 
+              "type": "command", 
+              "label": "c", 
+              "invalid": {
+                "a": [
+                  "入力が必須の項目です"
+                ]
+              }, 
+              "commandId": "mnewnumber", 
+              "srcsOrder": []
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {}, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "c1", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d", 
+                "nodeId": "d"
+              }, 
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "管理者", 
+          "createdAt": "2020-09-07 13:47:56", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # frameデータは作成されていないこと
+        self.assertIsNone(results['d'])
+        self.assertIsNone(results['d1'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d']), 2)
+        self.assertEqual(len(results['d1']), 2)
+        self.assertIsInstance(results['d'][0], MCMDError)
+        self.assertIsInstance(results['d'][1], MCMDError)
+        self.assertIsInstance(results['d1'][0], MCMDError)
+        self.assertIsInstance(results['d1'][1], MCMDError)
+
+    def test_mcmd_error_with_two_outputs2(self):
+        """
+        2出力のフローを実行すると、2つのMCMDErrorが取得できること
+        """
+        
+        # 1つのMCommandは引数指定が誤っている
+        flow_json = {
+          "label": "エラーフロー", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d", 
+              "invalid": {}, 
+              "position": {
+                "x": 99, 
+                "y": 201
+              }, 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c", 
+              "args": {
+                "a": 'col',
+                "I": "1", 
+                "S": "1", 
+                "l": "10"
+              }, 
+              "dsts": {
+                "o": "d"
+              }, 
+              "srcs": {}, 
+              "type": "command", 
+              "label": "c", 
+              "invalid": {
+                "a": [
+                  "入力が必須の項目です"
+                ]
+              }, 
+              "commandId": "mnewnumber", 
+              "srcsOrder": []
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {}, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "c1", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d", 
+                "nodeId": "d"
+              }, 
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "管理者", 
+          "createdAt": "2020-09-07 13:47:56", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # frameデータは作成されていないこと
+        # (1コマンドでもエラーが発生すれば全ての出力はない)
+        self.assertIsNone(results['d'])
+        self.assertIsNone(results['d1'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d']), 1)
+        self.assertEqual(len(results['d1']), 1)
+        self.assertIsInstance(results['d'][0], MCMDError)
+        self.assertIsInstance(results['d1'][0], MCMDError)
+
+    def test_run_error(self):
+        """
+        Commnad.run()から例外が送出される場合、CommandExceptionが取得できること
+        """
+
+        # squareコマンドに文字列を入力してエラーにする
+        flow_json = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                [
+                  {
+                    "type": "frame", 
+                    "label": "dd2", 
+                    "nodeId": "dd2"
+                  }
+                ]
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": [['Four']],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {},
+                    "srcs": { "i": "dd1" },
+                    "dsts": { "o_sq": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": None
+                }
+            ]
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('dd2', results)
+        # frameデータは作成されていないこと
+        self.assertIsNone(results['dd2'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('dd2', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['dd2']), 1)
+        self.assertIsInstance(results['dd2'][0], CommandException)
+
     # Helpler
     def get_frame_by_uuid(self, uuid, header=True):
         """
@@ -4699,7 +5008,7 @@ def convert_from_activity(lasts):
     # Activityを取得して返り値とする
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.results}
+            return {point.id : frame for point, frame in datum.lasts}
 
 def convert_from_activity_vis(lasts):
     """
@@ -4709,5 +5018,15 @@ def convert_from_activity_vis(lasts):
     from kskp.store import Activity
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
-            return {point.id : vis.result['reader'] for point, vis in datum.results}
+            return {point.id : vis.result['reader'] for point, vis in datum.lasts}
 
+def convert_from_activity_exs(lasts):
+    """
+    execute()の戻り値から
+    pointのidとframeのDictに置き換える
+    """
+    from kskp.store import Activity
+    # Activityを取得して返り値とする
+    for point_id, datum in lasts.items():
+        if isinstance(datum, Activity):
+            return {point.id : exs for point, exs in datum.exs}

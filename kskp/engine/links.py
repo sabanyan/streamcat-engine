@@ -268,9 +268,10 @@ class ActivityDataDestAppender():
 class RunsCommandAppender():
     def __init__(self):
         # Runsコマンドを取得する
-        runs_cmd = CommandLink("runs").resolve()
+        runs_cmd = CommandLink('runs').resolve()
         # Runsステップを作成する
-        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {})
+        # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
+        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {}, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
