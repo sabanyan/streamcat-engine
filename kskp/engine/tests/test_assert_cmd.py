@@ -1177,6 +1177,6 @@ def convert_from_activity(lasts):
     # Activityを取得して返り値とする
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.results}
+            return {point.id : frame for point, frame in datum.lasts}
 
             
