@@ -5,15 +5,14 @@ from kskp.depo.std.commands import CommandLink, SCommand
 from kskp.engine import Step, Point, Tube
 
 class FolderDataSourcePrepender():
-    def __init__(self):
+    def __init__(self, factory):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        pass
+        self._factory = factory
 
     def do_prepend(self, f, point, frame_uuid):
-        from kskp.store import Library, Folder
-
-        folder_store = Library.load_result_folder()
+        frame = self._factory.data.find_by_uuid(frame_uuid)
+        folder_store = frame.find_parent()
         self._put_loader(frame_uuid, point, f, folder_store)
 
     def _put_loader(self, frame_uuid, target_point, f, store):
@@ -35,15 +34,15 @@ class FolderDataSourcePrepender():
         return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
-    def __init__(self, flow_uuid):
+    def __init__(self, flow, factory):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        self.flow_uuid = flow_uuid
+        self.flow = flow
+        self._factory = factory
 
     def do_append(self, f, point, start_time):
-        from kskp.store import Library, Folder
-
-        folder_store = Library.load_result_folder()
+        # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
+        folder_store = self.flow.find_parent()
         saver = CommandLink("saver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
@@ -59,7 +58,7 @@ class FolderDataDestAppender():
 
         # saverのargs設定
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
-        args = {'flow_uuid': self.flow_uuid, 'datum_id':point.id} if self.flow_uuid is not None else {}
+        args = {'flow_uuid':self.flow.uuid, 'flow':self.flow, 'datum_id':point.id} if self.flow.uuid is not None else {}
         # saverが作るframe及びcacheのlabelはここで設定できる
         args['flow_label'] = f.label if f.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
@@ -96,10 +95,9 @@ class FolderDataDestAppender():
 
 
 class CacheDataDestAppender(FolderDataDestAppender):
-    def do_append(self, f, point, start_time):
-        from kskp.store import Library, Folder
 
-        folder_store = Library.load_cache_folder()
+    def do_append(self, f, point, start_time):
+        folder_store = self._factory.data.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
         saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
 
@@ -226,7 +224,7 @@ class ActivityDataDestAppender():
         activity_cmd = CommandLink("activity").resolve()
         # Activity Datumを作成する
         from kskp.store import Activity
-        activity = Activity(None, 'activity', flow_uuid)
+        activity = Activity(None, None, 'activity', flow_uuid)
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
@@ -314,19 +312,21 @@ class FlowJsonLink:
     """
     フローへのリンク
     """
-    def __init__(self, flow, vis_args={}, context=None):
+    def __init__(self, flow, factory, vis_args={}, context=None):
+        self.factory = factory
+
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
         self.vis_ids = vis_args.keys()
 
-        self.folder_data_source_prepender = FolderDataSourcePrepender()
+        self.folder_data_source_prepender = FolderDataSourcePrepender(factory)
 
-        self.folder_data_dest_appender = FolderDataDestAppender(flow.uuid)
+        self.folder_data_dest_appender = FolderDataDestAppender(flow, factory)
 
         self.vis_data_dest_appender = VisDataDestAppender(flow.uuid, vis_args)
 
-        self.cache_data_dest_appender = CacheDataDestAppender(flow.uuid)
+        self.cache_data_dest_appender = CacheDataDestAppender(flow, factory)
 
         if context is None:
             self.context = FlowLinkContext(flow.uuid, flow.label)
@@ -338,9 +338,8 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self.context)
-            from kskp.store import Flow
-            flow = Flow.find_by_uuid(node['uuid'])
-            ret = FlowJsonLink(flow, {}, self.context)
+            flow = self.factory.data.find_by_uuid(node['uuid'])
+            ret = FlowJsonLink(flow, self.factory, {}, self.context)
 
             # # かなりの力技・・・。
             # # 実行を行う場合、サブフロー内で余分な処理が走らないように
@@ -559,14 +558,16 @@ class FlowJsonLink:
         flow = Flow(label)
 
         # portを読む
-        ports = flow_data['ports']
+        ports = flow_data.ports
         flow.i_ports = self._parse_ports(ports[0])
         flow.o_ports = self._parse_ports(ports[1])
 
         # flowを更新する
-        if 'nodes' in flow_data:
-            self._update_flow_by_runnable(flow, flow_data['nodes'])
-            self._update_flow_by_other_than_runnable(flow, flow_data['nodes'])
+        if flow_data.has_nodes:
+            # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
+            # そのため、use_exec_auth=Trueを指定する
+            self._update_flow_by_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
+            self._update_flow_by_other_than_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
 
         return flow
 
@@ -678,7 +679,10 @@ class FlowJsonLink:
 
             # Storeの場合、Storeオブジェクトをpointに格納する
             if self._is_store_node(node):
-                self._put_store(node.get('uuid'), target_point)
+                store = self.factory.data.find_by_uuid(node.get('uuid'))
+                # StoreにDatabaseを設定する
+                target_point.datum = store
+                continue
 
             # データの取得先の設定
             # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
