@@ -44,10 +44,12 @@ class FolderDataDestAppender():
         # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
         folder_store = self.flow.find_parent()
         saver = CommandLink("saver").resolve()
-        saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
-        # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
-        f.points.append(saver_point2)
-        return saver_point, saver_point2
+        # saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
+        saver_step, saver_point = self._put_saver(point, f, folder_store, saver, start_time)
+        # # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
+        # f.points.append(saver_point2)
+        # return saver_point, saver_point2
+        return saver_point
 
     def _put_saver(self, point, f, store, saver, start_time):
         """
@@ -68,14 +70,15 @@ class FolderDataDestAppender():
         saver_step = self._make_step(args, saver)
         store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
         saver_point = Point(point.id + '_saver', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
+        # saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
 
         self.switch_target(point, saver_step, saver_point)
 
         f.substeps.append(saver_step)
         f.points.extend([saver_point, store_point])
 
-        return saver_step, saver_point, saver_point2
+        # return saver_step, saver_point, saver_point2
+        return saver_step, saver_point
 
     def _make_step(self, args, cmd):
         """
@@ -99,10 +102,10 @@ class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, f, point, start_time):
         folder_store = self._factory.data.load_cache_folder()
         saver = CommandLink("cachesaver").resolve()
-        saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
+        saver_step, saver_point = self._put_saver(point, f, folder_store, saver, start_time)
 
-        f.points.append(saver_point2)
-        return saver_point, saver_point2
+        # f.points.append(saver_point2)
+        return saver_point
 
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
@@ -228,7 +231,7 @@ class ActivityDataDestAppender():
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
-        self.activity_step = Step(str(uuid.uuid4()) + '_activity', activity_cmd, activity_args)
+        self.activity_step = Step(str(uuid.uuid4()) + '_activity', activity_cmd, activity_args, ex_acceptable=True)
         self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self.next_port_no = 0
@@ -250,6 +253,9 @@ class ActivityDataDestAppender():
                                None,
                                [Tube(None, None)])
 
+        # Stepのportsに追加する
+        self.activity_step.i_ports.append(Port(port_name, 'datum'))
+
         if f.uuid not in self._already_step_added:
             f.substeps.append(self.activity_step)
             f.points.append(activity_point)
@@ -262,9 +268,10 @@ class ActivityDataDestAppender():
 class RunsCommandAppender():
     def __init__(self):
         # Runsコマンドを取得する
-        runs_cmd = CommandLink("runs").resolve()
+        runs_cmd = CommandLink('runs').resolve()
         # Runsステップを作成する
-        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {})
+        # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
+        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {}, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -275,6 +282,10 @@ class RunsCommandAppender():
         port_name = str(self.next_port_no)
         point_id = point.id + '_runs'
         runs_point = Point(point_id, [Tube(Port(port_name, 'datum?'), self.runs_step)], None, [Tube(None, None)])
+
+        # Stepのportsに追加する
+        self.runs_step.i_ports.append(Port(port_name, 'mcmd'))
+        self.runs_step.o_ports.append(Port(port_name, 'datum?'))
 
         # ここでRunsCommandを繋げる
         point.target = [Tube(Port(port_name, 'mcmd'), self.runs_step)]
@@ -304,7 +315,8 @@ class FlowLinkContext():
 
         # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
         self.detadst_o_points = {}
-        self.detadst_u_points = {}
+        # データデストの'u'ポートは削除したので、以下の処理を削除する
+        # self.detadst_u_points = {}
         # ポート名の接尾語(ポート名が被らないようにするため)
         self.port_suffix_num = 0
 
@@ -357,7 +369,8 @@ class FlowJsonLink:
         f = self._make_flow(self.label, self.flow_data)
 
         self.context.detadst_o_points[f.uuid] = []
-        self.context.detadst_u_points[f.uuid] = []
+        # データデストの'u'ポートは削除したので、以下の処理を削除する
+        # self.context.detadst_u_points[f.uuid] = []
 
         # Runs/Activity Commandへ渡すポートを中継する
         for p in f.points:
@@ -370,8 +383,9 @@ class FlowJsonLink:
                 if step.is_datadst:
                     # oポートの中継
                     self._relay_o_port(f, step, p)
-                    # uポートの中継
-                    self._relay_u_port(f, step, p)
+                    # データデストの'u'ポートは削除したので、以下の処理を削除する
+                    # # uポートの中継
+                    # self._relay_u_port(f, step, p)
 
                 elif step.is_flow:
                     # データデスト以外のサブフローの場合
@@ -382,10 +396,11 @@ class FlowJsonLink:
                             original_out_point, out_point, port_name = self.context.detadst_o_points[inner_flow.uuid][i]
                             # oポートの中継
                             self._relay_o_port(f, step, original_out_point, port_name)
-                        for i in range(len(self.context.detadst_u_points[inner_flow.uuid])):
-                            original_out_point, out_point, port_name = self.context.detadst_u_points[inner_flow.uuid][i]
-                            # uポートの中継
-                            self._relay_u_port(f, step, original_out_point, port_name)
+                        # データデストの'u'ポートは削除したので、以下の処理を削除する
+                        # for i in range(len(self.context.detadst_u_points[inner_flow.uuid])):
+                        #     original_out_point, out_point, port_name = self.context.detadst_u_points[inner_flow.uuid][i]
+                        #     # uポートの中継
+                        #     self._relay_u_port(f, step, original_out_point, port_name)
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
@@ -424,23 +439,25 @@ class FlowJsonLink:
                             if detadst_o_points[1] == first_out_point:
                                 # Runsコマンドを付加する
                                 out_point = self.context.runs_command_appender.do_append(f, first_out_point)
+                                # Activity Stepを付加する
+                                self.context.activity_data_dest_appender.do_append(f, out_point, first_out_point)
                                 point_is_input_datadest = True
 
-                        for detadst_u_points in self.context.detadst_u_points[f.uuid]:
-                            if detadst_u_points[1] == first_out_point:
-                                # Activity Stepを付加する
-                                original_out_point = detadst_u_points[0]
-                                self.context.activity_data_dest_appender.do_append(f, first_out_point, original_out_point)
-                                point_is_input_datadest = True
+                        # データデストの'u'ポートは削除したので、以下の処理を削除する
+                        # for detadst_u_points in self.context.detadst_u_points[f.uuid]:
+                        #     if detadst_u_points[1] == first_out_point:
+                        #         # Activity Stepを付加する
+                        #         original_out_point = detadst_u_points[0]
+                        #         self.context.activity_data_dest_appender.do_append(f, first_out_point, original_out_point)
+                        #         point_is_input_datadest = True
 
                     if not point_is_input_datadest:
                         # Saverコマンドを付加する
-                        out_point, activity_point = self.folder_data_dest_appender.do_append(f, first_out_point, self.context.start_time)
-                        # Activity Stepを付加する
-                        self.context.activity_data_dest_appender.do_append(f, activity_point, first_out_point)
+                        out_point = self.folder_data_dest_appender.do_append(f, first_out_point, self.context.start_time)
                         # Runsコマンドを付加する
                         out_point = self.context.runs_command_appender.do_append(f, out_point)
-
+                        # Activity Stepを付加する
+                        self.context.activity_data_dest_appender.do_append(f, out_point, first_out_point)
 
         elif f.is_datadst:
             # 2出力StepのCommandの出力Pointを取得する
@@ -471,9 +488,9 @@ class FlowJsonLink:
         # データデストを付加した後にキャッシュデータデストを付加すること
         for cache_point in [point for point in f.points if point.is_cache]:
             # Cache Stepを付加する
-            out_point, activity_point = self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
+            out_point = self.cache_data_dest_appender.do_append(f, cache_point, self.context.start_time)
             # Activity Stepを付加する
-            self.context.activity_data_dest_appender.do_append(f, activity_point, cache_point)
+            # self.context.activity_data_dest_appender.do_append(f, activity_point, cache_point)
 
         return f
 
@@ -599,14 +616,15 @@ class FlowJsonLink:
                 # MCommandに不要な引数を設定するとエラーになる
                 args = node['args']
 
-            # runnableのインスタンス化を行う
-            step = Step(node['id'], cmd_or_flow, args)
-            flow.substeps.append(step)
-
             srcs = node['srcs']
             dsts = node['dsts']
 
-            i_ports = self._replace_multi_inputs(step.runnable.i_ports, srcs)
+            i_ports = self._replace_multi_inputs(cmd_or_flow.i_ports, srcs)
+            o_ports = self._replace_multi_inputs(cmd_or_flow.o_ports, dsts)
+
+            # runnableのインスタンス化を行う
+            step = Step(node['id'], cmd_or_flow, args, i_ports=i_ports, o_ports=o_ports)
+            flow.substeps.append(step)
 
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
