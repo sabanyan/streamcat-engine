@@ -2491,13 +2491,13 @@ class ExecuteTestCase(TestCaseBase):
         json_flow['ports'] = [[],[{'nodeId':'dd4', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'dd5', 'label':'lbl', 'type':'frame'}]]
 
-        # テスト用のフロー作成
-        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = self.save_flow('test', json_flow)
-
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub2', sub_uuid)
+
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        flow = self.save_flow('test', json_flow)
 
         # 単純なlastsのテスト
         flow_link = FlowJsonLink(flow, self.factory)
