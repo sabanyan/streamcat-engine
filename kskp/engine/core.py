@@ -9,38 +9,42 @@ class Job:
 
     def start(self):
         try:
-            return self.step.runnable.run(self.step.args, self.inputs)
+            return self.step.run(self.inputs)
         except Exception as e:
             self.errors.append(e)
             raise
 
-    def runs(self):
-        """
-        runsを実行する
-        """
-        try:
-            last_modules = []
-            for point_datum in self.step.runnable.results.values():
-                last_modules.append(point_datum.content)
+    # def runs(self):
+    #     """
+    #     runsを実行する
+    #     """
+    #     try:
+    #         last_modules = []
+    #         for point_datum in self.step.runnable.results.values():
+    #             last_modules.append(point_datum.content)
 
-            module_list = self.step.runnable.get_module_list()
-            last_modules.extend(module_list)
+    #         module_list = self.step.runnable.get_module_list()
+    #         last_modules.extend(module_list)
 
-            # import pprint
-            # pprint.pprint('runs :')  
-            # pprint.pprint(last_modules)
+    #         # import pprint
+    #         # pprint.pprint('runs :')  
+    #         # pprint.pprint(last_modules)
 
-            # 実行
-            import nysol.mcmd as nm
-            nm.runs(last_modules, msg='on')
-        except Exception as e:
-            self.errors.append(e)
-            raise
+    #         # 実行
+    #         import nysol.mcmd as nm
+    #         nm.runs(last_modules, msg='on')
+    #     except Exception as e:
+    #         self.errors.append(e)
+    #         raise
 
     def dtor(self):
+        # Tmpファイルを削除する
+        from kskp.core import Tmp
+        Tmp.remove_files()
+
         if isinstance(self.step.runnable, Flow):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
-            self.step.runnable.dtor()
+            self.step.dtor()
 
             for point in self.step.runnable.points:
                 if point.datum is not None:
@@ -48,10 +52,15 @@ class Job:
                     # a.datum.command_to_file().dtor() # command_to_fileは不要になる予定
 
 class Step:
-    def __init__(self, step_id, runnable, args):
+    def __init__(self, step_id, runnable, args, i_ports=None, o_ports=None, ex_acceptable=False):
         self.id = step_id
         self.runnable = runnable
         self.args = args
+        # 入力データが例外の場合、コマンドに渡すか否か
+        self.ex_acceptable = ex_acceptable
+        # コマンドのPortが'*'の場合、実行時にPortが展開されるので、Stepにもその情報を持たせる
+        self.i_ports = i_ports or runnable.i_ports
+        self.o_ports = o_ports or runnable.o_ports
 
     def __repr__(self):
         return self.id
@@ -63,6 +72,47 @@ class Step:
     @property
     def is_datadst(self):
         return self.is_flow and self.runnable.is_datadst
+
+    def run(self, inputs):
+        """
+        コマンドを実行する
+        (コマンドの実行で例外が送出されても、最後のコマンドまで実行する)
+        """
+        from kskp.store import CommandException
+
+        def make_exception_outputs(o_ports, cmd_ex):
+            """
+            全ての出力ポートに例外を格納する
+            """
+            outputs = {}
+            for o_port in o_ports:
+                outputs[o_port.name] = cmd_ex
+            return outputs
+
+        try:
+            if not self.ex_acceptable:
+                # 入力データに1つでも例外があれば、全ての出力ポートに例外を格納する
+                for input in inputs.values():
+                    if isinstance(input, CommandException):
+                        return make_exception_outputs(self.o_ports, cmd_ex=input)
+            
+            # コマンドを実行する
+            return self.runnable.run(self.args, inputs)
+        except AttributeError as e:
+            raise e
+        except Exception as e:
+            # 
+            # TODO: コマンドからの例外は全てCommandExceptionとしたい
+            #
+
+            import traceback
+            traceback.print_exc()
+
+            # コマンドのrun()から例外が送出された場合、全ての出力ポートに例外を格納する
+            return make_exception_outputs(self.o_ports, cmd_ex=CommandException(e))
+
+    def dtor(self):
+        self.runnable.dtor(self.args)
 
     def replace_args(self, flow_args):
         """
@@ -111,7 +161,7 @@ class Step:
 
 class Flow(Datum):
     def __init__(self, label):
-        super().__init__(None, Datum.FLOW_TYPE, label)
+        super().__init__(None, None, Datum.FLOW_TYPE, label)
 
         self.i_ports = []
         self.o_ports = []
@@ -265,6 +315,8 @@ class Flow(Datum):
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
+                if not output_point.o_port.name in result:
+                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.o_port.name)}が存在しません')
                 # 親フローに結果を戻す場合は戻す
                 output_point.datum = result.pop(output_point.o_port.name)
 
@@ -338,32 +390,32 @@ class Flow(Datum):
 
         return self.module_store.module_list
 
-    def find_activity(self):
-        """
-        Activity Stepをメインフローから再帰的に探し出す
-        """
-        from kskp.store import Activity
-        # 自身がActivityを持っている場合
-        # for activity in self.lasts.values():
-        for activity in [p.datum for p in self.points]:
-            if isinstance(activity, Activity):
-                return activity
-        # 自身が持っていない場合、サブフローを探しに行く
-        # (データデストのみを用いている場合)
-        for substep in self.substeps:
-            if substep.is_flow :
-                result = substep.runnable.find_activity()
-                if result is not None:
-                    return result
-        # Activityが見つからなかった場合
-        return None
+    # def find_activity(self):
+    #     """
+    #     Activity Stepをメインフローから再帰的に探し出す
+    #     """
+    #     from kskp.store import Activity
+    #     # 自身がActivityを持っている場合
+    #     # for activity in self.lasts.values():
+    #     for activity in [p.datum for p in self.points]:
+    #         if isinstance(activity, Activity):
+    #             return activity
+    #     # 自身が持っていない場合、サブフローを探しに行く
+    #     # (データデストのみを用いている場合)
+    #     for substep in self.substeps:
+    #         if substep.is_flow :
+    #             result = substep.runnable.find_activity()
+    #             if result is not None:
+    #                 return result
+    #     # Activityが見つからなかった場合
+    #     return None
 
-    def dtor(self):
+    def dtor(self, args):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.store import Command
             if isinstance(substep.runnable, Flow) or isinstance(substep.runnable, Command):
-                substep.runnable.dtor()
+                substep.dtor()
             else:
                 raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')
 

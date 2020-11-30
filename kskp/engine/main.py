@@ -42,21 +42,13 @@ def execute(link, args, inputs, job_complete_handler=None):
         # jobを開始する
         job.start()
 
-        # 実行はRunsCommandで行う
-        # job.runs()
-
         # 後始末をする
         job.dtor()
 
-        # Activityを結果として返す
-        activity = job.step.runnable.find_activity()
-
-        if activity is not None:
-            # 実行結果情報を保存する
-            # (今は出力ファイル名にその情報を刻んでいる)
-            activity.save()
-
-        return activity
+        # 結果を返却する
+        # job.step.runnable.cachesでキャッシュの結果も取れる
+        # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
+        return job.step.runnable.lasts
 
     except Exception as e:
         print('main:', e)
