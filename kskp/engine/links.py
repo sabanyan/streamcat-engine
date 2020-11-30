@@ -350,8 +350,12 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self.context)
-            flow = self.factory.data.find_by_uuid(node['uuid'])
-            ret = FlowJsonLink(flow, self.factory, {}, self.context)
+            from kskp.store.auth import NotAuthorizedException
+            try:
+                flow = self.factory.data.find_by_uuid(node['uuid'])
+                ret = FlowJsonLink(flow, self.factory, {}, self.context)
+            except NotAuthorizedException:
+                raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 
             # # かなりの力技・・・。
             # # 実行を行う場合、サブフロー内で余分な処理が走らないように
@@ -571,7 +575,6 @@ class FlowJsonLink:
         return ret
 
     def _make_flow(self, label, flow_data):
-        from kskp.store.auth import NotAuthorizedException
         from kskp.engine import Flow
         flow = Flow(label)
 
@@ -584,11 +587,8 @@ class FlowJsonLink:
         if flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
-            try:
-                self._update_flow_by_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
-                self._update_flow_by_other_than_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
-            except NotAuthorizedException:
-                raise NotAuthorizedException('共有フローの実行権限がありません')
+            self._update_flow_by_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
+            self._update_flow_by_other_than_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
 
         return flow
 
