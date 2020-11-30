@@ -571,6 +571,7 @@ class FlowJsonLink:
         return ret
 
     def _make_flow(self, label, flow_data):
+        from kskp.store.auth import NotAuthorizedException
         from kskp.engine import Flow
         flow = Flow(label)
 
@@ -583,8 +584,11 @@ class FlowJsonLink:
         if flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
-            self._update_flow_by_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
-            self._update_flow_by_other_than_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
+            try:
+                self._update_flow_by_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
+                self._update_flow_by_other_than_runnable(flow, flow_data.get_nodes(use_exec_auth=True))
+            except NotAuthorizedException:
+                raise NotAuthorizedException('共有フローの実行権限がありません')
 
         return flow
 
