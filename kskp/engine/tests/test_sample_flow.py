@@ -6,10 +6,10 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
-from .make_flow_json import create_flow, delete_flow
+# from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowLinkContext
-from kskp.store import Library, Folder, Frame, Command, Port, Datum, STORE_DIR
+from kskp.store import Library, Folder, Frame, Command, Port, Datum
 
 root = Library.load_root()
 
@@ -601,11 +601,11 @@ def convert_from_activity(activity):
     execute()の戻り値であるActivityから
     pointのidとframeのDictに置き換える
     """
-    return {point.id : frame for point, frame in activity.result}
+    return {point.id : frame for point, frame in activity.results}
 
 def convert_from_activity_vis(activity):
     """
     execute()の戻り値であるActivityから
     pointのidとvisのDictに置き換える
     """
-    return {point.id : vis.result['reader'] for point, vis in activity.result}
+    return {point.id : vis.result['reader'] for point, vis in activity.results}
