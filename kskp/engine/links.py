@@ -350,12 +350,8 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self.context)
-            from kskp.store.auth import NotAuthorizedException
-            try:
-                flow = self.factory.data.find_by_uuid(node['uuid'])
-                ret = FlowJsonLink(flow, self.factory, {}, self.context)
-            except NotAuthorizedException:
-                raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
+            flow = self.factory.data.find_by_uuid(node['uuid'])
+            ret = FlowJsonLink(flow, self.factory, {}, self.context)
 
             # # かなりの力技・・・。
             # # 実行を行う場合、サブフロー内で余分な処理が走らないように
