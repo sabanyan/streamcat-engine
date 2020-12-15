@@ -38,6 +38,10 @@ class Job:
     #         raise
 
     def dtor(self):
+        # Tmpファイルを削除する
+        from kskp.core import Tmp
+        Tmp.remove_files()
+
         if isinstance(self.step.runnable, Flow):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
             self.step.dtor()
@@ -74,31 +78,41 @@ class Step:
         コマンドを実行する
         (コマンドの実行で例外が送出されても、最後のコマンドまで実行する)
         """
+        from kskp.store import CommandException
 
-        def make_exception_return(o_ports, ex):
+        def make_exception_outputs(o_ports, cmd_ex):
             """
             全ての出力ポートに例外を格納する
             """
-            rets = {}
+            outputs = {}
             for o_port in o_ports:
-                rets[o_port.name] = ex
-            return rets
+                outputs[o_port.name] = cmd_ex
+            return outputs
 
         try:
             if not self.ex_acceptable:
                 # 入力データに1つでも例外があれば、全ての出力ポートに例外を格納する
                 for input in inputs.values():
-                    if isinstance(input, Exception):
-                        return make_exception_return(self.o_ports, input)
+                    if isinstance(input, CommandException):
+                        return make_exception_outputs(self.o_ports, cmd_ex=input)
             
             # コマンドを実行する
             return self.runnable.run(self.args, inputs)
+        except AttributeError as e:
+            raise e
         except Exception as e:
+            # 
+            # TODO: コマンドからの例外は全てCommandExceptionとしたい
+            #
+
+            import traceback
+            traceback.print_exc()
+
             # コマンドのrun()から例外が送出された場合、全ての出力ポートに例外を格納する
-            return make_exception_return(self.o_ports, e)
+            return make_exception_outputs(self.o_ports, cmd_ex=CommandException(e))
 
     def dtor(self):
-        self.runnable.dtor()
+        self.runnable.dtor(self.args)
 
     def replace_args(self, flow_args):
         """
@@ -219,6 +233,9 @@ class Flow(Datum):
         input_points = [p for p in self.points if p.is_for_input]
 
         for input_point in input_points:
+            if input_point.o_port.name not in inputs:
+                # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
+                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.o_port.name})にデータが入力されませんでした')
             input_point.datum = inputs[input_point.o_port.name]
 
     def search_invokable_steps(self):
@@ -393,7 +410,7 @@ class Flow(Datum):
     #     # Activityが見つからなかった場合
     #     return None
 
-    def dtor(self):
+    def dtor(self, args):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.store import Command

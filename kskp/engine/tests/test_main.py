@@ -1,13 +1,12 @@
-import os
 import copy
-import uuid
 import unittest
 import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.store import Command, Port, List, Database, DatabaseConn
+from kskp.store import FlowData, List, Database, DatabaseConn, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
+from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowJsonLink
 
 class ExecuteTestCase(TestCaseBase):
@@ -490,10 +489,10 @@ class ExecuteTestCase(TestCaseBase):
         """
         mコマンド１個のフロー実行
         """
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -539,12 +538,12 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd)
-        json_flow['nodes'].append(add_datum)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd)
+        flow_json['nodes'].append(add_datum)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -591,9 +590,9 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd)
-        json_flow['nodes'].append(add_datum)
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd)
+        flow_json['nodes'].append(add_datum)
 
         # Vis Args
         vis_args = {
@@ -606,7 +605,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -672,11 +671,11 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_2)
 
         # Vis Args
         vis_args = {
@@ -689,7 +688,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -754,15 +753,15 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_2)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_2)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -838,11 +837,11 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_2)
 
         # Vis Args
         vis_args = {
@@ -855,7 +854,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -870,10 +869,10 @@ class ExecuteTestCase(TestCaseBase):
         """
         mコマンド１個（２つのinputを持つ）のフロー実行
         """
-        json_flow = copy.deepcopy(self.flow_json_inputs)
-        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json_inputs)
+        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -898,11 +897,11 @@ class ExecuteTestCase(TestCaseBase):
         """
         mコマンド１個（２つのoutputを持つ）のフロー実行
         """
-        json_flow = copy.deepcopy(self.flow_json_outputs)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
+        flow_json = copy.deepcopy(self.flow_json_outputs)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
         
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -938,7 +937,7 @@ class ExecuteTestCase(TestCaseBase):
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(flow_json['label'], flow_json)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -969,7 +968,7 @@ class ExecuteTestCase(TestCaseBase):
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
         flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(flow_json['label'], flow_json)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1002,7 +1001,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(self.flow_json_outputs['label'], self.flow_json_outputs)
+        flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -1030,7 +1029,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(self.flow_json_outputs['label'], self.flow_json_outputs)
+        flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -1080,14 +1079,14 @@ class ExecuteTestCase(TestCaseBase):
           "commandId": "mselstr"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
-        json_flow['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'},
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
+        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'d4', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1148,10 +1147,10 @@ class ExecuteTestCase(TestCaseBase):
           "commandId": "mselstr"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
 
         # Vis Args
         vis_args = {
@@ -1164,7 +1163,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -1214,10 +1213,10 @@ class ExecuteTestCase(TestCaseBase):
           "commandId": "mselstr"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
 
         # Vis Args
         vis_args = {
@@ -1230,7 +1229,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -1247,10 +1246,10 @@ class ExecuteTestCase(TestCaseBase):
         mnewnumberの実行テスト
         """
 
-        json_flow = copy.deepcopy(self.flow_json_inputs_mnewnumber)
-        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json_inputs_mnewnumber)
+        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1280,11 +1279,11 @@ class ExecuteTestCase(TestCaseBase):
         mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
         mnrcommonの実行テスト
         """
-        json_flow = copy.deepcopy(self.flow_json_outputs_and_inputs)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
+        flow_json = copy.deepcopy(self.flow_json_outputs_and_inputs)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1312,7 +1311,7 @@ class ExecuteTestCase(TestCaseBase):
         サブフローを１個をもつフローを実行する
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1360,9 +1359,9 @@ class ExecuteTestCase(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub1', sub_uuid)
 
-        json_mainflow['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd3': [['65536']]}
@@ -1384,7 +1383,7 @@ class ExecuteTestCase(TestCaseBase):
         サブフローを2個をもつフローを実行する
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1432,9 +1431,9 @@ class ExecuteTestCase(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub1', sub_uuid)
 
-        json_mainflow['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd3': [['4294967296']]}
@@ -1460,7 +1459,7 @@ class ExecuteTestCase(TestCaseBase):
         真ん中のdatumでVisする
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1505,7 +1504,7 @@ class ExecuteTestCase(TestCaseBase):
 
         data = [[4]]
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'cache_data_z.csv', data)
-        update_flow_node_uuid(json_mainflow, 'dd1', frame.uuid)
+        update_flow_node_uuid(mainflow_json, 'dd1', frame.uuid)
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
@@ -1522,7 +1521,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['256']]}
@@ -1542,7 +1541,7 @@ class ExecuteTestCase(TestCaseBase):
         mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1587,10 +1586,10 @@ class ExecuteTestCase(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub2', sub_uuid)
 
-        json_mainflow['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
+        mainflow_json['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
                                       {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -1620,7 +1619,7 @@ class ExecuteTestCase(TestCaseBase):
         片方のdatum(dd2)をVisする
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1676,7 +1675,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
@@ -1698,7 +1697,7 @@ class ExecuteTestCase(TestCaseBase):
         片方のdatum(dd3)をVisする
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1754,7 +1753,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -1775,7 +1774,7 @@ class ExecuteTestCase(TestCaseBase):
         さらにメインフローで結果をそれぞれmcutしている
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -1877,17 +1876,17 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(json_mainflow)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(mainflow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub2', sub_uuid)
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
@@ -1917,7 +1916,7 @@ class ExecuteTestCase(TestCaseBase):
         dd5をVis
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -2008,11 +2007,11 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(json_mainflow)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(mainflow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
@@ -2029,7 +2028,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd5': [['1'], ['3'], ['1']]}
@@ -2051,7 +2050,7 @@ class ExecuteTestCase(TestCaseBase):
         さらにメインフローで結果をそれぞれmcutしている
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -2142,11 +2141,11 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(json_mainflow)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
+        flow_json = copy.deepcopy(mainflow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
@@ -2170,7 +2169,7 @@ class ExecuteTestCase(TestCaseBase):
           }
         }
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
@@ -2241,16 +2240,16 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_2)
-        json_flow['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_2)
+        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = self.save_flow('test', json_flow)
+        flow = self.save_flow('test', flow_json)
 
         # 単純な実行結果のテスト
         flow_link = FlowJsonLink(flow, self.factory)
@@ -2340,16 +2339,16 @@ class ExecuteTestCase(TestCaseBase):
         }
 
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_2)
-        json_flow['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_2)
+        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = self.save_flow('test', json_flow)
+        flow = self.save_flow('test', flow_json)
 
         # 単純な実行結果のテスト
         flow_link = FlowJsonLink(flow, self.factory)
@@ -2389,7 +2388,7 @@ class ExecuteTestCase(TestCaseBase):
         サブフローの出力するdd2と、結果をmcutしたdd5をキャッシュする
         """
 
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -2484,21 +2483,21 @@ class ExecuteTestCase(TestCaseBase):
           "cacheCreatedAt": ""
         }
 
-        json_flow = copy.deepcopy(json_mainflow)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_datum_2)
-        json_flow['ports'] = [[],[{'nodeId':'dd4', 'label':'lbl', 'type':'frame'},
+        flow_json = copy.deepcopy(mainflow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_datum_2)
+        flow_json['ports'] = [[],[{'nodeId':'dd4', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'dd5', 'label':'lbl', 'type':'frame'}]]
-
-        # テスト用のフロー作成
-        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
-        flow = self.save_flow('test', json_flow)
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub2', sub_uuid)
+
+        # テスト用のフロー作成
+        # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
+        flow = self.save_flow('test', flow_json)
 
         # 単純なlastsのテスト
         flow_link = FlowJsonLink(flow, self.factory)
@@ -2539,7 +2538,7 @@ class ExecuteTestCase(TestCaseBase):
         サブフローが１つのフローを実行する
         フローパラメータを使用する
         """
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -2587,10 +2586,10 @@ class ExecuteTestCase(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub3', sub_uuid)
 
-        json_mainflow['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
+        mainflow_json['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
                                       {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -2615,7 +2614,7 @@ class ExecuteTestCase(TestCaseBase):
         サブフローが１つのフローを実行する
         1つの項目で2つのフローパラメータを使用する
         """
-        json_mainflow = {
+        mainflow_json = {
             "description": "メインフロー",
             "label": "メインフロー",
             "params": [],
@@ -2664,10 +2663,10 @@ class ExecuteTestCase(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub4', sub_uuid)
 
-        json_mainflow['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
+        mainflow_json['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
                                       {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow('メインフロー', json_mainflow)
+        flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -2705,10 +2704,10 @@ class ExecuteTestCase(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'test_data.csv', data)
         update_flow_node_uuid(self.flow_json_use_by_csv, 'i', frame.uuid)
 
-        json_flow = copy.deepcopy(self.flow_json_use_by_csv)
-        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json_use_by_csv)
+        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
-        flow= self.root.create_flow(json_flow['label'], json_flow)
+        flow= self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -2780,12 +2779,12 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd_1)
-        json_flow['nodes'].append(add_datum_1)
-        json_flow['nodes'].append(add_cmd_2)
-        json_flow['nodes'].append(add_datum_2)
-        json_flow['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd_1)
+        flow_json['nodes'].append(add_datum_1)
+        flow_json['nodes'].append(add_cmd_2)
+        flow_json['nodes'].append(add_datum_2)
+        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         # 中間データ作成
         data = [
@@ -2795,9 +2794,9 @@ class ExecuteTestCase(TestCaseBase):
         ]
 
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
-        update_flow_node_uuid(json_flow, 'd2', frame.uuid)
+        update_flow_node_uuid(flow_json, 'd2', frame.uuid)
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -2906,7 +2905,8 @@ class ExecuteTestCase(TestCaseBase):
         mcatの実行テスト
         ※結合順不定なので、失敗することもある。（きちんと結合されてはいる）
         """
-        flow = self.root.create_flow(self.flow_json_inputs_mcat['label'], self.flow_json_inputs_mcat)
+        flow_data = FlowData(self.flow_json_inputs_mcat)
+        flow = self.root.create_flow(self.flow_json_inputs_mcat['label'], flow_data)
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -2956,12 +2956,12 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd)
-        json_flow['nodes'].append(add_datum)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd)
+        flow_json['nodes'].append(add_datum)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3005,12 +3005,12 @@ class ExecuteTestCase(TestCaseBase):
           "dataSource": "csv"
         }
 
-        json_flow = copy.deepcopy(self.flow_json)
-        json_flow['nodes'].append(add_cmd)
-        json_flow['nodes'].append(add_datum)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json = copy.deepcopy(self.flow_json)
+        flow_json['nodes'].append(add_cmd)
+        flow_json['nodes'].append(add_datum)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3047,9 +3047,9 @@ class ExecuteTestCase(TestCaseBase):
         update_flow_node_uuid(self.flow_json_use_mchkcsv, 'i', frame.uuid)
 
         # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
-        json_flow = copy.deepcopy(self.flow_json_use_mchkcsv)
-        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
-        flow = self.save_flow('test', json_flow)
+        flow_json = copy.deepcopy(self.flow_json_use_mchkcsv)
+        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow = self.save_flow('test', flow_json)
 
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
@@ -3094,11 +3094,11 @@ class ExecuteTestCase(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'cache_data.csv', data)
         update_flow_node_uuid(self.flow_json_outputs_pcmd, 'i', frame.uuid)
 
-        json_flow = copy.deepcopy(self.flow_json_outputs_pcmd)
-        json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
+        flow_json = copy.deepcopy(self.flow_json_outputs_pcmd)
+        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
 
         lasts = execute(flow_link, {}, {})
@@ -3150,7 +3150,7 @@ class ExecuteTestCase(TestCaseBase):
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
-        flow = self.root.create_flow(flow_json['label'], flow_json)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3196,7 +3196,7 @@ class ExecuteTestCase(TestCaseBase):
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
 
-        flow = self.root.create_flow(flow_json['label'], flow_json)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3315,7 +3315,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3411,7 +3411,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3614,7 +3614,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3745,7 +3745,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -3833,7 +3833,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -3921,7 +3921,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -4008,7 +4008,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -4095,7 +4095,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -4174,7 +4174,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -4262,7 +4262,7 @@ class ExecuteTestCase(TestCaseBase):
         }
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], flow_json)
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowJsonLink(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
@@ -4457,7 +4457,7 @@ class ExecuteTestCase(TestCaseBase):
           "projectName": "test"
         }
 
-        flow = self.root.create_flow(flow_json['label'], flow_json)
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowJsonLink(flow, self.factory), {"new_param1":"B", "new_param2":"C"}, {})
         lasts = convert_from_activity(lasts)
 
@@ -4472,6 +4472,316 @@ class ExecuteTestCase(TestCaseBase):
 
         # 後片付け
         lasts['d1'].delete()
+
+    def test_mcmd_error_with_two_outputs(self):
+        """
+        2出力のフローを実行すると、2つのMCMDErrorが取得できること
+        """
+
+        # 2つのMCommandは引数指定が誤っている
+        flow_json = {
+          "label": "エラーフロー", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d", 
+              "invalid": {}, 
+              "position": {
+                "x": 99, 
+                "y": 201
+              }, 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c", 
+              "args": {
+                "I": "1", 
+                "S": "1", 
+                "l": "10"
+              }, 
+              "dsts": {
+                "o": "d"
+              }, 
+              "srcs": {}, 
+              "type": "command", 
+              "label": "c", 
+              "invalid": {
+                "a": [
+                  "入力が必須の項目です"
+                ]
+              }, 
+              "commandId": "mnewnumber", 
+              "srcsOrder": []
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {}, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "c1", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d", 
+                "nodeId": "d"
+              }, 
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "管理者", 
+          "createdAt": "2020-09-07 13:47:56", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # frameデータは作成されていないこと
+        self.assertIsNone(results['d'])
+        self.assertIsNone(results['d1'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d']), 2)
+        self.assertEqual(len(results['d1']), 2)
+        self.assertIsInstance(results['d'][0], MCMDError)
+        self.assertIsInstance(results['d'][1], MCMDError)
+        self.assertIsInstance(results['d1'][0], MCMDError)
+        self.assertIsInstance(results['d1'][1], MCMDError)
+
+    def test_mcmd_error_with_two_outputs2(self):
+        """
+        2出力のフローを実行すると、2つのMCMDErrorが取得できること
+        """
+        
+        # 1つのMCommandは引数指定が誤っている
+        flow_json = {
+          "label": "エラーフロー", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d", 
+              "invalid": {}, 
+              "position": {
+                "x": 99, 
+                "y": 201
+              }, 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c", 
+              "args": {
+                "a": 'col',
+                "I": "1", 
+                "S": "1", 
+                "l": "10"
+              }, 
+              "dsts": {
+                "o": "d"
+              }, 
+              "srcs": {}, 
+              "type": "command", 
+              "label": "c", 
+              "invalid": {
+                "a": [
+                  "入力が必須の項目です"
+                ]
+              }, 
+              "commandId": "mnewnumber", 
+              "srcsOrder": []
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "args": {}, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "type": "command", 
+              "label": "c1", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            }
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d", 
+                "nodeId": "d"
+              }, 
+              {
+                "type": "frame", 
+                "label": "d1", 
+                "nodeId": "d1"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "管理者", 
+          "createdAt": "2020-09-07 13:47:56", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # frameデータは作成されていないこと
+        # (1コマンドでもエラーが発生すれば全ての出力はない)
+        self.assertIsNone(results['d'])
+        self.assertIsNone(results['d1'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 2)
+        self.assertIn('d', results)
+        self.assertIn('d1', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d']), 1)
+        self.assertEqual(len(results['d1']), 1)
+        self.assertIsInstance(results['d'][0], MCMDError)
+        self.assertIsInstance(results['d1'][0], MCMDError)
+
+    def test_run_error(self):
+        """
+        Commnad.run()から例外が送出される場合、CommandExceptionが取得できること
+        """
+
+        # squareコマンドに文字列を入力してエラーにする
+        flow_json = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                [
+                  {
+                    "type": "frame", 
+                    "label": "dd2", 
+                    "nodeId": "dd2"
+                  }
+                ]
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": [['Four']],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {},
+                    "srcs": { "i": "dd1" },
+                    "dsts": { "o_sq": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": None
+                }
+            ]
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('dd2', results)
+        # frameデータは作成されていないこと
+        self.assertIsNone(results['dd2'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('dd2', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['dd2']), 1)
+        self.assertIsInstance(results['dd2'][0], CommandException)
 
     # Helpler
     def get_frame_by_uuid(self, uuid, header=True):
@@ -4527,7 +4837,7 @@ class ExecuteTestCase(TestCaseBase):
         return self.factory.data.find_by_uuid(frame.uuid)
 
     def save_flow(self, label, flow_json):
-        new_flow = self.root.create_flow(label, flow_json)
+        new_flow = self.root.create_flow(label, FlowData(flow_json))
         new_flow.save()
         # save()によりreadable=Noneになるため再取得する
         return self.factory.data.find_by_uuid(new_flow.uuid)
@@ -4538,7 +4848,7 @@ class ExecuteTestCase(TestCaseBase):
         """
         from .make_flow_json import test_json
         flow_json = test_json[flow_id]
-        flow = self.root.create_flow('test', flow_json)
+        flow = self.root.create_flow('test', FlowData(flow_json))
         flow.uuid = uuid
         flow.save()
         # save()によりreadable=Noneになるため再取得する
@@ -4699,7 +5009,7 @@ def convert_from_activity(lasts):
     # Activityを取得して返り値とする
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.results}
+            return {point.id : frame for point, frame in datum.lasts}
 
 def convert_from_activity_vis(lasts):
     """
@@ -4709,5 +5019,15 @@ def convert_from_activity_vis(lasts):
     from kskp.store import Activity
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
-            return {point.id : vis.result['reader'] for point, vis in datum.results}
+            return {point.id : vis.result['reader'] for point, vis in datum.lasts}
 
+def convert_from_activity_exs(lasts):
+    """
+    execute()の戻り値から
+    pointのidとframeのDictに置き換える
+    """
+    from kskp.store import Activity
+    # Activityを取得して返り値とする
+    for point_id, datum in lasts.items():
+        if isinstance(datum, Activity):
+            return {point.id : exs for point, exs in datum.exs}

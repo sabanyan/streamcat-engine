@@ -268,9 +268,10 @@ class ActivityDataDestAppender():
 class RunsCommandAppender():
     def __init__(self):
         # Runsコマンドを取得する
-        runs_cmd = CommandLink("runs").resolve()
+        runs_cmd = CommandLink('runs').resolve()
         # Runsステップを作成する
-        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {})
+        # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
+        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {}, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -349,8 +350,12 @@ class FlowJsonLink:
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self.context)
-            flow = self.factory.data.find_by_uuid(node['uuid'])
-            ret = FlowJsonLink(flow, self.factory, {}, self.context)
+            from kskp.store.auth import NotAuthorizedException
+            try:
+                flow = self.factory.data.find_by_uuid(node['uuid'])
+                ret = FlowJsonLink(flow, self.factory, {}, self.context)
+            except NotAuthorizedException:
+                raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 
             # # かなりの力技・・・。
             # # 実行を行う場合、サブフロー内で余分な処理が走らないように
