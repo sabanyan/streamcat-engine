@@ -7,7 +7,7 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.store import Command, Port, List, Database, DatabaseConn
+from kskp.store import FlowData, Command, Port, List, Database, DatabaseConn
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
 
@@ -744,7 +744,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.simple_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -789,7 +789,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.flow_json_same)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -831,7 +831,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.sequential_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -887,7 +887,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.double_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'},{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -960,7 +960,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.one_side_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1012,7 +1012,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.both_same_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1058,7 +1058,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.both_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -1094,7 +1094,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         # 後片付け
         lasts['d2'].delete()
 
-    # @unittest.skip
+    @unittest.skip
     def test_error_groupby2(self):
         """
         特徴量コマンドにてエラーが発生するフローを実行、出力結果をテストする
@@ -1102,7 +1102,7 @@ class ExecuteAssertCmdFlow(TestCaseBase):
         json_flow = copy.deepcopy(self.error_groupby2_json)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
 
-        flow = self.root.create_flow(json_flow['label'], json_flow)
+        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
         flow.save()
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
@@ -1177,6 +1177,6 @@ def convert_from_activity(lasts):
     # Activityを取得して返り値とする
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.results}
+            return {point.id : frame for point, frame in datum.lasts}
 
             
