@@ -1,21 +1,22 @@
-import os
 import copy
-import uuid
-import datetime
 import unittest
 import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.store import FlowData, Command, Port, List, Database, DatabaseConn
+from kskp.store import FlowData
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
 
 class ExecuteAssertCmdFlow(TestCaseBase):
-
-    maxDiff = None
     """
-    AssertCommandの動作を確認するテストプログラム
+    ２つの入力に対して、出力が一致しているかどうかを確認する。入力にはcsv、KSKPのエラーに対応する
+    入力されたデータが行ごとに一致しているかを確認し、結果を出力する
+
+    出力値の各列情報は、
+    ["フロー名","フローUUID", "フローのパス","実行日時","テストポイントID","テスト成功","エラー発生","行番号","入力iのデータ","入力mのデータ"]
+
+    本テストでは、入力データを変化させ、その出力が想定通りであるかを確認する
     """
     flow_json = {
         "label": "テストフロ",
@@ -739,7 +740,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_simple_assert_command(self):
         """
-        内容が違う２つの入力に対して、assert_commandを一つ配置したフローを実行、出力結果をテストする
+        内容が3行目以降違う２つの入力に対して、assert_commandを一つ配置したフローを実行、
+        出力で、入力データの3行目以降不一致判定が出ることを期待する。
+        エラー判定はfalse        
         """
         json_flow = copy.deepcopy(self.simple_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
@@ -784,7 +787,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_same_execute(self):
         """
-        内容が同じ２つの入力に対して、assert_commandを一つ配置したフローを実行、出力結果をテストする
+        内容が同じ２つの入力に対して、assert_commandを一つ配置したフローを実行、
+        出力で、入力データが一致という判定が出ることを期待する。
+        エラー判定はfalse     
         """
         json_flow = copy.deepcopy(self.flow_json_same)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
@@ -827,6 +832,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     def test_case_sequential_assert(self):
         """
         assert_commandが２連続で実行されるフローを実行、出力結果をテストする
+        assert_commandを２連続配置したフローを実行、
+        出力で入力データ全行が不一致判定が出ることを期待する。
+        エラー判定はfalse     
         """
         json_flow = copy.deepcopy(self.sequential_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -882,7 +890,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_case_two_assert(self):
         """
-        assert_commandが並列で2つの島にあるフローを実行、出力結果をテストする
+        内容が3行目以降違う２つの入力に対して、assert_commandを一つ配置したフローの島を2つ用意し、同時実行、
+        出力で、入力データが3行目以降不一致という判定が出ることを期待する。
+        エラー判定はfalse
         """
         json_flow = copy.deepcopy(self.double_assert_json)
         json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'},{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -954,8 +964,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_one_side_error_assert(self):
         """
-        assert_commandの入力の一方がエラーのフローを実行、出力結果をテストする
-        エラーはnysol_pythonのモジュールから発せられるものを使用する
+        ２つの入力のうち、片方がassert_command以前のノードでエラーが発生するフローを実行、
+        出力で、入力データが全行不一致という判定が出ることを期待する。
+        エラー判定はtrue
         """
         json_flow = copy.deepcopy(self.one_side_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -1005,9 +1016,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_same_both_error_assert(self):
         """
-        assert_commandの入力の両方がエラーのフローを実行、出力結果をテストする
-        エラー内容はどちらも同じ
-        エラーはnysol_pythonのモジュールから発せられるものを使用する
+        内容がどちらも同じエラーを出す２つの入力に対して、assert_commandを一つ配置し実行、
+        出力で、入力データが一致という判定が出ることを期待する。
+        エラー判定はtrue
         """
         json_flow = copy.deepcopy(self.both_same_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -1051,9 +1062,9 @@ class ExecuteAssertCmdFlow(TestCaseBase):
     # @unittest.skip
     def test_both_error_assert(self):
         """
-        assert_commandの入力の両方がエラーのフローを実行、出力結果をテストする
-        エラー内容は左右で違うものを用意
-        エラーはnysol_pythonのモジュールから発せられるものを使用する
+        内容が違うエラーを出す２つの入力に対して、assert_commandを一つ配置し実行、
+        出力で、入力データが不一致という判定が出ることを期待する。
+        エラー判定はtrue
         """
         json_flow = copy.deepcopy(self.both_error_json)
         json_flow['ports'] = [[],[{'nodeId':'d2', 'label':'d2', 'type':'frame'}]]
@@ -1093,53 +1104,6 @@ class ExecuteAssertCmdFlow(TestCaseBase):
 
         # 後片付け
         lasts['d2'].delete()
-
-    @unittest.skip
-    def test_error_groupby2(self):
-        """
-        特徴量コマンドにてエラーが発生するフローを実行、出力結果をテストする
-        """
-        json_flow = copy.deepcopy(self.error_groupby2_json)
-        json_flow['ports'] = [[],[{'nodeId':'d1', 'label':'d1', 'type':'frame'}]]
-
-        flow = self.root.create_flow(json_flow['label'], FlowData(json_flow))
-        flow.save()
-        flow_link = FlowJsonLink(flow, self.factory)
-        lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
-        # 正解データ内のuuid, タイムスタンプはダミー、テスト実行時には、毎回変動するので、出力がされているかどうかのみ確認する
-        corrects = {
-            'd1': [['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','1','顧客,数量,金額','【コマンド：特徴量の計算】【オプション欄：f】指定した項目名は存在しません。random1'],
-            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','2','A,1,10',''],
-            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','3','A,2,20',''],
-            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','4','B,1,30',''],
-            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','5','B,3,40',''],
-            ['テストフロ','00000000-0000-0000-0000-000000000000','/ライブラリ/テストフロ','0000-00-00 00:00:00.000000+00:00','d1','False','True','6','B,1,50','']
-        ]}
-        # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.exists(lasts['d1'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        results = self.get_frame_by_uuid(lasts['d1'].uuid)
-
-        # 出力の一致を確認
-        self.assertEqual(len(results), len(corrects['d1']))
-        for result,correct in zip(results, corrects['d1']):
-            self.assertEqual(len(result), len(correct))
-
-            self.assertEqual(result[0], correct[0])
-            self.assertIsNotNone(result[1])
-            self.assertEqual(result[2], correct[2])
-            self.assertIsNotNone(result[3])
-            self.assertEqual(result[4], correct[4])
-            self.assertEqual(result[5], correct[5])
-            self.assertEqual(result[6], correct[6])
-            self.assertEqual(result[7], correct[7])
-            self.assertEqual(result[8], correct[8])
-            self.assertEqual(result[9], correct[9])
-
-        # 後片付け
-        lasts['d1'].delete()
 
 
     def check_equal(self, result, correct):
