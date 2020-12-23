@@ -6761,6 +6761,7 @@ shindo_sub6 = {
 }
 
 import os
+from kskp.store import SCHEMA_NAME
 
 # PostgreSQLのデータソース
 postgre_src = {
@@ -6806,7 +6807,7 @@ postgre_src = {
       {
         "id": "c1",
         "args": {
-          "schema_name" : os.environ['KSKP_POSTGRESQL_SCHEMA_NAME'],
+          "schema_name" : SCHEMA_NAME,
           "table_name": "data"
         },
         "dsts": {
@@ -6875,7 +6876,7 @@ postgre_dst = {
 		{
 			"id": "c1",
 			"args": {
-        "schema_name" : os.environ['KSKP_POSTGRESQL_SCHEMA_NAME'],
+        "schema_name" : SCHEMA_NAME,
 				"table_name": "tmp"
 			},
 			"dsts": {
