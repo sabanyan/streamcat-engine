@@ -1,4 +1,4 @@
-from kskp.store import Datum
+from kskp.core import Datum
 
 class Job:
     def __init__(self, step, inputs):
@@ -413,7 +413,7 @@ class Flow(Datum):
     def dtor(self, args):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
-            from kskp.store import Command
+            from kskp.core import Command
             if isinstance(substep.runnable, Flow) or isinstance(substep.runnable, Command):
                 substep.dtor()
             else:

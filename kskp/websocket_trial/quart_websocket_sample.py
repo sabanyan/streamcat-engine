@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from kskp.store import Command
+from kskp.core import Command
 import kskp.engine as engine
 from kskp.engine import Flow, Point, Step, Port
 

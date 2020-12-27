@@ -10,7 +10,7 @@ from watchdog.events import PatternMatchingEventHandler
 
 import nysol.mcmd as nm
 
-from kskp.store import Command, Port, Parameter
+from kskp.core import Command, Port, Parameter
 import kskp.engine
 from kskp.engine import Flow, Step, Point, Job
 
