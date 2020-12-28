@@ -9,9 +9,9 @@ from pathlib import Path
 # from .make_flow_json import create_flow, delete_flow
 
 from kskp.engine import execute, FlowJsonLink, FlowLinkContext
-from kskp.store import Library, Folder, Frame, Command, Port, Datum
+from kskp.store import Frame
 
-root = Library.load_root()
+# root = Library.load_root()
 
 @unittest.skip('フローが大きすぎてどこが出力ポイントかわからない')
 class ExecuteSampleFlowTestCase(unittest.TestCase):
