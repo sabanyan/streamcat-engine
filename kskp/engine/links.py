@@ -1,8 +1,8 @@
 import uuid
 
-from kskp.store import Port
+from kskp.core import Port
 from kskp.depo.std.commands import CommandLink, SCommand
-from kskp.engine import Step, Point, Tube
+from .core import Step, Point, Tube
 
 class FolderDataSourcePrepender():
     def __init__(self, factory):
@@ -575,7 +575,7 @@ class FlowJsonLink:
         return ret
 
     def _make_flow(self, label, flow_data):
-        from kskp.engine import Flow
+        from .core import Flow
         flow = Flow(label)
 
         # portを読む

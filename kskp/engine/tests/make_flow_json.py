@@ -6761,7 +6761,7 @@ shindo_sub6 = {
 }
 
 import os
-from kskp.store import SCHEMA_NAME
+from kskp.core import SCHEMA_NAME
 
 # PostgreSQLのデータソース
 postgre_src = {
