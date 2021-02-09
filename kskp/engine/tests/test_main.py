@@ -4,7 +4,7 @@ import nysol.mcmd as nm
 
 from pathlib import Path
 
-from kskp.store import FlowData, List, Database, DatabaseConn, CommandException
+from kskp.store import FlowData, List, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowJsonLink
@@ -4808,7 +4808,7 @@ class ExecuteTestCase(TestCaseBase):
     def create_data(self, file_path_obj, data=None):
         """
         テストデータ作成用
-        frameのuuidが返る
+        frameが返る
         """
         import io
         # if data is not None:
@@ -4822,29 +4822,28 @@ class ExecuteTestCase(TestCaseBase):
         frame = self.root.create_frame(file_path_obj.name, io.BytesIO(b''))
         frame.save(file_path=file_path_obj)
         # save()によりreadable=Noneになるため再取得する
-        return self.factory.data.find_by_uuid(frame.uuid)
+        return frame.reload()
 
     def create_data2(self, file_path_obj):
         """
         テストデータ作成用
-        frameのuuidが返る
+        frameが返る
         """
-        import io
         with file_path_obj.open('rb') as f:
             frame = self.root.create_frame(file_path_obj.name, f)
             frame.save()
         # save()によりreadable=Noneになるため再取得する
-        return self.factory.data.find_by_uuid(frame.uuid)
+        return frame.reload()
 
     def save_flow(self, label, flow_json):
         new_flow = self.root.create_flow(label, FlowData(flow_json))
         new_flow.save()
         # save()によりreadable=Noneになるため再取得する
-        return self.factory.data.find_by_uuid(new_flow.uuid)
+        return new_flow.reload()
 
     def create_flow(self, flow_id, uuid):
         """
-        指定されたidのフローを作成し、そのuuidを返す
+        指定されたidのフローを作成し、そのフローを返す
         """
         from .make_flow_json import test_json
         flow_json = test_json[flow_id]
@@ -4852,7 +4851,7 @@ class ExecuteTestCase(TestCaseBase):
         flow.uuid = uuid
         flow.save()
         # save()によりreadable=Noneになるため再取得する
-        return self.factory.data.find_by_uuid(flow.uuid)
+        return flow.reload()
 
     def delete_flow(self, uuid):
         try:
@@ -4867,128 +4866,6 @@ class ExecuteTestCase(TestCaseBase):
         for cache_uuid in cache_uuids:
           cache = self.factory.data.find_by_uuid(cache_uuid)
           cache.delete()
-
-@unittest.skip('古いので失敗する。改修予定')
-class ExecuteTestCase2(unittest.TestCase):
-
-    # mコマンド１つのフロー
-    flow_json = {
-      "label": "test用",
-      "creator": "開発用",
-      "createdAt": "2019-10-28 15:06:35",
-      "projectId": None,
-      "description": "",
-      "ports": [
-        [],
-        []
-      ],
-      "params": [],
-      "nodes": [
-        {
-          "id": "d",
-          "type": "frame",
-          "uuid": None,
-          "error": {},
-          "label": "d",
-          "invalid": {},
-          "makeCache": False,
-          "dataSource": "csv",
-          "cacheCreatedAt": None
-        },
-        {
-          "id": "f",
-          "args": {},
-          "dsts": {
-            "d1": "d"
-          },
-          "srcs": {},
-          "type": "flow",
-          "uuid": "8cfbce33-f2f9-4f52-a97d-ce170f70f6e3",
-          "error": {},
-          "label": "f",
-          "invalid": {},
-          "srcsOrder": []
-        },
-        {
-          "id": "f1",
-          "args": {},
-          "dsts": {},
-          "srcs": {
-            "d1": "d"
-          },
-          "type": "flow",
-          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
-          "error": {},
-          "label": "f1",
-          "invalid": {},
-          "srcsOrder": [
-            "d1"
-          ]
-        },
-        {
-          "id": "f2",
-          "args": {},
-          "dsts": {},
-          "srcs": {
-            "d1": "d"
-          },
-          "type": "flow",
-          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
-          "error": {},
-          "label": "PostgreSQLデータデスト",
-          "invalid": {},
-          "srcsOrder": [
-            "d1"
-          ]
-        }
-      ]
-    }
-
-    conn_json = {
-      'dbms'     : "postgresql",
-      'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
-      'port'     : 5432, 
-      'database' : "kskp", 
-      'user_id'  : "kskp", 
-      'password' : r'J2-pH|%B'
-    }
-    database_conn = DatabaseConn(conn_json)
-
-    # @unittest.skip
-    def test_simple_flow_execute(self):
-        """
-        mコマンド１個のフロー実行
-        """
-        # DBストアの作成
-        db = Database(root.uuid, 'postgresql', self.database_conn, None)
-        db.uuid = 'c410cd16-2529-498d-8e7f-490ffa58dc95'
-        db.save()
-
-        # サブフロー(PostgreSQLデータソース)の作成
-        postgre_src = '8cfbce33-f2f9-4f52-a97d-ce170f70f6e3'
-        self.create_flow('postgre_src', postgre_src)
-
-        # サブフロー(PostgreSQLデータデスト)の作成
-        postgre_dst = 'b3e980d4-8338-4e83-a238-dd4537148c43'
-        self.create_flow('postgre_dst', postgre_dst)
-
-        # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
-        flow = self.root.create_flow(self.flow_json['label'], self.flow_json)
-        flow_link = FlowJsonLink(flow, self.factory)
-        lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
-
-        # テスト
-        # DBにframeデータが生成されているか
-        # self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
-        # 実ファイルが指定ディレクトリに存在するか
-        # result = self.get_frame_by_uuid(lasts['d1'].uuid)
-        # self.assertEqual(result, correct['d1'])
-
-        # 後片付け
-        self.assertTrue (self.delete_flow(postgre_src))
-        self.assertTrue (self.delete_flow(postgre_dst))
-
 
 def update_flow_node_uuid(flow_json, node_id, uuid):
     """

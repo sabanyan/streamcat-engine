@@ -22,7 +22,7 @@ class FolderDataSourcePrepender():
         Loaderは指定したstoreからデータを取ってくる
         """
         loader_step = self._make_loader_step(frame_uuid)
-        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), loader_step)])
+        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), loader_step)])
         target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
         f.points.append(store_point)
         f.substeps.append(loader_step)
@@ -31,7 +31,7 @@ class FolderDataSourcePrepender():
         """
         指定したuuidのデータを取ってくるLoaderStepを作成する
         """
-        return Step(str(uuid.uuid4()), CommandLink("loader").resolve(), {'uuid':node_uuid})
+        return Step(str(uuid.uuid4()), CommandLink('loader').resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
     def __init__(self, flow, factory):
@@ -43,7 +43,7 @@ class FolderDataDestAppender():
     def do_append(self, f, point, start_time):
         # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
         folder_store = self.flow.find_parent()
-        saver = CommandLink("saver").resolve()
+        saver = CommandLink('saver').resolve()
         # saver_step, saver_point, saver_point2 = self._put_saver(point, f, folder_store, saver, start_time)
         saver_step, saver_point = self._put_saver(point, f, folder_store, saver, start_time)
         # # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
@@ -68,7 +68,7 @@ class FolderDataDestAppender():
         args['start_time'] = start_time
 
         saver_step = self._make_step(args, saver)
-        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('store', 'store'), saver_step)])
+        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), saver_step)])
         saver_point = Point(point.id + '_saver', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         # saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
 
@@ -101,7 +101,7 @@ class CacheDataDestAppender(FolderDataDestAppender):
 
     def do_append(self, f, point, start_time):
         folder_store = self._factory.data.load_cache_folder()
-        saver = CommandLink("cachesaver").resolve()
+        saver = CommandLink('cachesaver').resolve()
         saver_step, saver_point = self._put_saver(point, f, folder_store, saver, start_time)
 
         # f.points.append(saver_point2)
@@ -224,7 +224,7 @@ class ActivityDataDestAppender():
         self.flow_uuid = flow_uuid
 
         # Activityコマンドを取得する
-        activity_cmd = CommandLink("activity").resolve()
+        activity_cmd = CommandLink('activity').resolve()
         # Activity Datumを作成する
         from kskp.store import Activity
         activity = Activity(None, None, 'activity', flow_uuid)
@@ -303,15 +303,16 @@ class FlowLinkContext():
     """
     FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
     """
-    def __init__(self, flow_uuid, flow_label):
-        self.flow_uuid = flow_uuid
-        self.flow_label = flow_label
+    def __init__(self, flow):
+        self.flow = flow
+        self.flow_uuid = flow.uuid
+        self.flow_label = flow.label
 
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
         self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.runs_command_appender = RunsCommandAppender()
-        self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
+        self.activity_data_dest_appender = ActivityDataDestAppender(flow.uuid)
 
         # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
         self.detadst_o_points = {}
@@ -341,7 +342,7 @@ class FlowJsonLink:
         self.cache_data_dest_appender = CacheDataDestAppender(flow, factory)
 
         if context is None:
-            self.context = FlowLinkContext(flow.uuid, flow.label)
+            self.context = FlowLinkContext(flow)
         else:
             self.context = context
             
@@ -464,27 +465,28 @@ class FlowJsonLink:
                         self.context.activity_data_dest_appender.do_append(f, out_point, first_out_point)
 
         elif f.is_datadst:
-            # 2出力StepのCommandの出力Pointを取得する
+            # 1出力StepのCommandの出力Pointを取得する
             out_point = None
-            activity_point = None
+            # activity_point = None
             for p in f.points:
                 if p.o_runnable is None or \
                    p.o_runnable.is_flow or \
-                   len(p.o_runnable.runnable.o_ports) != 2:
+                   len(p.o_runnable.runnable.o_ports) != 1:
                     continue
                 if p.o_port.name == 'o':
                     out_point = p
-                elif p.o_port.name =='u':
-                    activity_point = p
+                # elif p.o_port.name =='u':
+                #     activity_point = p
 
-            if out_point is None or activity_point is None:
-                raise Exception('Both saver outputs,[o,u] is required !')
+            # if out_point is None or activity_point is None:
+            if out_point is None:
+                raise Exception('saver output [o] is required !')
             
             # データデストの出力を親フローに繋げる
             o_port = Port('o', 'mcmd')
-            u_port = Port('u', 'frame')
+            # u_port = Port('u', 'frame')
             self._open_flow_out_port(f, o_port, out_point)
-            self._open_flow_out_port(f, u_port, activity_point)
+            # self._open_flow_out_port(f, u_port, activity_point)
 
 
         # キャッシュ作成処理
@@ -510,7 +512,9 @@ class FlowJsonLink:
             origin_tubes = [Tube(Port('o', 'frame'), step)]
         else:
             origin_tubes = [Tube(Port(port_name, 'mcmd'), step)]
-        new_point = self._insert_point(flow, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
+
+        # NOTE: stepとnew_pointのidが重複するが、フローエディタにロードされない上、保存もされないので問題にはならないだろう
+        new_point = self._insert_point(flow, step.id, origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
         self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_name))
 
         # データデストの出力を親フローに繋げる)
@@ -530,7 +534,7 @@ class FlowJsonLink:
             origin_tubes = [Tube(Port('u', 'frame'), step)]
         else:
             origin_tubes = [Tube(Port(port_name, 'frame'), step)]
-        new_point = self._insert_point(flow, str(uuid.uuid4()), origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
+        new_point = self._insert_point(flow, step.id, origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
         self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_name))
 
         # データデストの出力を親フローに繋げる)
@@ -612,6 +616,7 @@ class FlowJsonLink:
                 # SCommand共通引数を作成する
                 args = {'flow_uuid'    : self.context.flow_uuid,
                         'flow_label'   : self.context.flow_label,
+                        'result_folder': self.context.flow.find_parent(),
                         'start_time'   : self.context.start_time,
                         'activity_uuid': self.context.activity_data_dest_appender.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
@@ -701,7 +706,9 @@ class FlowJsonLink:
 
             # Storeの場合、Storeオブジェクトをpointに格納する
             if self._is_store_node(node):
-                store = self.factory.data.find_by_uuid(node.get('uuid'))
+                store_uuid = node.get('uuid')
+                store = self.factory.data.find_by_uuid(store_uuid)
+
                 # StoreにDatabaseを設定する
                 target_point.datum = store
                 continue
@@ -813,7 +820,9 @@ class FlowJsonLink:
         return node['type'] == 'store'
 
     def _is_runnable_node(self, node):
-        """ 指定されたnodeがrunnableかどうかを判断する """
+        """
+        指定されたnodeがrunnableかどうかを判断する
+        """
         return node['type'] == 'command' or node['type'] == 'flow'
 
     def _pick_necessary_dst_ids(self, nodes, datum_ids):

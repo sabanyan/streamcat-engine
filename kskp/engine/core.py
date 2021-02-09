@@ -193,9 +193,9 @@ class Flow(Datum):
         """
         データデストの場合はTrueを返す
         """
-        # いい条件が思い浮かばない,,,
+        # TODO: いい条件が思い浮かばない,,,
         has_store = any (p for p in self.points if p.is_store)
-        return len(self.i_ports) == 1 and len(self.lasts) == 2 and has_store
+        return len(self.i_ports) == 1 and len(self.lasts) == 1 and has_store
 
     def run(self, args, inputs):
         """
