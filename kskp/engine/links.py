@@ -62,7 +62,10 @@ class FolderDataDestAppender():
 
         # saverのargs設定
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
-        args = {'flow_uuid':self.flow.uuid, 'flow':self.flow, 'datum_id':point.id} if self.flow.uuid is not None else {}
+        if self.flow.uuid is None:
+            args = {}
+        else:
+            args = {'flow_uuid':self.flow.uuid, 'flow':self.flow, 'result_folder':store, 'datum_id':point.id}
         # saverが作るframe及びcacheのlabelはここで設定できる
         args['flow_label'] = f.label if f.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
@@ -70,14 +73,14 @@ class FolderDataDestAppender():
         args['start_time'] = start_time
 
         saver_step = self._make_step(args, saver)
-        store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), saver_step)])
+        # store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), saver_step)])
         saver_point = Point(point.id + '_saver', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
         # saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
 
         self.switch_target(point, saver_step, saver_point)
 
         f.substeps.append(saver_step)
-        f.points.extend([saver_point, store_point])
+        f.points.append(saver_point)
 
         # return saver_step, saver_point, saver_point2
         return saver_step, saver_point
