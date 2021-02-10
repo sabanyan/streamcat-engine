@@ -2,7 +2,9 @@ import uuid
 
 from kskp.core import Port
 from kskp.depo.std.commands import CommandLink, SCommand
-from .core import Step, Point, Tube
+from .point import Point
+from .step import Step
+from .tube import Tube
 
 class FolderDataSourcePrepender():
     def __init__(self, factory):
@@ -367,6 +369,8 @@ class FlowJsonLink:
             # # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
             # if len(dst_ids) > 0:
             #     ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
+        else:
+            raise Exception(f'ノード({node.get("id")})のtypeが不正な値({node["type"]})です')
 
         return ret
 

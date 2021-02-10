@@ -1,3 +1,3 @@
 from .main import execute
-from .core import Step
+from .step import Step
 from .links import FlowJsonLink, FlowLinkContext

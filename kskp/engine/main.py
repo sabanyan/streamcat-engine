@@ -8,9 +8,6 @@ TODO: 外部からコマンド実行できるように
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
-from .core import Step, Job
-
-
 class DefaultHandler(PatternMatchingEventHandler):
     """
     ファイル監視のイベントハンドラ
@@ -57,6 +54,9 @@ def execute(link, args, inputs, job_complete_handler=None):
         # return exs
 
 def make_job(link, args, inputs):
+    from .step import Step
+    from .job import Job
+
     # linkからrunnableを生成する
     runnable = link.resolve()
 
