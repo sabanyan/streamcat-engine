@@ -6760,7 +6760,6 @@ shindo_sub6 = {
   ]
 }
 
-import os
 from kskp.core import SCHEMA_NAME
 
 # PostgreSQLのデータソース
@@ -6910,6 +6909,133 @@ postgre_dst = {
 	]
 }
 
+# SMBのデータソース
+windows_src = {
+    "label": "Windowsデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2021-02-11 09:55:00",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "8557c193-9bf9-4ce8-8dbb-d1d09864e4a8",
+        "label": "リモートフォルダ",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "label": "d1",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "file_path": "testData.csv"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "remotefolder_loader"
+      }
+    ]
+  }
+
+# SMBのデータデスト
+windows_dst = {
+    "label": "Windowsデータデスト",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2021-02-11 09:55:00",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
+		{
+			"id": "d",
+			"type": "store",
+			"uuid": "8557c193-9bf9-4ce8-8dbb-d1d09864e4a8",
+			"label": "リモートフォルダ",
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		},
+		{
+			"id": "d1",
+			"type": "frame",
+			"uuid": None,
+			"label": "d1",
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		},
+		{
+			"id": "c1",
+			"args": {
+				"dir_path": "/"
+			},
+			"dsts": {
+				"o": "d2"
+			},
+			"srcs": {
+				"i": "d1",
+				"store": "d"
+			},
+			"type": "command",
+			"label": "c1",
+			"commandId": "remotefolder_saver"
+		},
+		{
+			"id": "d2",
+			"type": "frame",
+			"uuid": None,
+			"label": "d2",
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		}
+	]
+}
+
+
+
 test_json = {
     'sub1': sub1,
     'sub2': sub2,
@@ -6928,5 +7054,7 @@ test_json = {
     'shindo_sub6': shindo_sub6,
     'shindo_sub6': shindo_sub6,
     'postgre_src': postgre_src,
-    'postgre_dst': postgre_dst
+    'postgre_dst': postgre_dst,
+    'windows_src': windows_src,
+    'windows_dst': windows_dst
 }

@@ -2,12 +2,12 @@ import copy
 import unittest
 import pprint
 
-from kskp.store import FlowData, DatabaseConn
+from kskp.store import FlowData, RemoteFolderConn
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
 from .test_main import convert_from_activity
 
-class DbTest(TestCaseBase):
+class RemoteFolderTest(TestCaseBase):
 
     flow_json0 = {
       "label": "test用",
@@ -29,7 +29,7 @@ class DbTest(TestCaseBase):
           },
           "srcs": {},
           "type": "flow",
-          "uuid": "8cfbce33-f2f9-4f52-a97d-ce170f70f6e3",
+          "uuid": "78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e",
           "label": "PostgreSQLデータソース",
         },
         {
@@ -49,7 +49,7 @@ class DbTest(TestCaseBase):
             "d1": "d"
           },
           "type": "flow",
-          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
+          "uuid": "8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5",
           "label": "PostgreSQLデータデスト1"
         }
       ]
@@ -75,7 +75,7 @@ class DbTest(TestCaseBase):
           },
           "srcs": {},
           "type": "flow",
-          "uuid": "8cfbce33-f2f9-4f52-a97d-ce170f70f6e3",
+          "uuid": "78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e",
           "error": {},
           "label": "PostgreSQLデータソース",
           "invalid": {},
@@ -100,7 +100,7 @@ class DbTest(TestCaseBase):
             "d1": "d"
           },
           "type": "flow",
-          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
+          "uuid": "8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5",
           "error": {},
           "label": "PostgreSQLデータデスト1",
           "invalid": {},
@@ -116,7 +116,7 @@ class DbTest(TestCaseBase):
             "d1": "d"
           },
           "type": "flow",
-          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
+          "uuid": "8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5",
           "error": {},
           "label": "PostgreSQLデータデスト2",
           "invalid": {},
@@ -127,44 +127,36 @@ class DbTest(TestCaseBase):
       ]
     }
 
-    # conn_json = {
-    #   'dbms'     : "postgresql",
-    #   'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
-    #   'port'     : 5432, 
-    #   'database' : "kskp", 
-    #   'user_id'  : "kskp", 
-    #   'password' : r'J2-pH|%B'
-    # }
     conn_json = {
-      'dbms'     : "postgresql",
-      'hostname' : "db", 
-      'port'     : 5432, 
-      'database' : "kskp", 
-      'user_id'  : "kskp", 
-      'password' : 'ZQZtVgL6G32Vy6p6WJtG3C3K84yuJ4zz'
+        'protocol' : 'smb',
+        'hostname' : "18.178.64.116",
+        'domain'   : "WORKGROUP",
+        'directory': "share",
+        'user_id'  : "samba",
+        'password' : "kskanalytics"
     }
-    database_conn = DatabaseConn(conn_json)
+    remote_folder_conn = RemoteFolderConn(conn_json)
 
     # @unittest.skip
     def test_simple_flow(self):
         """
-        1つのDBデータソースの出力を1つのDBデータデストに繋げて実行する
+        1つのデータソースの出力を1つのデータデストに繋げて実行する
         """
         # ルートデータストアを取得する
         root = self.factory.data.load_root()
 
-        # DBストアの作成
-        db = root.create_database('postgresql', self.database_conn)
-        db.uuid = 'c410cd16-2529-498d-8e7f-490ffa58dc95'
-        db.save()
+        # リモートフォルダストアの作成
+        rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
+        rfolder.uuid = '8557c193-9bf9-4ce8-8dbb-d1d09864e4a8'
+        rfolder.save()
 
-        # サブフロー(PostgreSQLデータソース)の作成
-        postgre_src_uuid = '8cfbce33-f2f9-4f52-a97d-ce170f70f6e3'
-        postgre_src = self.create_flow_by_flow_id(root,'postgre_src', postgre_src_uuid)
+        # サブフロー(リモートフォルダデータソース)の作成
+        windows_src_uuid = '78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e'
+        windows_src = self.create_flow_by_flow_id(root,'windows_src', windows_src_uuid)
 
-        # サブフロー(PostgreSQLデータデスト)の作成
-        postgre_dst_uuid = 'b3e980d4-8338-4e83-a238-dd4537148c43'
-        postgre_dst = self.create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
+        # サブフロー(リモートフォルダデータデスト)の作成
+        windows_dst_uuid = '8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5'
+        windows_dst = self.create_flow_by_flow_id(root, 'windows_dst', windows_dst_uuid)
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
@@ -174,36 +166,37 @@ class DbTest(TestCaseBase):
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['f1'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
 
         # 後片付け
-        postgre_src.delete()
-        postgre_dst.delete()
+        windows_src.delete()
+        windows_dst.delete()
         datasource_f1.delete()
-        db.delete()
+        rfolder.delete()
 
-    # @unittest.skip
+    @unittest.skip
     def test_two_datadest(self):
         """
-        1つのDBデータソースの出力を2つのDBデータデストに繋げて実行する
-        2つのDBデータソースの出力先テーブルは同じテーブル名なので、排他制御が必要になる
+        1つのデータソースの出力を2つのデータデストに繋げて実行する
+        2つのデータソースの出力先は同じファイルなので、排他制御が必要になる
         """
         # ルートデータストアを取得する
         root = self.factory.data.load_root()
 
-        # DBストアの作成
-        db = root.create_database('postgresql', self.database_conn)
-        db.uuid = 'c410cd16-2529-498d-8e7f-490ffa58dc95'
-        db.save()
+        # リモートフォルダストアの作成
+        rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
+        rfolder.uuid = '8557c193-9bf9-4ce8-8dbb-d1d09864e4a8'
+        rfolder.save()
 
-        # サブフロー(PostgreSQLデータソース)の作成
-        postgre_src_uuid = '8cfbce33-f2f9-4f52-a97d-ce170f70f6e3'
-        postgre_src = self.create_flow_by_flow_id(root,'postgre_src', postgre_src_uuid)
+        # サブフロー(リモートフォルダデータソース)の作成
+        windows_src_uuid = '78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e'
+        windows_src = self.create_flow_by_flow_id(root,'windows_src', windows_src_uuid)
 
-        # サブフロー(PostgreSQLデータデスト)の作成
-        postgre_dst_uuid = 'b3e980d4-8338-4e83-a238-dd4537148c43'
-        postgre_dst = self.create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
+        # サブフロー(リモートフォルダデータデスト)の作成
+        windows_dst_uuid = '8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5'
+        windows_dst = self.create_flow_by_flow_id(root, 'windows_dst', windows_dst_uuid)
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
@@ -213,17 +206,19 @@ class DbTest(TestCaseBase):
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
+        self.assertIsNotNone(lasts['f1'], 'SaverCommandは結果(Datasource)を出力しませんでした')
+        self.assertIsNotNone(lasts['f2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1']
         datasource_f2 = lasts['f2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
         self.assertTrue(self.factory.data.exists(datasource_f2.uuid))
 
         # 後片付け
-        postgre_src.delete()
-        postgre_dst.delete()
+        windows_src.delete()
+        windows_dst.delete()
         datasource_f1.delete()
         datasource_f2.delete()
-        db.delete()
+        rfolder.delete()
 
     def create_flow_by_flow_id(self, parent, flow_id, uuid):
         """
