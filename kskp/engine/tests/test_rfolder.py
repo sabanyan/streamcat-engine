@@ -1,7 +1,9 @@
-import copy
 import unittest
 import pprint
+import shutil
+from pathlib import Path
 
+from kskp.core import Datum
 from kskp.store import FlowData, RemoteFolderConn
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
@@ -149,6 +151,11 @@ class RemoteFolderTest(TestCaseBase):
         rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
         rfolder.uuid = '8557c193-9bf9-4ce8-8dbb-d1d09864e4a8'
         rfolder.save()
+        rfolder = rfolder.reload()
+
+        # 入力CSVファイルを作成する
+        MY_TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
+        shutil.copyfile(Path(MY_TESTDATA_DIR) / '漢字読み.csv', rfolder.path / 'testData.csv')
 
         # サブフロー(リモートフォルダデータソース)の作成
         windows_src_uuid = '78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e'
@@ -168,7 +175,7 @@ class RemoteFolderTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f1'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
+        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
 
         # 後片付け
         windows_src.delete()
@@ -176,7 +183,7 @@ class RemoteFolderTest(TestCaseBase):
         datasource_f1.delete()
         rfolder.delete()
 
-    @unittest.skip
+    # @unittest.skip
     def test_two_datadest(self):
         """
         1つのデータソースの出力を2つのデータデストに繋げて実行する
@@ -189,6 +196,11 @@ class RemoteFolderTest(TestCaseBase):
         rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
         rfolder.uuid = '8557c193-9bf9-4ce8-8dbb-d1d09864e4a8'
         rfolder.save()
+        rfolder = rfolder.reload()
+
+        # 入力CSVファイルを作成する
+        MY_TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
+        shutil.copyfile(Path(MY_TESTDATA_DIR) / '漢字読み.csv', rfolder.path / 'testData.csv')
 
         # サブフロー(リモートフォルダデータソース)の作成
         windows_src_uuid = '78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e'
@@ -210,8 +222,8 @@ class RemoteFolderTest(TestCaseBase):
         self.assertIsNotNone(lasts['f2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1']
         datasource_f2 = lasts['f2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
-        self.assertTrue(self.factory.data.exists(datasource_f2.uuid))
+        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(datasource_f2.uuid, type=Datum.FLOW_TYPE))
 
         # 後片付け
         windows_src.delete()
