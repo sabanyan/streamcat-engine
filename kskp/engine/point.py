@@ -25,26 +25,26 @@ class Point:
 
         if self.o_port is not None:
             if self.o_runnable is None:
-                dom_o = f"self.{self.o_port.name}"
+                dom_o = f'self.{self.o_port.label}'
             else:
-                dom_o = f"{self.o_runnable}.{self.o_port.name}"
+                dom_o = f'{self.o_runnable}.{self.o_port.label}'
         else:
-            dom_o = f"{self.o_runnable}.None"
+            dom_o = f'{self.o_runnable}.None'
 
-        cod_i = ""
+        cod_i = ''
         for tube in self.target:
             if tube.port is not None:
                 if tube.runnable is None:
-                    cod_i += f"(self.{tube.port.name})"
+                    cod_i += f'(self.{tube.port.label})'
                 else:
-                    cod_i += f"({tube.runnable}.{tube.port.name})"
+                    cod_i += f'({tube.runnable}.{tube.port.label})'
             else:
-                cod_i += f"({tube.runnable}.None)"
+                cod_i += f'({tube.runnable}.None)'
 
         if self.datum is None:
-            return f"{self.id}<{dom_o} -> {cod_i}>"
+            return f'{self.id}<{dom_o} -> {cod_i}>'
         else:
-            return f"{self.id}<{dom_o} -({self.datum})-> {cod_i}>"
+            return f'{self.id}<{dom_o} -({self.datum})-> {cod_i}>'
 
     def __hash__(self):
         # PointをDictのキーとして扱う場合同じインスタンスで同じとみなす

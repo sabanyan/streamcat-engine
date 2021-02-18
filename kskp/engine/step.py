@@ -34,7 +34,7 @@ class Step:
             """
             outputs = {}
             for o_port in o_ports:
-                outputs[o_port.name] = cmd_ex
+                outputs[o_port.label] = cmd_ex
             return outputs
 
         try:

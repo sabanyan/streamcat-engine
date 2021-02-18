@@ -74,10 +74,10 @@ class Flow(Datum):
         input_points = [p for p in self.points if p.is_for_input]
 
         for input_point in input_points:
-            if input_point.o_port.name not in inputs:
+            if input_point.o_port.label not in inputs:
                 # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
-                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.o_port.name})にデータが入力されませんでした')
-            input_point.datum = inputs[input_point.o_port.name]
+                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.o_port.label})にデータが入力されませんでした')
+            input_point.datum = inputs[input_point.o_port.label]
 
     def search_invokable_steps(self):
         """
@@ -134,13 +134,13 @@ class Flow(Datum):
                 step.replace_args(flow_args)
 
             # jobを作るためにinputsを集める
-            # inputs = {a.target.port.name: a.datum for a in self.points if a.target.runnable == step}
+            # inputs = {a.target.port.label: a.datum for a in self.points if a.target.runnable == step}
             inputs = {}
             for p in self.points:
                 for t_tube in p.target:
                     if t_tube.runnable == step:
                         # コマンドのinputs引数に値を格納する
-                        inputs[t_tube.port.name] = p.datum
+                        inputs[t_tube.port.label] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
@@ -157,10 +157,10 @@ class Flow(Datum):
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
-                if not output_point.o_port.name in result:
-                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.o_port.name)}が存在しません')
+                if not output_point.o_port.label in result:
+                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.o_port.label)}が存在しません')
                 # 親フローに結果を戻す場合は戻す
-                output_point.datum = result.pop(output_point.o_port.name)
+                output_point.datum = result.pop(output_point.o_port.label)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
@@ -175,8 +175,8 @@ class Flow(Datum):
         実行すべきstepがなくなった後呼び出される
         pointsの結果をまとめてoutputの形式に合うように整えて返す
         """
-        return {port.name: self.get_output_point(port).datum for port in self.o_ports if self.get_output_point(port) is not None}
-        # result = {port.name: self.get_output_point(port).datum.run() for port in self.o_ports}
+        return {port.label: self.get_output_point(port).datum for port in self.o_ports if self.get_output_point(port) is not None}
+        # result = {port.label: self.get_output_point(port).datum.run() for port in self.o_ports}
         # print('make_outputs result:', result)
         # return result
 

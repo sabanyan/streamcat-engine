@@ -245,21 +245,21 @@ class ActivityDataDestAppender():
 
     def do_append(self, f, point, original_out_point):
         # Activity Stepのargsにpointを追加する
-        port_name = str(self.next_port_no)
-        self.activity_step.args['points'][port_name] = original_out_point
+        port_label = str(self.next_port_no)
+        self.activity_step.args['points'][port_label] = original_out_point
 
         # PointにActivity Stepを繋げる
-        point.target = [Tube(Port(port_name, 'datum'), self.activity_step)]
+        point.target = [Tube(Port(port_label, 'datum'), self.activity_step)]
 
         # Activity_pointを作成し、これにActivity Stepを繋げる
-        point_id = point.id + '_activity_' + port_name
+        point_id = point.id + '_activity_' + port_label
         activity_point = Point(point_id,
                                [Tube(Port('o', 'activity'), self.activity_step)],
                                None,
                                [Tube(None, None)])
 
         # Stepのportsに追加する
-        self.activity_step.i_ports.append(Port(port_name, 'datum'))
+        self.activity_step.i_ports.append(Port(port_label, 'datum'))
 
         if f.uuid not in self._already_step_added:
             f.substeps.append(self.activity_step)
@@ -284,16 +284,16 @@ class RunsCommandAppender():
 
     def do_append(self, f, point):
         # RunsCommandに繋げるPointを作成する
-        port_name = str(self.next_port_no)
+        port_label = str(self.next_port_no)
         point_id = point.id + '_runs'
-        runs_point = Point(point_id, [Tube(Port(port_name, 'datum?'), self.runs_step)], None, [Tube(None, None)])
+        runs_point = Point(point_id, [Tube(Port(port_label, 'datum?'), self.runs_step)], None, [Tube(None, None)])
 
         # Stepのportsに追加する
-        self.runs_step.i_ports.append(Port(port_name, 'mcmd'))
-        self.runs_step.o_ports.append(Port(port_name, 'datum?'))
+        self.runs_step.i_ports.append(Port(port_label, 'mcmd'))
+        self.runs_step.o_ports.append(Port(port_label, 'datum?'))
 
         # ここでRunsCommandを繋げる
-        point.target = [Tube(Port(port_name, 'mcmd'), self.runs_step)]
+        point.target = [Tube(Port(port_label, 'mcmd'), self.runs_step)]
 
         if not self._already_step_added:
             f.substeps.append(self.runs_step)
@@ -319,7 +319,7 @@ class FlowLinkContext():
         self.runs_command_appender = RunsCommandAppender()
         self.activity_data_dest_appender = ActivityDataDestAppender(flow.uuid)
 
-        # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
+        # {flow_uuid:, [(original_out_point:, points: ,port_label:)]}
         self.detadst_o_points = {}
         # データデストの'u'ポートは削除したので、以下の処理を削除する
         # self.detadst_u_points = {}
@@ -405,14 +405,14 @@ class FlowJsonLink:
                     # フローが'o','u'の出力ポートを持っている場合
                     if inner_flow.uuid in self.context.detadst_o_points:
                         for i in range(len(self.context.detadst_o_points[inner_flow.uuid])):
-                            original_out_point, out_point, port_name = self.context.detadst_o_points[inner_flow.uuid][i]
+                            original_out_point, out_point, port_label = self.context.detadst_o_points[inner_flow.uuid][i]
                             # oポートの中継
-                            self._relay_o_port(f, step, original_out_point, port_name)
+                            self._relay_o_port(f, step, original_out_point, port_label)
                         # データデストの'u'ポートは削除したので、以下の処理を削除する
                         # for i in range(len(self.context.detadst_u_points[inner_flow.uuid])):
-                        #     original_out_point, out_point, port_name = self.context.detadst_u_points[inner_flow.uuid][i]
+                        #     original_out_point, out_point, port_label = self.context.detadst_u_points[inner_flow.uuid][i]
                         #     # uポートの中継
-                        #     self._relay_u_port(f, step, original_out_point, port_name)
+                        #     self._relay_u_port(f, step, original_out_point, port_label)
 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
 
@@ -480,9 +480,9 @@ class FlowJsonLink:
                    p.o_runnable.is_flow or \
                    len(p.o_runnable.runnable.o_ports) != 1:
                     continue
-                if p.o_port.name == 'o':
+                if p.o_port.label == 'o':
                     out_point = p
-                # elif p.o_port.name =='u':
+                # elif p.o_port.label =='u':
                 #     activity_point = p
 
             # if out_point is None or activity_point is None:
@@ -507,46 +507,46 @@ class FlowJsonLink:
 
         return f
 
-    def _relay_o_port(self, flow, step, out_point, port_name=None):
+    def _relay_o_port(self, flow, step, out_point, port_label=None):
         """
         フローの'o'ポートを親フローに中継する
         """
         # oポートの中継
-        if port_name is None:
-            port_name = 'o_' + str(self.context.port_suffix_num)
+        if port_label is None:
+            port_label = 'o_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
             # データデストからの入力ポート名は'o'固定
             origin_tubes = [Tube(Port('o', 'frame'), step)]
         else:
-            origin_tubes = [Tube(Port(port_name, 'mcmd'), step)]
+            origin_tubes = [Tube(Port(port_label, 'mcmd'), step)]
 
         # NOTE: stepとnew_pointのidが重複するが、フローエディタにロードされない上、保存もされないので問題にはならないだろう
         new_point = self._insert_point(flow, step.id, origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
-        self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_name))
+        self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_label))
 
         # データデストの出力を親フローに繋げる)
         if not self.is_root:
-            port = Port(port_name, 'mcmd')
+            port = Port(port_label, 'mcmd')
             self._open_flow_out_port(flow, port, new_point)
 
-    def _relay_u_port(self, flow, step, out_point, port_name=None):
+    def _relay_u_port(self, flow, step, out_point, port_label=None):
         """
         フローの'u'ポートを親フローに中継する
         """
         # uポートの中継
-        if port_name is None:
-            port_name = 'u_' + str(self.context.port_suffix_num)
+        if port_label is None:
+            port_label = 'u_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
             # データデスト空の入力ポート名は'u'固定
             origin_tubes = [Tube(Port('u', 'frame'), step)]
         else:
-            origin_tubes = [Tube(Port(port_name, 'frame'), step)]
+            origin_tubes = [Tube(Port(port_label, 'frame'), step)]
         new_point = self._insert_point(flow, step.id, origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
-        self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_name))
+        self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_label))
 
         # データデストの出力を親フローに繋げる)
         if not self.is_root:
-            port = Port(port_name, 'frame')
+            port = Port(port_label, 'frame')
             self._open_flow_out_port(flow, port, new_point)
 
     def _open_flow_out_port(self, flow, out_point, out_port):
@@ -643,15 +643,15 @@ class FlowJsonLink:
             flow.substeps.append(step)
 
             # srcとdstからpointを作る
-            for s_port_name, s_node_id in srcs.items():
+            for s_port_label, s_node_id in srcs.items():
                 # 可変長引数で入力PointがNoneになる場合に備える
                 if s_node_id is None:
-                    raise Exception(f"コマンド({node['label']})の入力({s_port_name})が指定されていません")
+                    raise Exception(f"コマンド({node['label']})の入力({s_port_label})が指定されていません")
 
                 # 定義上に存在しないポート名がsrcsに存在していないかの確認
-                src_port = self._get_port_by_name(i_ports, s_port_name)
+                src_port = self._get_port_by_label(i_ports, s_port_label)
                 if src_port is None:
-                    raise Exception(f"指定しているport名({s_port_name})がrunnable {node['id']}の定義しているポート群({i_ports})に存在しません")
+                    raise Exception(f"指定しているport名({s_port_label})がrunnable {node['id']}の定義しているポート群({i_ports})に存在しません")
 
                 # out/inポートフラグの取得
                 is_in = self._is_in_point(flow, s_node_id)
@@ -664,16 +664,16 @@ class FlowJsonLink:
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
                 [self._update_point(point=src_point, origin=Tube(i_port, None))
-                 for i_port in flow.i_ports if i_port.name == src_point.id]
+                 for i_port in flow.i_ports if i_port.label == src_point.id]
 
-            for d_port_name, d_node_id in dsts.items():
+            for d_port_label, d_node_id in dsts.items():
                 if d_node_id is None:
-                    raise Exception(f"コマンド({node['label']})の出力({d_port_name})が指定されていません")
+                    raise Exception(f"コマンド({node['label']})の出力({d_port_label})が指定されていません")
 
                 # 定義上に存在しないポート名がdstsに存在していないかの確認
-                dst_port = self._get_port_by_name(step.runnable.o_ports, d_port_name)
+                dst_port = self._get_port_by_label(step.runnable.o_ports, d_port_label)
                 if dst_port is None:
-                    raise Exception(f"指定しているport名({d_port_name})がrunnable {node['id']}の定義しているポート群({step.runnable.o_ports})に存在しません")
+                    raise Exception(f"指定しているport名({d_port_label})がrunnable {node['id']}の定義しているポート群({step.runnable.o_ports})に存在しません")
 
                 # out/inポートフラグの取得
                 is_in = self._is_in_point(flow, d_node_id) 
@@ -688,7 +688,7 @@ class FlowJsonLink:
                 # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にtarget変数が必要なので、何もしない)
                 if not self.is_root:
                     [self._update_point(point=dst_point, target=Tube(o_port, None))
-                    for o_port in flow.o_ports if o_port.name == dst_point.id]
+                    for o_port in flow.o_ports if o_port.label == dst_point.id]
 
 
     def _update_flow_by_other_than_runnable(self, flow, nodes):
@@ -741,25 +741,25 @@ class FlowJsonLink:
 
     def _is_out_point(self, flow, node_id):
         for port in flow.o_ports:
-            if port.name == node_id:
+            if port.label == node_id:
                 return True
         return False
 
     def _is_in_point(self, flow, node_id):
         for port in flow.i_ports:
-            if port.name == node_id:
+            if port.label == node_id:
                 return True
         return False
 
-    def _get_port_by_name(self, runnable_ports, port_name):
+    def _get_port_by_label(self, runnable_ports, port_label):
         """
-        指定したport_nameをもつportを取得する。
+        指定したport_labelをもつportを取得する。
         runnableというクラスがあったらそこにあるべきなのだろうけど
         今はないし、作るの面倒なのでとりあえずここに。
         絶対必要になった時に作ろう。。。
         """
         for runnable_port in runnable_ports:
-            if runnable_port.name == port_name:
+            if runnable_port.label == port_label:
                 return runnable_port
         return None
 
@@ -769,7 +769,7 @@ class FlowJsonLink:
         """
         ret = []
         for src_port in i_ports:
-            if src_port.name == '*':
+            if src_port.label == '*':
                 ret.extend([Port(p, 'frame') for p in srcs.keys()])
             else:
                 ret.append(src_port)

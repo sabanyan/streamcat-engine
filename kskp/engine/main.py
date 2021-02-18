@@ -81,8 +81,8 @@ def make_job(link, args, inputs):
 #     """
 #
 #     # try:
-#     #     return [Point(port.name, None, step, inputs[port.name]) for port
-#     #                                                             in step.runnable.i_ports]
+#     #     return [Point(port.label, None, step, inputs[port.label]) for port
+#     #                                                               in step.runnable.i_ports]
 #     # except KeyError as e:
 #     #     # inputsに必要な引数が与えられていない
 #     #     raise Exception('inputsに必要な引数が与えられていません') from e
