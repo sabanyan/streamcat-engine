@@ -445,7 +445,7 @@ class FlowJsonLink:
                 for first_out_point in [point for point in f.points if point.is_out]:
                     point_is_input_datadest = False
 
-                    if first_out_point.o_runnable is not None and first_out_point.o_runnable.is_flow:
+                    if first_out_point.src_runnable is not None and first_out_point.src_runnable.is_flow:
                         # ↓どちらかのFor文しか通らない、いまいちなコード
                         for detadst_o_points in self.context.detadst_o_points[f.uuid]:
                             if detadst_o_points[1] == first_out_point:
@@ -476,9 +476,9 @@ class FlowJsonLink:
             out_point = None
             # activity_point = None
             for p in f.points:
-                if p.o_runnable is None or \
-                   p.o_runnable.is_flow or \
-                   len(p.o_runnable.runnable.o_ports) != 1:
+                if p.src_runnable is None or \
+                   p.src_runnable.is_flow or \
+                   len(p.src_runnable.runnable.o_ports) != 1:
                     continue
                 if p.src_port.label == 'o':
                     out_point = p
@@ -690,7 +690,6 @@ class FlowJsonLink:
                     [self._update_point(point=dst_point, dst_tubes=Tube(o_port, None))
                     for o_port in flow.o_ports if o_port.label == dst_point.id]
 
-
     def _update_flow_by_other_than_runnable(self, flow, nodes):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
@@ -775,7 +774,7 @@ class FlowJsonLink:
                 ret.append(src_port)
         return ret
 
-    def _upsert_point(self, flow, point_id, is_in, is_out, dst_tubes, src_tubes):
+    def _upsert_point(self, flow, point_id, is_in, is_out, src_tubes, dst_tubes):
         """
         指定したpoint_idのpointを作成する
         対象のpointがすでに存在していればそのpointを更新する
@@ -885,16 +884,9 @@ class FlowJsonLink:
         for point in points:
             for p_dst_tube in point.dst_tubes:
                 # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
-                if p_dst_tube.runnable is current_point.o_runnable:
+                if p_dst_tube.runnable is current_point.src_runnable:
                     necessary_points.append(point)
                     if not (point.datum is not None or point.is_first):
                         necessary_points.extend(self._search_necessary_point(points, point))
 
         return necessary_points
-
-    def _put_store(self, store_uuid, store_point):
-        from kskp.store import Store
-        # ライブラリからDatabaseを取得する
-        store = Store.find_by_uuid(store_uuid)
-        # StoreにDatabaseを設定する
-        store_point.datum = store

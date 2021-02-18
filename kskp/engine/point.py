@@ -24,12 +24,12 @@ class Point:
     def __repr__(self):
 
         if self.src_port is not None:
-            if self.o_runnable is None:
+            if self.src_runnable is None:
                 dom_o = f'self.{self.src_port.label}'
             else:
-                dom_o = f'{self.o_runnable}.{self.src_port.label}'
+                dom_o = f'{self.src_runnable}.{self.src_port.label}'
         else:
-            dom_o = f'{self.o_runnable}.None'
+            dom_o = f'{self.src_runnable}.None'
 
         cod_i = ''
         for tube in self.dst_tubes:
@@ -52,7 +52,7 @@ class Point:
 
     @property
     def is_for_input(self):
-        return self.o_runnable is None and self.src_port is not None and self.datum is None
+        return self.src_runnable is None and self.src_port is not None and self.datum is None
 
     @property
     def is_store(self):
@@ -64,7 +64,7 @@ class Point:
         return self.src_tubes[0].port
 
     @property
-    def o_runnable(self):
+    def src_runnable(self):
         """
         out_runableの略称ではないことに注意!
         """
@@ -90,14 +90,14 @@ class Point:
         """
         フローの始端のものかどうか（サブ、rootどちらでも良い）
         """
-        return self.o_runnable is None
+        return self.src_runnable is None
 
     @property
     def is_root_first(self):
         """
         rootのフローの始端かどうか
         """
-        return self.o_runnable is None and self.src_port is None
+        return self.src_runnable is None and self.src_port is None
 
     @property
     def is_cache(self):

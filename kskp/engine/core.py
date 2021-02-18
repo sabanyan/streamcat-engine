@@ -91,8 +91,8 @@ class Flow(Datum):
         # for p in self.points:
         #     for t_tube in p.dst_tubes:
         #         if t_tube.runnable is None and p.datum is None:
-        #             last_steps.add(p.o_runnable)
-        last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
+        #             last_steps.add(p.src_runnable)
+        last_steps = {p.src_runnable for p in self.points if p.is_last and p.datum is None}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
@@ -118,7 +118,7 @@ class Flow(Datum):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self.search_first_steps_to_run(a.o_runnable) for a in prev_points if a.datum is None and a.o_runnable is not None)
+        return union(self.search_first_steps_to_run(a.src_runnable) for a in prev_points if a.datum is None and a.src_runnable is not None)
 
     def run_invokable_steps(self, steps, flow_args):
         """
@@ -153,7 +153,7 @@ class Flow(Datum):
 
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
-            output_points = {point for point in self.points if point.o_runnable == step}
+            output_points = {point for point in self.points if point.src_runnable == step}
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
