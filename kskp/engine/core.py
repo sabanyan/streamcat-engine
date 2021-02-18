@@ -18,7 +18,7 @@ class Flow(Datum):
     def lasts(self):
         # lasts = {}
         # for p in self.points:
-        #     for t_tube in p.target:
+        #     for t_tube in p.dst_tubes:
         #         if t_tube.runnable is None:
         #             lasts[p.point_id] = p.datum
 
@@ -74,10 +74,10 @@ class Flow(Datum):
         input_points = [p for p in self.points if p.is_for_input]
 
         for input_point in input_points:
-            if input_point.o_port.label not in inputs:
+            if input_point.src_port.label not in inputs:
                 # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
-                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.o_port.label})にデータが入力されませんでした')
-            input_point.datum = inputs[input_point.o_port.label]
+                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.src_port.label})にデータが入力されませんでした')
+            input_point.datum = inputs[input_point.src_port.label]
 
     def search_invokable_steps(self):
         """
@@ -89,7 +89,7 @@ class Flow(Datum):
         # 最初に「最後の矢印」を集める
         # last_steps = set()
         # for p in self.points:
-        #     for t_tube in p.target:
+        #     for t_tube in p.dst_tubes:
         #         if t_tube.runnable is None and p.datum is None:
         #             last_steps.add(p.o_runnable)
         last_steps = {p.o_runnable for p in self.points if p.is_last and p.datum is None}
@@ -108,10 +108,10 @@ class Flow(Datum):
         # 該当stepの実行に必要なpointを取得する
         # prev_points = set()
         # for p in self.points:
-        #     for t_tube in p.target:
+        #     for t_tube in p.dst_tubes:
         #         if t_tube.runnable == original_step:
         #             prev_points.add(p)
-        prev_points = {p for p in self.points if any(t_tube.runnable == original_step for t_tube in p.target)}
+        prev_points = {p for p in self.points if any(t_tube.runnable == original_step for t_tube in p.dst_tubes)}
 
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
         if all([a.datum is not None for a in prev_points]):
@@ -134,10 +134,10 @@ class Flow(Datum):
                 step.replace_args(flow_args)
 
             # jobを作るためにinputsを集める
-            # inputs = {a.target.port.label: a.datum for a in self.points if a.target.runnable == step}
+            # inputs = {a.dst_tube.port.label: a.datum for a in self.points if a.dst_tube.runnable == step}
             inputs = {}
             for p in self.points:
-                for t_tube in p.target:
+                for t_tube in p.dst_tubes:
                     if t_tube.runnable == step:
                         # コマンドのinputs引数に値を格納する
                         inputs[t_tube.port.label] = p.datum
@@ -157,10 +157,10 @@ class Flow(Datum):
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
-                if not output_point.o_port.label in result:
-                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.o_port.label)}が存在しません')
+                if not output_point.src_port.label in result:
+                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.src_port.label)}が存在しません')
                 # 親フローに結果を戻す場合は戻す
-                output_point.datum = result.pop(output_point.o_port.label)
+                output_point.datum = result.pop(output_point.src_port.label)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
@@ -186,8 +186,8 @@ class Flow(Datum):
         """
         points = []
         for point in self.points:
-            for target in point.target:
-                if target.port == o_port:
+            for dst_tube in point.dst_tubes:
+                if dst_tube.port == o_port:
                     return point
         # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
         # 何かの間違いがあった。
@@ -196,7 +196,7 @@ class Flow(Datum):
         # サブフローのo_portsが
         # [{"label": "出力1", "nodeId": "d3", "type": "frame"}, {"label": "出力2", "nodeId": "d4", "type": "frame"}]
         # の様に2つあって、/vizsなどによって片方（例えばd3）だけ使う様な場合、
-        # d4をtarget.portとするpointは存在しない（使わないpointは切り捨てている）ので、ここを通ることになる。
+        # d4をdst_tube.portとするpointは存在しない（使わないpointは切り捨てている）ので、ここを通ることになる。
 
         # なので、ここで例外を出すと正常に最後まで実行できなくなる。
         # とりあえずこのままにしておく

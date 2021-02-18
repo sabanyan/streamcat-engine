@@ -3,16 +3,16 @@ class Point:
     o->iの順番なので注意
     """
 
-    def __init__(self, point_id, origin_tubes, datum, target_tubes, is_in=False, is_out=False, cache=False):
+    def __init__(self, point_id, src_tubes, datum, dst_tubes, is_in=False, is_out=False, cache=False):
         if point_id is None:
             raise Exception('point_idにNoneは指定できません')
 
         self.id = point_id
         self.label = ''
 
-        self.origin = origin_tubes
+        self.src_tubes = src_tubes
         self.datum = datum
-        self.target = target_tubes
+        self.dst_tubes = dst_tubes
 
         # フローの入力ポートか
         self.is_in = is_in
@@ -23,16 +23,16 @@ class Point:
 
     def __repr__(self):
 
-        if self.o_port is not None:
+        if self.src_port is not None:
             if self.o_runnable is None:
-                dom_o = f'self.{self.o_port.label}'
+                dom_o = f'self.{self.src_port.label}'
             else:
-                dom_o = f'{self.o_runnable}.{self.o_port.label}'
+                dom_o = f'{self.o_runnable}.{self.src_port.label}'
         else:
             dom_o = f'{self.o_runnable}.None'
 
         cod_i = ''
-        for tube in self.target:
+        for tube in self.dst_tubes:
             if tube.port is not None:
                 if tube.runnable is None:
                     cod_i += f'(self.{tube.port.label})'
@@ -52,7 +52,7 @@ class Point:
 
     @property
     def is_for_input(self):
-        return self.o_runnable is None and self.o_port is not None and self.datum is None
+        return self.o_runnable is None and self.src_port is not None and self.datum is None
 
     @property
     def is_store(self):
@@ -60,15 +60,15 @@ class Point:
         return self.datum is not None and isinstance(self.datum, Store)
 
     @property
-    def o_port(self):
-        return self.origin[0].port
+    def src_port(self):
+        return self.src_tubes[0].port
 
     @property
     def o_runnable(self):
         """
         out_runableの略称ではないことに注意!
         """
-        return self.origin[0].runnable
+        return self.src_tubes[0].runnable
 
     @property
     def is_last(self):
@@ -76,14 +76,14 @@ class Point:
         フローの終端のものかどうか（サブ、rootどちらでも良い）
         targetのrunnableにNoneがある場合は終端となっている
         """
-        return any(t_tube.runnable is None for t_tube in self.target)
+        return any(t_tube.runnable is None for t_tube in self.dst_tubes)
 
     @property
     def is_root_last(self):
         """
         rootのフローの終端かどうか
         """
-        return any(t_tube.runnable is None and t_tube.port is None for t_tube in self.target)
+        return any(t_tube.runnable is None and t_tube.port is None for t_tube in self.dst_tubes)
 
     @property
     def is_first(self):
@@ -97,7 +97,7 @@ class Point:
         """
         rootのフローの始端かどうか
         """
-        return self.o_runnable is None and self.o_port is None
+        return self.o_runnable is None and self.src_port is None
 
     @property
     def is_cache(self):
@@ -111,7 +111,7 @@ class Point:
         指定したTubeでoriginを更新する
         複数のoriginをもつPointはないので、上書きだけ（appendする必要がない）
         """
-        self.origin = [tube]
+        self.src_tubes = [tube]
 
     def update_target(self, tube):
         """
@@ -123,6 +123,6 @@ class Point:
         なので、上書きしている
         """
         if self.is_root_last:
-            self.target = [tube]
+            self.dst_tubes = [tube]
         else:
-            self.target.append(tube)
+            self.dst_tubes.append(tube)

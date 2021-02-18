@@ -25,7 +25,7 @@ class FolderDataSourcePrepender():
         """
         loader_step = self._make_loader_step(frame_uuid)
         store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), loader_step)])
-        target_point.origin = [Tube(Port('o', 'frame'), loader_step)]
+        target_point.src_tubes = [Tube(Port('o', 'frame'), loader_step)]
         f.points.append(store_point)
         f.substeps.append(loader_step)
 
@@ -96,10 +96,10 @@ class FolderDataDestAppender():
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.target = [Tube(Port('i', 'frame'), saver_step)]
+            point.dst_tubes = [Tube(Port('i', 'frame'), saver_step)]
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.target.append(Tube(Port('i', 'frame'), saver_step))
+            point.dst_tubes.append(Tube(Port('i', 'frame'), saver_step))
 
 
 class CacheDataDestAppender(FolderDataDestAppender):
@@ -115,12 +115,12 @@ class CacheDataDestAppender(FolderDataDestAppender):
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.target = [Tube(Port('i', 'frame'), saver_step)]
+            point.dst_tubes = [Tube(Port('i', 'frame'), saver_step)]
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            tmp_targets = point.target
-            point.target = [Tube(Port('i', 'frame'), saver_step)]
-            saver_point.target = tmp_targets
+            tmp_tubes = point.dst_tubes
+            point.dst_tubes = [Tube(Port('i', 'frame'), saver_step)]
+            saver_point.dst_tubes = tmp_tubes
             
 
 class VisDataDestAppender():
@@ -183,10 +183,10 @@ class VisDataDestAppender():
     def switch_target(self, point, step):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.target = [Tube(Port('i', 'frame'), step)]
+            point.dst_tubes = [Tube(Port('i', 'frame'), step)]
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.target.append(Tube(Port('i', 'frame'), step))
+            point.dst_tubes.append(Tube(Port('i', 'frame'), step))
 
     def do_append_after_runs(self, f, point, original_out_point):
         visualizer_step, visualizer_point = self._put_visualizer(f, point, original_out_point)
@@ -209,7 +209,7 @@ class VisDataDestAppender():
 
         # VisPointにVisualizerフローを繋げる
         # point.id = str(uuid.uuid4())
-        point.target = [Tube(Port('i', 'frame'), visualizer_step)]
+        point.dst_tubes = [Tube(Port('i', 'frame'), visualizer_step)]
 
         f.substeps.append(visualizer_step)
         f.points.append(visualizer_point)
@@ -249,7 +249,7 @@ class ActivityDataDestAppender():
         self.activity_step.args['points'][port_label] = original_out_point
 
         # PointにActivity Stepを繋げる
-        point.target = [Tube(Port(port_label, 'datum'), self.activity_step)]
+        point.dst_tubes = [Tube(Port(port_label, 'datum'), self.activity_step)]
 
         # Activity_pointを作成し、これにActivity Stepを繋げる
         point_id = point.id + '_activity_' + port_label
@@ -293,7 +293,7 @@ class RunsCommandAppender():
         self.runs_step.o_ports.append(Port(port_label, 'datum?'))
 
         # ここでRunsCommandを繋げる
-        point.target = [Tube(Port(port_label, 'mcmd'), self.runs_step)]
+        point.dst_tubes = [Tube(Port(port_label, 'mcmd'), self.runs_step)]
 
         if not self._already_step_added:
             f.substeps.append(self.runs_step)
@@ -386,11 +386,11 @@ class FlowJsonLink:
 
         # Runs/Activity Commandへ渡すポートを中継する
         for p in f.points:
-            for p_target in p.target:
-                if p_target.runnable is None:
+            for p_dst_tube in p.dst_tubes:
+                if p_dst_tube.runnable is None:
                     continue
 
-                step = p_target.runnable
+                step = p_dst_tube.runnable
                 # データデストの場合
                 if step.is_datadst:
                     # oポートの中継
@@ -480,9 +480,9 @@ class FlowJsonLink:
                    p.o_runnable.is_flow or \
                    len(p.o_runnable.runnable.o_ports) != 1:
                     continue
-                if p.o_port.label == 'o':
+                if p.src_port.label == 'o':
                     out_point = p
-                # elif p.o_port.label =='u':
+                # elif p.src_port.label =='u':
                 #     activity_point = p
 
             # if out_point is None or activity_point is None:
@@ -578,10 +578,10 @@ class FlowJsonLink:
         """
         ret = []
         for point in points:
-            for t_tube in point.target:
-                if t_tube.is_None:
+            for dst_tube in point.dst_tubes:
+                if dst_tube.is_None:
                     continue
-                if t_tube.runnable is not None and len(t_tube.runnable.runnable.o_ports) == 0: 
+                if dst_tube.runnable is not None and len(dst_tube.runnable.runnable.o_ports) == 0: 
                     ret.append(point.id)
         return ret
 
@@ -862,7 +862,7 @@ class FlowJsonLink:
             # if len(flow.o_ports) == 0:
             if self.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
-                # lasts_point.target = [Tube(None, None)]
+                # lasts_point.dst_tubes = [Tube(None, None)]
                 lasts_point.is_out = True
 
             # lasts_pointの上に繋がっているpointsを取得する
@@ -883,9 +883,9 @@ class FlowJsonLink:
         necessary_points = []
         # current_pointの上につながっているPointを探す
         for point in points:
-            for p_target in point.target:
+            for p_dst_tube in point.dst_tubes:
                 # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
-                if p_target.runnable is current_point.o_runnable:
+                if p_dst_tube.runnable is current_point.o_runnable:
                     necessary_points.append(point)
                     if not (point.datum is not None or point.is_first):
                         necessary_points.extend(self._search_necessary_point(points, point))
