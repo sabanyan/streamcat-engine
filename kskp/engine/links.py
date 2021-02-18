@@ -516,12 +516,12 @@ class FlowJsonLink:
             port_label = 'o_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
             # データデストからの入力ポート名は'o'固定
-            origin_tubes = [Tube(Port('o', 'frame'), step)]
+            src_tubes = [Tube(Port('o', 'frame'), step)]
         else:
-            origin_tubes = [Tube(Port(port_label, 'mcmd'), step)]
+            src_tubes = [Tube(Port(port_label, 'mcmd'), step)]
 
         # NOTE: stepとnew_pointのidが重複するが、フローエディタにロードされない上、保存もされないので問題にはならないだろう
-        new_point = self._insert_point(flow, step.id, origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
+        new_point = self._insert_point(flow, step.id, src_tubes=src_tubes, dst_tubes=[Tube(None, None)], is_in=False, is_out=True)
         self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_label))
 
         # データデストの出力を親フローに繋げる)
@@ -538,10 +538,10 @@ class FlowJsonLink:
             port_label = 'u_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
             # データデスト空の入力ポート名は'u'固定
-            origin_tubes = [Tube(Port('u', 'frame'), step)]
+            src_tubes = [Tube(Port('u', 'frame'), step)]
         else:
-            origin_tubes = [Tube(Port(port_label, 'frame'), step)]
-        new_point = self._insert_point(flow, step.id, origin=origin_tubes, target=[Tube(None, None)], is_in=False, is_out=True)
+            src_tubes = [Tube(Port(port_label, 'frame'), step)]
+        new_point = self._insert_point(flow, step.id, src_tubes=src_tubes, dst_tubes=[Tube(None, None)], is_in=False, is_out=True)
         self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_label))
 
         # データデストの出力を親フローに繋げる)
@@ -554,7 +554,7 @@ class FlowJsonLink:
         指定するPointを出力PointとするPortを、フローに設定する
         """
         flow.o_ports.append(out_point)
-        self._update_point(point=out_port, target=Tube(out_point, None))
+        self._update_point(point=out_port, dst_tubes=Tube(out_point, None))
 
     def _pick_out_points(self, f, outs, points):
         # /vizsなど、lastsが指定されている場合
@@ -659,11 +659,11 @@ class FlowJsonLink:
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 src_point = self._upsert_point(flow=flow, point_id=s_node_id, is_in=is_in, is_out=is_out,
-                                              origin=Tube(None, None), target=Tube(src_port, step))
+                                              src_tubes=Tube(None, None), dst_tubes=Tube(src_port, step))
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
-                [self._update_point(point=src_point, origin=Tube(i_port, None))
+                [self._update_point(point=src_point, src_tubes=Tube(i_port, None))
                  for i_port in flow.i_ports if i_port.label == src_point.id]
 
             for d_port_label, d_node_id in dsts.items():
@@ -681,13 +681,13 @@ class FlowJsonLink:
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 dst_point = self._upsert_point(flow=flow, point_id=d_node_id, is_in=is_in, is_out=is_out,
-                                              origin=Tube(dst_port, step), target=Tube(None, None))
+                                              src_tubes=Tube(dst_port, step), dst_tubes=Tube(None, None))
 
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
-                # 繋げるためにtargetを置き換える
-                # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にtarget変数が必要なので、何もしない)
+                # 繋げるためにdst_tubesを置き換える
+                # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にdst_tubes変数が必要なので、何もしない)
                 if not self.is_root:
-                    [self._update_point(point=dst_point, target=Tube(o_port, None))
+                    [self._update_point(point=dst_point, dst_tubes=Tube(o_port, None))
                     for o_port in flow.o_ports if o_port.label == dst_point.id]
 
 
@@ -775,27 +775,27 @@ class FlowJsonLink:
                 ret.append(src_port)
         return ret
 
-    def _upsert_point(self, flow, point_id, is_in, is_out, target, origin):
+    def _upsert_point(self, flow, point_id, is_in, is_out, dst_tubes, src_tubes):
         """
         指定したpoint_idのpointを作成する
         対象のpointがすでに存在していればそのpointを更新する
         """
         point_ids = [point.id for point in flow.points]
         if point_id in point_ids:
-            point = self._update_point(point=flow.select_point_by_node_id(point_id), is_in=is_in, is_out=is_out, origin=origin, target=target)
+            point = self._update_point(point=flow.select_point_by_node_id(point_id), is_in=is_in, is_out=is_out, src_tubes=src_tubes, dst_tubes=dst_tubes)
         else:
-            point = self._insert_point(flow=flow, point_id=point_id, is_in=is_in, is_out=is_out, origin=[origin], target=[target])
+            point = self._insert_point(flow=flow, point_id=point_id, is_in=is_in, is_out=is_out, src_tubes=[src_tubes], dst_tubes=[dst_tubes])
         return point
 
-    def _insert_point(self, flow, point_id, is_in, is_out, origin, target):
+    def _insert_point(self, flow, point_id, is_in, is_out, src_tubes, dst_tubes):
         """
         pointを新規作成し、flowのpointsに追加する
         """
-        point = Point(point_id, origin, None, target, is_in, is_out)
+        point = Point(point_id, src_tubes, None, dst_tubes, is_in, is_out)
         flow.points.append(point)
         return point
 
-    def _update_point(self, point, is_in=None, is_out=None, origin=Tube(None, None), target=Tube(None, None)):
+    def _update_point(self, point, is_in=None, is_out=None, src_tubes=Tube(None, None), dst_tubes=Tube(None, None)):
         """
         既存のpointを更新する
         """
@@ -805,11 +805,11 @@ class FlowJsonLink:
         if is_out is not None:
             point.is_out = is_out
 
-        if not origin.is_None:
-            point.update_origin(origin)
+        if not src_tubes.is_None:
+            point.update_src_tubes(src_tubes)
 
-        if not target.is_None:
-            point.update_target(target)
+        if not dst_tubes.is_None:
+            point.update_dst_tubes(dst_tubes)
 
         return point
 
@@ -861,7 +861,7 @@ class FlowJsonLink:
             lasts_point = flow.select_point_by_id(id)
             # if len(flow.o_ports) == 0:
             if self.is_root and is_vis:
-                # 今は/vizs対象のdatumで終わるように、/vizs対象pointのtargetのtubeをNone,Noneにしている。（正しいんかな？）
+                # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
                 # lasts_point.dst_tubes = [Tube(None, None)]
                 lasts_point.is_out = True
 
@@ -874,10 +874,10 @@ class FlowJsonLink:
     def _search_necessary_point(self, points, current_point):
         """
         /vizsするdatumを作成するために必要なPointを絞り込む
-        既にdatumを持つpointに当たるか、origin.runnableを持たないpointに当たるまで登る
+        既にdatumを持つpointに当たるか、src_tubes.runnableを持たないpointに当たるまで登る
 
         1. 指定されたstep_idをもつpointのidを始点にする（current_pointのこと）
-        2. 始点のorigin.runnableをtarget.runnableにもつpointを保持する（上に上がっていく）
+        2. 始点のsrc_tubes.runnableをdst_tubes.runnableにもつpointを保持する（上に上がっていく）
         3. 保持対象のpointのidを新たな始点として再帰的に再びsearch_necessary_pointに潜る
         """
         necessary_points = []

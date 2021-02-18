@@ -106,17 +106,17 @@ class Point:
         """
         return self.cache
 
-    def update_origin(self, tube):
+    def update_src_tubes(self, tube):
         """
-        指定したTubeでoriginを更新する
-        複数のoriginをもつPointはないので、上書きだけ（appendする必要がない）
+        指定したTubeでsrc_tubesを更新する
+        複数のsrc_tubeをもつPointはないので、上書きだけ（appendする必要がない）
         """
         self.src_tubes = [tube]
 
-    def update_target(self, tube):
+    def update_dst_tubes(self, tube):
         """
-        指定したTubeでtargetを更新する
-        既にtargetに有効なTubeがあった場合は追加、
+        指定したTubeでdst_tubesを更新する
+        既にdst_tubesに有効なTubeがあった場合は追加、
         そうではなかったら上書きする
 
         初期値が[Tube(None, None)]のため、appendするとTube(None, None)が残る
