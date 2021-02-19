@@ -1,6 +1,9 @@
 from kskp.core import Datum
 
 class Flow(Datum):
+    """
+    TODO: FlowStepに名称変更した方がいい？
+    """
     def __init__(self, label):
         super().__init__(None, None, Datum.FLOW_TYPE, label)
 

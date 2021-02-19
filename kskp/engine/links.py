@@ -1,5 +1,4 @@
 import uuid
-
 from kskp.core import Port
 from kskp.depo.std.commands import CommandLink, SCommand
 from .point import Point
@@ -604,7 +603,11 @@ class FlowJsonLink:
         return flow
 
     def _parse_ports(self, port_dict_list):
-        """ dictのリストからportインスタンスのリストを作る """
+        """
+        dictのリストからportインスタンスのリストを作る
+        """
+        # TODO: 'nodeId'はサブフロー内でのノードIdなので、ポートの識別子には'label'を使うべきか？
+        # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
         return [Port(p['nodeId'], p['type']) for p in port_dict_list]
 
     def _update_flow_by_runnable(self, flow, nodes):

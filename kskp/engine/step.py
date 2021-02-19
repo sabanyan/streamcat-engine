@@ -1,4 +1,7 @@
 class Step:
+    """
+    コマンド等の実行可能ノードのインスタンスを表現するクラス
+    """
     def __init__(self, step_id, runnable, args, i_ports=None, o_ports=None, ex_acceptable=False):
         self.id = step_id
         self.runnable = runnable

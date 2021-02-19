@@ -1,8 +1,7 @@
 class Point:
     """
-    o->iの順番なので注意
+    データノードのインスタンスを表現するクラス
     """
-
     def __init__(self, point_id, src_tubes, datum, dst_tubes, is_in=False, is_out=False, cache=False):
         if point_id is None:
             raise Exception('point_idにNoneは指定できません')
@@ -66,7 +65,7 @@ class Point:
     @property
     def src_runnable(self):
         """
-        out_runableの略称ではないことに注意!
+        入力元Tubeのうち1番目のRunnableオブジェクト
         """
         return self.src_tubes[0].runnable
 
