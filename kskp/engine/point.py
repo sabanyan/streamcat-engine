@@ -105,14 +105,14 @@ class Point:
         """
         return self.cache
 
-    def update_src_tubes(self, tube):
+    def add_src_tube(self, tube):
         """
         指定したTubeでsrc_tubesを更新する
         複数のsrc_tubeをもつPointはないので、上書きだけ（appendする必要がない）
         """
         self.src_tubes = [tube]
 
-    def update_dst_tubes(self, tube):
+    def add_dst_tube(self, tube):
         """
         指定したTubeでdst_tubesを更新する
         既にdst_tubesに有効なTubeがあった場合は追加、

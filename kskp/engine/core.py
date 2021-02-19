@@ -1,21 +1,28 @@
-from kskp.core import Datum
+from kskp.store import FlowData
 
-class Flow(Datum):
+class Flow(FlowData):
     """
-    TODO: FlowStepに名称変更した方がいい？
+    TODO: 名称変更した方がいい？
     """
     def __init__(self, label):
-        super().__init__(None, None, Datum.FLOW_TYPE, label)
+        # super().__init__(None, None, Datum.FLOW_TYPE, label)
+        super().__init__()
+
+        # UUIDを採番する
+        import uuid
+        self.uuid = str(uuid.uuid4())
 
         self.i_ports = []
         self.o_ports = []
-        self.params = []
+        # self.params = []
 
         self.points = []
         self.substeps = []
 
         from kskp.store import ModuleStore
         self.module_store = ModuleStore()
+
+        self.context = {}
 
     @property
     def lasts(self):
@@ -46,10 +53,10 @@ class Flow(Datum):
         pointではなくstepを基軸にして書き直し
         """
         # inputsを必要な部分に配置する
-        self.prepare_inputs(inputs)
+        self._prepare_inputs(inputs)
 
         # 実行準備が整ったstepのリストを取得する
-        invokable_steps = self.search_invokable_steps()
+        invokable_steps = self._search_invokable_steps()
 
         # print('invokable_steps1', invokable_steps, '\n')
 
@@ -57,19 +64,19 @@ class Flow(Datum):
         while len(invokable_steps) > 0:
 
             # stepのうち、実行準備が整ったものを実行する
-            self.run_invokable_steps(invokable_steps, args)
+            self._run_invokable_steps(invokable_steps, args)
 
             # print('invokable_steps2', '\n')  
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
-            invokable_steps = self.search_invokable_steps()
+            invokable_steps = self._search_invokable_steps()
 
             # print('invokable_steps3', invokable_steps, self.points, '\n')
 
         # 実行すべきrunnableがもう残っていないなら、終了
-        return self.make_outputs()
+        return self._make_outputs()
 
-    def prepare_inputs(self, inputs):
+    def _prepare_inputs(self, inputs):
         """
         inputsを必要な部分に配置する
         """
@@ -82,7 +89,7 @@ class Flow(Datum):
                 raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.src_port.label})にデータが入力されませんでした')
             input_point.datum = inputs[input_point.src_port.label]
 
-    def search_invokable_steps(self):
+    def _search_invokable_steps(self):
         """
         stepのうち、実行準備が整ったものを探して返す
         """
@@ -98,11 +105,11 @@ class Flow(Datum):
         last_steps = {p.src_runnable for p in self.points if p.is_last and p.datum is None}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
-        first_steps = union(self.search_first_steps_to_run(s) for s in last_steps)
+        first_steps = union(self._search_first_steps_to_run(s) for s in last_steps)
 
         return first_steps
 
-    def search_first_steps_to_run(self, original_step):
+    def _search_first_steps_to_run(self, original_step):
         """
         与えられたstepからフロー構造を逆に辿って、
         実行準備が整ったstepを見つけ出す
@@ -121,9 +128,9 @@ class Flow(Datum):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self.search_first_steps_to_run(a.src_runnable) for a in prev_points if a.datum is None and a.src_runnable is not None)
+        return union(self._search_first_steps_to_run(a.src_runnable) for a in prev_points if a.datum is None and a.src_runnable is not None)
 
-    def run_invokable_steps(self, steps, flow_args):
+    def _run_invokable_steps(self, steps, flow_args):
         """
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
@@ -173,17 +180,17 @@ class Flow(Datum):
                 for value in result.values():
                     self.module_store.append(value.content)
 
-    def make_outputs(self):
+    def _make_outputs(self):
         """
         実行すべきstepがなくなった後呼び出される
         pointsの結果をまとめてoutputの形式に合うように整えて返す
         """
-        return {port.label: self.get_output_point(port).datum for port in self.o_ports if self.get_output_point(port) is not None}
+        return {port.label: self._get_output_point(port).datum for port in self.o_ports if self._get_output_point(port) is not None}
         # result = {port.label: self.get_output_point(port).datum.run() for port in self.o_ports}
-        # print('make_outputs result:', result)
+        # print('_make_outputs result:', result)
         # return result
 
-    def get_output_point(self, o_port):
+    def _get_output_point(self, o_port):
         """
         指定された出力ポートに対応するデータを返す
         """
@@ -208,12 +215,6 @@ class Flow(Datum):
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
         # return points[0]
 
-    def select_point_by_node_id(self, node_id):
-        """
-        指定したnode_idをもつpointを１つ返す
-        """
-        return [point for point in self.points if point.id == node_id][0]
-
     def select_point_by_id(self, point_id):
         """
         self.pointsの中から
@@ -224,6 +225,18 @@ class Flow(Datum):
                 return point
  
         raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
+
+    def has_as_in_point(self, node_id):
+        for port in self.i_ports:
+            if port.label == node_id:
+                return True
+        return False
+
+    def has_as_out_point(self, node_id):
+        for port in self.o_ports:
+            if port.label == node_id:
+                return True
+        return False
 
     def get_module_list(self):
         """

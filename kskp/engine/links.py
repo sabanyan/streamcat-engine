@@ -350,32 +350,6 @@ class FlowJsonLink:
         else:
             self.context = context
             
-    def _node2link(self, node):
-        if node['type'] == 'command':
-            ret = CommandLink(node['commandId'])
-        elif node['type'] == 'flow':
-            # ret = FlowUuidLink(node['uuid'], {}, self.context)
-            from kskp.store.auth import NotAuthorizedException
-            try:
-                flow = self.factory.data.find_by_uuid(node['uuid'])
-                ret = FlowJsonLink(flow, self.factory, {}, self.context)
-            except NotAuthorizedException:
-                raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
-
-            # # かなりの力技・・・。
-            # # 実行を行う場合、サブフロー内で余分な処理が走らないように
-            # # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
-
-            # # メインフローで/vizs時、どのdstsを通るかを求める
-            # dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.vis_ids)
-            # # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
-            # if len(dst_ids) > 0:
-            #     ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
-        else:
-            raise Exception(f'ノード({node.get("id")})のtypeが不正な値({node["type"]})です')
-
-        return ret
-
     def resolve(self):
         f = self._make_flow(self.label, self.flow_data)
 
@@ -520,7 +494,8 @@ class FlowJsonLink:
             src_tubes = [Tube(Port(port_label, 'mcmd'), step)]
 
         # NOTE: stepとnew_pointのidが重複するが、フローエディタにロードされない上、保存もされないので問題にはならないだろう
-        new_point = self._insert_point(flow, step.id, src_tubes=src_tubes, dst_tubes=[Tube(None, None)], is_in=False, is_out=True)
+        new_point = Point(step.id, src_tubes, None, [Tube(None, None)], is_in=False, is_out=True)
+        flow.points.append(new_point)
         self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_label))
 
         # データデストの出力を親フローに繋げる)
@@ -540,7 +515,8 @@ class FlowJsonLink:
             src_tubes = [Tube(Port('u', 'frame'), step)]
         else:
             src_tubes = [Tube(Port(port_label, 'frame'), step)]
-        new_point = self._insert_point(flow, step.id, src_tubes=src_tubes, dst_tubes=[Tube(None, None)], is_in=False, is_out=True)
+        new_point = Point(step.id, src_tubes, None, [Tube(None, None)], is_in=False, is_out=True)
+        flow.points.append(new_point)
         self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_label))
 
         # データデストの出力を親フローに繋げる)
@@ -548,12 +524,12 @@ class FlowJsonLink:
             port = Port(port_label, 'frame')
             self._open_flow_out_port(flow, port, new_point)
 
-    def _open_flow_out_port(self, flow, out_point, out_port):
+    def _open_flow_out_port(self, flow, out_port, out_point):
         """
         指定するPointを出力PointとするPortを、フローに設定する
         """
-        flow.o_ports.append(out_point)
-        self._update_point(point=out_port, dst_tubes=Tube(out_point, None))
+        flow.o_ports.append(out_port)
+        out_point.add_dst_tube(Tube(out_port, None))
 
     def _pick_out_points(self, f, outs, points):
         # /vizsなど、lastsが指定されている場合
@@ -657,8 +633,8 @@ class FlowJsonLink:
                     raise Exception(f"指定しているport名({s_port_label})がrunnable {node['id']}の定義しているポート群({i_ports})に存在しません")
 
                 # out/inポートフラグの取得
-                is_in = self._is_in_point(flow, s_node_id)
-                is_out = self._is_out_point(flow, s_node_id)
+                is_in = flow.has_as_in_point(s_node_id)
+                is_out = flow.has_as_out_point(s_node_id)
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 src_point = self._upsert_point(flow=flow, point_id=s_node_id, is_in=is_in, is_out=is_out,
@@ -666,7 +642,7 @@ class FlowJsonLink:
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
-                [self._update_point(point=src_point, src_tubes=Tube(i_port, None))
+                [src_point.add_src_tube(Tube(i_port, None))
                  for i_port in flow.i_ports if i_port.label == src_point.id]
 
             for d_port_label, d_node_id in dsts.items():
@@ -679,8 +655,8 @@ class FlowJsonLink:
                     raise Exception(f"指定しているport名({d_port_label})がrunnable {node['id']}の定義しているポート群({step.runnable.o_ports})に存在しません")
 
                 # out/inポートフラグの取得
-                is_in = self._is_in_point(flow, d_node_id) 
-                is_out = self._is_out_point(flow, d_node_id)
+                is_in = flow.has_as_in_point(d_node_id) 
+                is_out = flow.has_as_out_point(d_node_id)
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 dst_point = self._upsert_point(flow=flow, point_id=d_node_id, is_in=is_in, is_out=is_out,
@@ -690,7 +666,7 @@ class FlowJsonLink:
                 # 繋げるためにdst_tubesを置き換える
                 # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にdst_tubes変数が必要なので、何もしない)
                 if not self.is_root:
-                    [self._update_point(point=dst_point, dst_tubes=Tube(o_port, None))
+                    [dst_point.add_dst_tube(Tube(o_port, None))
                     for o_port in flow.o_ports if o_port.label == dst_point.id]
 
     def _update_flow_by_other_than_runnable(self, flow, nodes):
@@ -741,17 +717,31 @@ class FlowJsonLink:
                     target_point.cache = False
         return flow
 
-    def _is_out_point(self, flow, node_id):
-        for port in flow.o_ports:
-            if port.label == node_id:
-                return True
-        return False
+    def _node2link(self, node):
+        if node['type'] == 'command':
+            ret = CommandLink(node['commandId'])
+        elif node['type'] == 'flow':
+            # ret = FlowUuidLink(node['uuid'], {}, self.context)
+            from kskp.store.auth import NotAuthorizedException
+            try:
+                flow = self.factory.data.find_by_uuid(node['uuid'])
+                ret = FlowJsonLink(flow, self.factory, {}, self.context)
+            except NotAuthorizedException:
+                raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 
-    def _is_in_point(self, flow, node_id):
-        for port in flow.i_ports:
-            if port.label == node_id:
-                return True
-        return False
+            # # かなりの力技・・・。
+            # # 実行を行う場合、サブフロー内で余分な処理が走らないように
+            # # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
+
+            # # メインフローで/vizs時、どのdstsを通るかを求める
+            # dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.vis_ids)
+            # # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
+            # if len(dst_ids) > 0:
+            #     ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
+        else:
+            raise Exception(f'ノード({node.get("id")})のtypeが不正な値({node["type"]})です')
+
+        return ret
 
     def _get_port_by_label(self, runnable_ports, port_label):
         """
@@ -784,35 +774,15 @@ class FlowJsonLink:
         """
         point_ids = [point.id for point in flow.points]
         if point_id in point_ids:
-            point = self._update_point(point=flow.select_point_by_node_id(point_id), is_in=is_in, is_out=is_out, src_tubes=src_tubes, dst_tubes=dst_tubes)
-        else:
-            point = self._insert_point(flow=flow, point_id=point_id, is_in=is_in, is_out=is_out, src_tubes=[src_tubes], dst_tubes=[dst_tubes])
-        return point
-
-    def _insert_point(self, flow, point_id, is_in, is_out, src_tubes, dst_tubes):
-        """
-        pointを新規作成し、flowのpointsに追加する
-        """
-        point = Point(point_id, src_tubes, None, dst_tubes, is_in, is_out)
-        flow.points.append(point)
-        return point
-
-    def _update_point(self, point, is_in=None, is_out=None, src_tubes=Tube(None, None), dst_tubes=Tube(None, None)):
-        """
-        既存のpointを更新する
-        """
-        if is_in is not None:
+            point = flow.select_point_by_id(point_id)
+            # 既存のpointを更新する
+            src_tubes.is_None or point.add_src_tube(src_tubes)
+            dst_tubes.is_None or point.add_dst_tube(dst_tubes)
             point.is_in = is_in
-
-        if is_out is not None:
             point.is_out = is_out
-
-        if not src_tubes.is_None:
-            point.update_src_tubes(src_tubes)
-
-        if not dst_tubes.is_None:
-            point.update_dst_tubes(dst_tubes)
-
+        else:
+            point = Point(point_id, [src_tubes], None, [dst_tubes], is_in, is_out)
+            flow.points.append(point)
         return point
 
     def _is_value_node(self, node):
