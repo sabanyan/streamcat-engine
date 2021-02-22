@@ -37,7 +37,7 @@ class Job:
 
     def dtor(self):
         from kskp.core import Tmp
-        from .core import Flow
+        from .flow import Flow
 
         # Tmpファイルを削除する
         Tmp.remove_files()

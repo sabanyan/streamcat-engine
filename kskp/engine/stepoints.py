@@ -1,52 +1,9 @@
-from kskp.store import FlowData
+class Stepoints():
 
-class Flow(FlowData):
-    """
-    TODO: 名称変更した方がいい？
-    """
-    def __init__(self, label):
-        # super().__init__(None, None, Datum.FLOW_TYPE, label)
-        super().__init__()
-
-        # UUIDを採番する
-        import uuid
-        self.uuid = str(uuid.uuid4())
-
-        self.i_ports = []
-        self.o_ports = []
-        # self.params = []
-
-        self.points = []
-        self.substeps = []
-
-        from kskp.store import ModuleStore
-        self.module_store = ModuleStore()
-
-        self.context = {}
-
-    @property
-    def lasts(self):
-        # lasts = {}
-        # for p in self.points:
-        #     for t_tube in p.dst_tubes:
-        #         if t_tube.runnable is None:
-        #             lasts[p.point_id] = p.datum
-
-        # return lasts
-        return {p.id: p.datum for p in self.points if p.is_last}
-
-    @property
-    def outs(self):
-        return {p.id: p.datum for p in self.points if p.is_out}
-
-    @property
-    def is_datadst(self):
-        """
-        データデストの場合はTrueを返す
-        """
-        # TODO: いい条件が思い浮かばない,,,
-        has_store = any (p for p in self.points if p.is_store)
-        return len(self.i_ports) == 1 and len(self.lasts) == 1 and has_store
+    def __init__(self, steps, points, o_ports):
+        self.points = points
+        self.substeps = steps
+        self.o_ports = o_ports
 
     def run(self, args, inputs):
         """
@@ -214,69 +171,6 @@ class Flow(FlowData):
 
         # points = list(filter(lambda a:a.i_port == o_port, self.points))
         # return points[0]
-
-    def select_point_by_id(self, point_id):
-        """
-        self.pointsの中から
-        指定したidのpointを取得する
-        """
-        for point in self.points:
-            if point.id == point_id:
-                return point
- 
-        raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
-
-    def has_as_in_point(self, node_id):
-        for port in self.i_ports:
-            if port.label == node_id:
-                return True
-        return False
-
-    def has_as_out_point(self, node_id):
-        for port in self.o_ports:
-            if port.label == node_id:
-                return True
-        return False
-
-    def get_module_list(self):
-        """
-        substepsのmoduleをextendして返す
-        """
-        for substep in self.substeps:
-            if isinstance(substep.runnable, Flow):
-                self.module_store.extend(substep.runnable.get_module_list())
-
-        return self.module_store.module_list
-
-    # def find_activity(self):
-    #     """
-    #     Activity Stepをメインフローから再帰的に探し出す
-    #     """
-    #     from kskp.store import Activity
-    #     # 自身がActivityを持っている場合
-    #     # for activity in self.lasts.values():
-    #     for activity in [p.datum for p in self.points]:
-    #         if isinstance(activity, Activity):
-    #             return activity
-    #     # 自身が持っていない場合、サブフローを探しに行く
-    #     # (データデストのみを用いている場合)
-    #     for substep in self.substeps:
-    #         if substep.is_flow :
-    #             result = substep.runnable.find_activity()
-    #             if result is not None:
-    #                 return result
-    #     # Activityが見つからなかった場合
-    #     return None
-
-    def dtor(self, args):
-        # 配下のflowのdtorも動かす
-        for substep in self.substeps:
-            from kskp.core import Command
-            if isinstance(substep.runnable, Flow) or isinstance(substep.runnable, Command):
-                substep.dtor()
-            else:
-                raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')
-
 
 def union(sets):
     """

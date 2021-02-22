@@ -17,7 +17,7 @@ class Step:
 
     @property
     def is_flow(self):
-        from .core import Flow
+        from .flow import Flow
         return isinstance(self.runnable, Flow)
 
     @property
