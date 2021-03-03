@@ -5415,7 +5415,7 @@ class ExecuteTestCase(TestCaseBase):
         self.assertEqual(len(results['d2']), 1)
         self.assertIsInstance(results['d2'][0], CommandException)
 
-    @unittest.skip('フローの途中に入力ポイントを配置するサブフローは不具合により呼び出せない')
+    # @unittest.skip('フローの途中に入力ポイントを配置するサブフローは不具合により呼び出せない')
     def test_subflow_with_input_on_way(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出せること
@@ -5424,33 +5424,6 @@ class ExecuteTestCase(TestCaseBase):
         sub_flow_json = {
             "label": "subflow2",
             "nodes": [
-                {
-                    "id": "d1",
-                    "type": "frame",
-                    "uuid": None,
-                    "label": "d1",
-                    "makeCache": False,
-                    "dataSource": "csv",
-                    "cacheCreatedAt": None
-                },
-                {
-                    "id": "c1",
-                    "args": {
-                        "f": "*"
-                    },
-                    "dsts": {
-                        "o": "d1"
-                    },
-                    "srcs": {
-                        "i": "d3"
-                    },
-                    "type": "command",
-                    "label": "c1",
-                    "commandId": "mcut",
-                    "srcsOrder": [
-                        "i"
-                    ]
-                },
                 {
                     "id": "d2",
                     "type": "frame",
@@ -5476,15 +5449,33 @@ class ExecuteTestCase(TestCaseBase):
                     "cacheCreatedAt": None
                 },
                 {
+                    "id": "c1",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "d3"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    },
+                    "type": "command",
+                    "label": "c1",
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
                     "id": "c2",
                     "args": {
                         "f": "*"
                     },
-                    "dsts": {
-                        "o": "d3"
-                    },
                     "srcs": {
                         "i": "d2"
+                    },
+                    "dsts": {
+                        "o": "d3"
                     },
                     "type": "command",
                     "label": "c2",
@@ -5492,6 +5483,15 @@ class ExecuteTestCase(TestCaseBase):
                     "srcsOrder": [
                         "i"
                     ]
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
                 }
             ],
             "ports": [
@@ -5597,6 +5597,9 @@ class ExecuteTestCase(TestCaseBase):
         # 正しいVisが得られるか
         correct = {'d1': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
+
+        # フローを削除する
+        sub_flow.delete()
 
     def test_subflow_with_datasource(self):
         """
@@ -5764,6 +5767,9 @@ class ExecuteTestCase(TestCaseBase):
         correct = {'d1': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50'],
                           ['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
+
+        # フローを削除する
+        sub_flow.delete()
 
     # Helpler
     def get_frame_by_uuid(self, uuid, header=True):

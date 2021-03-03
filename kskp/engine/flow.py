@@ -27,12 +27,14 @@ class Flow(FlowData):
 
         self.stepoints = Stepoints(steps=[], points=[], o_ports=self.o_ports)
 
-
         # flowを設定する
         if flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
-            self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
+            substeps, points = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
+            # StepsとPointsを格納する
+            self.stepoints = Stepoints(steps=substeps, points=points, o_ports=self.o_ports)
+            # 
             self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
 
         # self.params = []
@@ -60,6 +62,9 @@ class Flow(FlowData):
         from kskp.depo.std.commands import SCommand
         from .step import Step
         from .tube import Tube
+
+        substeps = []
+        points = set()
 
         # まず、runnableを集める
         for node in nodes:
@@ -90,7 +95,8 @@ class Flow(FlowData):
 
             # runnableのインスタンス化を行う
             step = Step(node['id'], cmd_or_flow, args, i_ports=i_ports, o_ports=o_ports)
-            self.substeps.append(step)
+            # Stepを集める
+            substeps.append(step)
 
             # srcとdstからpointを作る
             for s_port_label, s_node_id in srcs.items():
@@ -113,8 +119,10 @@ class Flow(FlowData):
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
-                [src_point.add_src_tube(Tube(i_port, None))
-                 for i_port in self.i_ports if i_port.label == src_point.id]
+                [src_point.add_src_tube(Tube(i_port, None)) for i_port in self.i_ports if i_port.label == src_point.id]
+
+                # Pointを集める
+                points.add(src_point)
 
             for d_port_label, d_node_id in dsts.items():
                 if d_node_id is None:
@@ -137,8 +145,13 @@ class Flow(FlowData):
                 # 繋げるためにdst_tubesを置き換える
                 # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にdst_tubes変数が必要なので、何もしない)
                 if not self.is_root:
-                    [dst_point.add_dst_tube(Tube(o_port, None))
-                    for o_port in self.o_ports if o_port.label == dst_point.id]
+                    [dst_point.add_dst_tube(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
+
+                # Pointを集める
+                points.add(dst_point)
+
+        # 作成したStep及びPointのリストを返す
+        return substeps, list(points)
 
     def _update_flow_by_other_than_runnable(self, nodes):
         """
@@ -169,8 +182,8 @@ class Flow(FlowData):
                 target_point.datum = store
                 continue
 
-            # 始端Pointの場合、DatumオブジェクトをPointに格納する
-            if target_point.is_first:
+            # 始端Pointかつ入力Pointでない場合、DatumオブジェクトをPointに格納する
+            if not target_point.is_in and target_point.is_first:
                 if self._is_value_node(node):
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):

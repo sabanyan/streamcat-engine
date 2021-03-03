@@ -21,7 +21,6 @@ class Point:
         self.cache = cache
 
     def __repr__(self):
-
         if self.src_port is not None:
             if self.src_runnable is None:
                 dom_o = f'self.{self.src_port.label}'
@@ -45,9 +44,16 @@ class Point:
         else:
             return f'{self.id}<{dom_o} -({self.datum})-> {cod_i}>'
 
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __ne__(self, other):
+        return self.id != other.id
+
     def __hash__(self):
-        # PointをDictのキーとして扱う場合同じインスタンスで同じとみなす
-        return id(self)
+        # # PointをDictのキーとして扱う場合同じインスタンスで同じとみなす
+        # return id(self)
+        return hash(self.id)
 
     @property
     def is_for_input(self):

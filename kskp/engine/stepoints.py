@@ -1,8 +1,8 @@
 class Stepoints():
 
     def __init__(self, steps, points, o_ports):
-        self.points = points
         self.substeps = steps
+        self.points = points
         self.o_ports = o_ports
 
     def run(self, args, inputs):

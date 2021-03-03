@@ -1,6 +1,6 @@
 import uuid
 from kskp.core import Port
-from kskp.depo.std.commands import CommandLink, SCommand
+from kskp.depo.std.commands import CommandLink
 from .point import Point
 from .step import Step
 from .tube import Tube
