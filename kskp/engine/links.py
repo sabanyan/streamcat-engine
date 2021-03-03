@@ -6,13 +6,13 @@ from .step import Step
 from .tube import Tube
 
 class FolderDataSourcePrepender():
-    def __init__(self, factory):
+    def __init__(self, datum_factory):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        self._factory = factory
+        self._datum_factory = datum_factory
 
     def do_prepend(self, flow, point, frame_uuid):
-        frame = self._factory.data.find_by_uuid(frame_uuid)
+        frame = self._datum_factory.find_by_uuid(frame_uuid)
         folder_store = frame.find_parent()
         self._put_loader(frame_uuid, point, flow, folder_store)
 
@@ -35,11 +35,11 @@ class FolderDataSourcePrepender():
         return Step(str(uuid.uuid4()), CommandLink('loader').resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
-    def __init__(self, flow_datum, factory):
+    def __init__(self, flow_datum, datum_factory):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow_datum = flow_datum
-        self._factory = factory
+        self._datum_factory = datum_factory
 
     def do_append(self, flow, point, start_time):
         # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
@@ -103,7 +103,7 @@ class FolderDataDestAppender():
 class CacheDataDestAppender(FolderDataDestAppender):
 
     def do_append(self, flow, point, start_time):
-        folder_store = self._factory.data.load_cache_folder()
+        folder_store = self._datum_factory.load_cache_folder()
         saver = CommandLink('cachesaver').resolve()
         saver_step, saver_point = self._put_saver(point, flow, folder_store, saver, start_time)
 
@@ -329,21 +329,21 @@ class FlowJsonLink:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, factory, vis_args={}, context=None):
-        self.factory = factory
+    def __init__(self, flow_datum, factory=None, vis_args={}, context=None):
+        # self.factory = factory
+        from kskp.store.factory import DatumFactory
+        self.datum_factory = DatumFactory(flow_datum._session)
 
         self.label = flow_datum.label
         self.flow_data = flow_datum.flow_data
         self.is_root = False
         self.vis_ids = vis_args.keys()
 
-        self.folder_data_source_prepender = FolderDataSourcePrepender(factory)
-
-        self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, factory)
+        self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory)
 
         self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
 
-        self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, factory)
+        self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory)
 
         if context is None:
             self.context = FlowJsonLink.FlowLinkContext(flow_datum)
@@ -353,7 +353,7 @@ class FlowJsonLink:
     def resolve(self):
         # Flowを生成する
         from .flow import Flow
-        flow = Flow(self.flow_data, self.is_root, self.context, self.factory)
+        flow = Flow(self.flow_data, self.is_root, self.context, self.datum_factory)
 
         self.context.detadst_o_points[flow.uuid] = []
         # データデストの'u'ポートは削除したので、以下の処理を削除する

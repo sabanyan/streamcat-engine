@@ -4783,6 +4783,988 @@ class ExecuteTestCase(TestCaseBase):
         self.assertEqual(len(results['dd2']), 1)
         self.assertIsInstance(results['dd2'][0], CommandException)
 
+    def test_visz_run_error(self):
+        """
+        Commnad.run()から例外が送出される場合、CommandExceptionが取得できること
+        """
+
+        # squareコマンドに文字列を入力してエラーにする
+        flow_json = {
+            "description": "メインフロー",
+            "label": "メインフロー",
+            "params": [],
+            "ports": [
+                [],
+                [
+                  {
+                    "type": "frame", 
+                    "label": "dd2", 
+                    "nodeId": "dd2"
+                  }
+                ]
+            ],
+            "nodes": [
+                {
+                    "id": "dd1",
+                    "type": "int",
+                    "value": [['Four']],
+                    "uuid": None
+                },
+                {
+                    "id": "ss1",
+                    "type": "command",
+                    "commandId": "square",
+                    "args": {},
+                    "srcs": { "i": "dd1" },
+                    "dsts": { "o_sq": "dd2" }
+                },
+                {
+                    "id": "dd2",
+                    "type": "int",
+                    "uuid": None
+                }
+            ]
+        }
+
+        vis_args = {
+          "dd2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを作成する
+        flow =self.save_flow(self.flow_json['label'], flow_json)
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するvisデータを取得する
+        # (対応するvisデータはNoneなので、convert_from_activity_visは使わない)
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('dd2', results)
+        # visデータは作成されていないこと
+        self.assertIsNone(results['dd2'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('dd2', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['dd2']), 1)
+        self.assertIsInstance(results['dd2'][0], CommandException)
+
+    def test_vizs_flow_with_input(self):
+        """
+        一つのフローと一つの入力ポイントが配置されている場合に、フローのプレビューができること
+        """
+
+        # 一つのフローと一つの入力ポイント
+        flow_json = {
+            "label": "err",
+            "nodes": [
+                {
+                    "id": "d",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "error": {},
+                    "label": "percent",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 119
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "error": {},
+                    "label": "percent",
+                    "invalid": {},
+                    "position": {
+                        "x": 233,
+                        "y": 119
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d2",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "error": {},
+                    "label": "d2",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 283
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {
+                        "f": "*"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "type": "command",
+                    "error": {},
+                    "label": "c1",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 201
+                    },
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "percent",
+                        "nodeId": "d1"
+                    }
+                ],
+                []
+            ],
+            "params": [],
+            "creator": "ユーザー管理者",
+            "createdAt": "2021-02-22 13:48:21",
+            "projectId": None,
+            "description": ""
+        }
+    
+        vis_args = {
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを作成する
+        flow = self.root.create_flow('', FlowData(flow_json))
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d2': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+    def test_vizs_flow_with_output(self):
+        """
+        一つのフローと一つの出力ポイントが配置されている場合に、フローのプレビューができること
+        """
+
+        # 一つのフローと一つの出力ポイント
+        flow_json = {
+            "label": "err",
+            "nodes": [
+                {
+                    "id": "d",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "error": {},
+                    "label": "percent",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 119
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "error": {},
+                    "label": "percent",
+                    "invalid": {},
+                    "position": {
+                        "x": 233,
+                        "y": 119
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d2",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "error": {},
+                    "label": "d2",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 283
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {
+                        "f": "*"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "type": "command",
+                    "error": {},
+                    "label": "c1",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 201
+                    },
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "percent",
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "params": [],
+            "creator": "ユーザー管理者",
+            "createdAt": "2021-02-22 13:48:21",
+            "projectId": None,
+            "description": ""
+        }
+    
+        vis_args = {
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを作成する
+        flow = self.root.create_flow('', FlowData(flow_json))
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d2': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+    def test_vizs_flow_with_inoutput(self):
+        """
+        一つのフローと一つの入出力ポイントが配置されている場合に、フローのプレビューができること
+        """
+
+        # 一つのフローと一つの入出力ポイント
+        flow_json = {
+            "label": "err",
+            "nodes": [
+                {
+                    "id": "d",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "error": {},
+                    "label": "percent",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 119
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "error": {},
+                    "label": "percent",
+                    "invalid": {},
+                    "position": {
+                        "x": 233,
+                        "y": 119
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d2",
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "type": "frame",
+                    "uuid": None,
+                    "error": {},
+                    "label": "d2",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 283
+                    },
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {
+                        "f": "*"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                    "size": {
+                        "width": 38,
+                        "height": 38
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "type": "command",
+                    "error": {},
+                    "label": "c1",
+                    "invalid": {},
+                    "position": {
+                        "x": 99,
+                        "y": 201
+                    },
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "percent",
+                        "nodeId": "d1"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "percent",
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "params": [],
+            "creator": "ユーザー管理者",
+            "createdAt": "2021-02-22 13:48:21",
+            "projectId": None,
+            "description": ""
+        }
+    
+        vis_args = {
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを作成する
+        flow = self.root.create_flow('', FlowData(flow_json))
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d2': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+    @unittest.skip('メインフローのflowオブジェクトで送出された例外はActivityに渡されない')
+    def test_visz_subflow_with_datasource(self):
+        """
+        入力ポイントとデータソースを配置すフローをプレビューする
+        """
+
+        sub_flow_json = {
+            "label": "subflow3",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "percent",
+                    "makeCache": None,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {},
+                    "srcs": {
+                        "*0": "d1",
+                        "*1": "d"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                    "type": "command",
+                    "label": "c1",
+                    "commandId": "mcat",
+                    "srcsOrder": [
+                        "*0",
+                        "*1"
+                    ]
+                },
+                {
+                    "id": "d2",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d2",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "percent",
+                        "nodeId": "d"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d2",
+                        "nodeId": "d2"
+                    }
+                ]
+            ],
+            "params": [],
+            "creator": "ユーザー管理者",
+            "createdAt": "2021-03-02 12:19:27",
+            "projectId": None,
+            "description": ""
+        }
+
+        # サブフローを作成する
+        sub_flow = self.root.create_flow('', FlowData(sub_flow_json))
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        vis_args = {
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        flow_link = FlowJsonLink(sub_flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+
+        print(lasts)
+
+        # 出力ポイントとこれに対応するvisデータを取得する
+        # (対応するvisデータはNoneなので、convert_from_activity_visは使わない)
+        results = convert_from_activity(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('d2', results)
+        # visデータは作成されていないこと
+        self.assertIsNone(results['d2'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 2つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('d2', results)
+        # 2つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d2']), 1)
+        self.assertIsInstance(results['d2'][0], CommandException)
+
+    @unittest.skip('フローの途中に入力ポイントを配置するサブフローは不具合により呼び出せない')
+    def test_subflow_with_input_on_way(self):
+        """
+        フローの途中に入力ポイントを配置するサブフローを呼び出せること
+        """
+
+        sub_flow_json = {
+            "label": "subflow2",
+            "nodes": [
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {
+                        "f": "*"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    },
+                    "srcs": {
+                        "i": "d3"
+                    },
+                    "type": "command",
+                    "label": "c1",
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d2",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客0", "数量1", "金額2"],
+                              ["x", 10, 100],
+                              ["x", 20, 200],
+                              ["y", 10, 300],
+                              ["y", 30, 400],
+                              ["y", 10, 500]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d3",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d3",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c2",
+                    "args": {
+                        "f": "*"
+                    },
+                    "dsts": {
+                        "o": "d3"
+                    },
+                    "srcs": {
+                        "i": "d2"
+                    },
+                    "type": "command",
+                    "label": "c2",
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "d3",
+                        "nodeId": "d3"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        flow_json = {
+            "label": "main2",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "args": {},
+                    "dsts": {
+                        "d1": "d1"
+                    },
+                    "srcs": {
+                        "d3": "d"
+                    },
+                    "type": "flow",
+                    "uuid": "5cd94ccf-a1bb-4cae-82ed-d75ddb77c535",
+                    "label": "f1",
+                    "srcsOrder": [
+                        "d3"
+                    ]
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # サブフローを作成する
+        sub_flow = self.root.create_flow('', FlowData(sub_flow_json))
+        sub_flow.uuid = '5cd94ccf-a1bb-4cae-82ed-d75ddb77c535'
+        sub_flow.save()
+
+        # フローを作成する
+        flow = self.root.create_flow('', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+    def test_subflow_with_datasource(self):
+        """
+        入力ポイントとデータソースを配置するサブフローを呼び出せること
+        """
+
+        sub_flow_json = {
+            "label": "subflow3",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "percent",
+                    "makeCache": None,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {},
+                    "srcs": {
+                        "*0": "d1",
+                        "*1": "d"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                    "type": "command",
+                    "label": "c1",
+                    "commandId": "mcat",
+                    "srcsOrder": [
+                        "*0",
+                        "*1"
+                    ]
+                },
+                {
+                    "id": "d2",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d2",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "percent",
+                        "nodeId": "d"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d2",
+                        "nodeId": "d2"
+                    }
+                ]
+            ],
+            "params": [],
+            "creator": "ユーザー管理者",
+            "createdAt": "2021-03-02 12:19:27",
+            "projectId": None,
+            "description": ""
+        }
+  
+        flow_json = {
+            "label": "main2",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "args": {},
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {
+                        "d2": "d1"
+                    },
+                    "type": "flow",
+                    "uuid": "5cd94ccf-a1bb-4cae-82ed-d75ddb77c535",
+                    "label": "f1"
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # サブフローを作成する
+        sub_flow = self.root.create_flow('', FlowData(sub_flow_json))
+        sub_flow.uuid = '5cd94ccf-a1bb-4cae-82ed-d75ddb77c535'
+        sub_flow.save()
+
+        # フローを作成する
+        flow = self.root.create_flow('', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50'],
+                          ['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
     # Helpler
     def get_frame_by_uuid(self, uuid, header=True):
         """

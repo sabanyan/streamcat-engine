@@ -116,7 +116,7 @@ class Stepoints():
             job = Job(step, inputs)
 
             # 実行開始
-            result = job.start()
+            results = job.start()
 
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
@@ -124,17 +124,17 @@ class Stepoints():
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
-                if not output_point.src_port.label in result:
+                if not output_point.src_port.label in results:
                     raise Exception(f'STEP({step.id})に出力ポート{(output_point.src_port.label)}が存在しません')
                 # 親フローに結果を戻す場合は戻す
-                output_point.datum = result.pop(output_point.src_port.label)
+                output_point.datum = results.pop(output_point.src_port.label)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
             # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
             from kskp.depo.std.commands import RunfuncCommand
             if isinstance(step.runnable, RunfuncCommand):
-                for value in result.values():
+                for value in results.values():
                     self.module_store.append(value.content)
 
     def _make_outputs(self):
@@ -143,9 +143,8 @@ class Stepoints():
         pointsの結果をまとめてoutputの形式に合うように整えて返す
         """
         return {port.label: self._get_output_point(port).datum for port in self.o_ports if self._get_output_point(port) is not None}
-        # result = {port.label: self.get_output_point(port).datum.run() for port in self.o_ports}
-        # print('_make_outputs result:', result)
-        # return result
+        # results = {port.label: self.get_output_point(port).datum.run() for port in self.o_ports}
+        # return results
 
     def _get_output_point(self, o_port):
         """

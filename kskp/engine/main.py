@@ -19,7 +19,7 @@ class DefaultHandler(PatternMatchingEventHandler):
 job_complete_handler = None
 
 
-def execute(link, args, inputs, job_complete_handler=None):
+def execute(link, args={}, inputs={}, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
@@ -37,7 +37,7 @@ def execute(link, args, inputs, job_complete_handler=None):
         job = make_job(link, args, inputs)
 
         # jobを開始する
-        job.start()
+        results = job.start()
 
         # 後始末をする
         job.dtor()

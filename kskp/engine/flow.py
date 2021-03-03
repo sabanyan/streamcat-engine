@@ -8,7 +8,7 @@ class Flow(FlowData):
     """
     TODO: 名称変更した方がいい？
     """
-    def __init__(self, flow_data, is_root, link_context, factory):
+    def __init__(self, flow_data, is_root, link_context, datum_factory):
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_data.to_json())
 
@@ -22,8 +22,8 @@ class Flow(FlowData):
 
         self.is_root = is_root
         self.link_context = link_context
-        self.factory = factory
-        self.folder_data_source_prepender = FolderDataSourcePrepender(factory)
+        self.datum_factory = datum_factory
+        self.folder_data_source_prepender = FolderDataSourcePrepender(datum_factory)
 
         self.stepoints = Stepoints(steps=[], points=[], o_ports=self.o_ports)
 
@@ -160,21 +160,19 @@ class Flow(FlowData):
             target_point.cache = node.get('makeCache')
             target_point.label = node.get('label')
 
-            # Storeの場合、Storeオブジェクトをpointに格納する
+            # Storeの場合、StoreオブジェクトをPointに格納する
             if self._is_store_node(node):
                 store_uuid = node.get('uuid')
-                store = self.factory.data.find_by_uuid(store_uuid)
+                store = self.datum_factory.find_by_uuid(store_uuid)
 
                 # StoreにDatabaseを設定する
                 target_point.datum = store
                 continue
 
-            # データの取得先の設定
-            # サブフローの先頭は外部からデータをもらうので、それ以外の場合に処理を行う
-            if not (len(self.i_ports) > 0 and target_point.is_first):
+            # 始端Pointの場合、DatumオブジェクトをPointに格納する
+            if target_point.is_first:
                 if self._is_value_node(node):
-                    # nodeのvalue属性はテストで用いるためだけに存在する
-                    # テストコードからvalue属性を無くした後、この分岐は削除したい
+                    # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
                         from kskp.store import List
                         target_point.datum = List(node['value'])
@@ -197,8 +195,8 @@ class Flow(FlowData):
             # ret = FlowUuidLink(node['uuid'], {}, self.link_context)
             from kskp.store.auth import NotAuthorizedException
             try:
-                flow = self.factory.data.find_by_uuid(node['uuid'])
-                ret = FlowJsonLink(flow, self.factory, {}, self.link_context)
+                flow = self.datum_factory.find_by_uuid(node['uuid'])
+                ret = FlowJsonLink(flow, None, {}, self.link_context)
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 
