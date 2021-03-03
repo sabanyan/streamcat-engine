@@ -182,8 +182,8 @@ class Flow(FlowData):
                 target_point.datum = store
                 continue
 
-            # 始端Pointかつ入力Pointでない場合、DatumオブジェクトをPointに格納する
-            if not target_point.is_in and target_point.is_first:
+            # 入力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
+            if not target_point.is_in:
                 if self._is_value_node(node):
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
