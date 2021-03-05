@@ -1,15 +1,12 @@
 import copy
 import unittest
-import nysol.mcmd as nm
-
 from pathlib import Path
-
 from kskp.store import FlowData, List, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowJsonLink
 
-class ExecuteTestCase(TestCaseBase):
+class MainTest(TestCaseBase):
     """
     実際のフロー実行のテスト
     """
