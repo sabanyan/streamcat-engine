@@ -303,15 +303,16 @@ class FlowLinkContext():
     """
     FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
     """
-    def __init__(self, flow_uuid, flow_label):
-        self.flow_uuid = flow_uuid
-        self.flow_label = flow_label
+    def __init__(self,flow):
+        self.flow = flow
+        self.flow_uuid = flow.uuid
+        self.flow_label = flow.label
 
         # 処理の開始時刻を取得する
         from datetime import datetime, timezone
         self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
         self.runs_command_appender = RunsCommandAppender()
-        self.activity_data_dest_appender = ActivityDataDestAppender(flow_uuid)
+        self.activity_data_dest_appender = ActivityDataDestAppender(self.flow_uuid)
 
         # {flow_uuid:, [(original_out_point:, points: ,port_name:)]}
         self.detadst_o_points = {}
@@ -326,7 +327,6 @@ class FlowJsonLink:
     """
     def __init__(self, flow, factory, vis_args={}, context=None):
         self.factory = factory
-
         self.label = flow.label
         self.flow_data = flow.flow_data
         self.is_root = False
@@ -341,7 +341,7 @@ class FlowJsonLink:
         self.cache_data_dest_appender = CacheDataDestAppender(flow, factory)
 
         if context is None:
-            self.context = FlowLinkContext(flow.uuid, flow.label)
+            self.context = FlowLinkContext(flow)
         else:
             self.context = context
             
@@ -610,7 +610,8 @@ class FlowJsonLink:
             
             if isinstance(cmd_or_flow, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow_uuid'    : self.context.flow_uuid,
+                args = {'flow'         : self.context.flow,
+                        'flow_uuid'    : self.context.flow_uuid,
                         'flow_label'   : self.context.flow_label,
                         'start_time'   : self.context.start_time,
                         'activity_uuid': self.context.activity_data_dest_appender.activity_uuid}
@@ -629,6 +630,7 @@ class FlowJsonLink:
             # runnableのインスタンス化を行う
             step = Step(node['id'], cmd_or_flow, args, i_ports=i_ports, o_ports=o_ports)
             flow.substeps.append(step)
+
 
             # srcとdstからpointを作る
             for s_port_name, s_node_id in srcs.items():
@@ -677,6 +679,15 @@ class FlowJsonLink:
                 if not self.is_root:
                     [self._update_point(point=dst_point, target=Tube(o_port, None))
                     for o_port in flow.o_ports if o_port.name == dst_point.id]
+            
+                from kskp.depo.std.commands import AssertCommand
+                if isinstance(cmd_or_flow, AssertCommand):
+                    # 出力情報に、AssertCommandの出力ポイントのidを含めるため
+                    args['asserted_point'] = dst_point.id
+                    # AssertCommandで例外を検証対象とするため、例外の入力を許可する
+                    step.ex_acceptable = True
+            
+
 
 
     def _update_flow_by_other_than_runnable(self, flow, nodes):
