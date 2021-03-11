@@ -330,6 +330,10 @@ class FlowJsonLink:
             self.port_suffix_num = 0
 
     def __init__(self, flow_datum, factory=None, vis_args={}, context=None):
+
+        # フローJSONの書式の検証をする
+        flow_datum.flow_data.valid_flow_json_or_raise()
+
         # self.factory = factory
         from kskp.store.factory import DatumFactory
         self.datum_factory = DatumFactory(flow_datum._session)

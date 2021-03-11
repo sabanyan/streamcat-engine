@@ -3216,7 +3216,6 @@ class MainTest(TestCaseBase):
         一つの経路上に二つの出力ポイントがある場合
         """
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "mcuta", 
           "nodes": [
             {
@@ -3634,7 +3633,6 @@ class MainTest(TestCaseBase):
         一つの経路上から二つのvisを取得する場合
         """
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "loop", 
           "nodes": [
             {
@@ -3771,7 +3769,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'duplicate.csv', data)
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -3859,7 +3856,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'empty.csv', data)
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -3946,7 +3942,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'percent.csv', data)
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -4033,7 +4028,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'jag.csv', data)
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -4112,7 +4106,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data2(Path(MY_TESTDATA_DIR) / '漢字読み.csv')
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -4200,7 +4193,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'mchkcsv_data.csv', data)
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -4286,7 +4278,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
 
         flow_json = {
-          "uuid": "c5fafc1c-19a3-4be2-809b-10991163a421", 
           "label": "vis", 
           "nodes": [
             {
@@ -4380,7 +4371,6 @@ class MainTest(TestCaseBase):
         frame = self.create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
 
         flow_json = {
-          "uuid": "f1426e63-4a78-4cd7-8811-09ba89b185ae", 
           "label": "err", 
           "nodes": [
             {
@@ -4450,8 +4440,7 @@ class MainTest(TestCaseBase):
           "creator": "開発用", 
           "createdAt": "2020-03-16 17:15:22", 
           "projectId": None, 
-          "description": "", 
-          "projectName": "test"
+          "description": ""
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
@@ -5303,7 +5292,7 @@ class MainTest(TestCaseBase):
                     "type": "frame",
                     "uuid": None,
                     "label": "percent",
-                    "makeCache": None,
+                    "makeCache": False,
                     "dataSource": "csv",
                     "cacheCreatedAt": None
                 },
@@ -5611,7 +5600,7 @@ class MainTest(TestCaseBase):
                     "type": "frame",
                     "uuid": None,
                     "label": "percent",
-                    "makeCache": None,
+                    "makeCache": False,
                     "dataSource": "csv",
                     "cacheCreatedAt": None
                 },
