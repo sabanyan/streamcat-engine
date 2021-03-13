@@ -135,7 +135,7 @@ class VisDataDestAppender():
         # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
         convtoutf8 = CommandLink('convtoutf8').resolve()
-        convtoutf8_step = self._make_step({}, convtoutf8)
+        convtoutf8_step = self._make_step({'target_encoding':'utf-8','target_newline':'\n'}, convtoutf8)
 
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
