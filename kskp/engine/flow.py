@@ -148,6 +148,13 @@ class Flow(FlowData):
                 if not self.is_root:
                     [dst_point.add_dst_tube(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
 
+                from kskp.depo.std.commands import AssertCommand
+                if isinstance(cmd_or_flow, AssertCommand):
+                    # 出力情報に、AssertCommandの出力ポイントのidを含めるため
+                    args['asserted_point'] = dst_point.id
+                    # AssertCommandで例外を検証対象とするため、例外の入力を許可する
+                    step.ex_acceptable = True
+
                 # Pointを集める
                 points.add(dst_point)
 
