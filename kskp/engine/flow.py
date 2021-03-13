@@ -76,7 +76,8 @@ class Flow(FlowData):
             
             if isinstance(cmd_or_flow, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow_uuid'    : self.link_context.flow_uuid,
+                args = {'flow'         : self.link_context.flow_datum,
+                        'flow_uuid'    : self.link_context.flow_uuid,
                         'flow_label'   : self.link_context.flow_label,
                         'result_folder': self.link_context.flow_datum.find_parent(),
                         'start_time'   : self.link_context.start_time,
