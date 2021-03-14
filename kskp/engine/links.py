@@ -1,4 +1,3 @@
-import uuid
 from kskp.core import Port
 from kskp.depo.std.commands import CommandLink
 from .point import Point
@@ -33,7 +32,7 @@ class FolderDataSourcePrepender():
         """
         指定したuuidのデータを取ってくるLoaderStepを作成する
         """
-        return Step(str(uuid.uuid4()), CommandLink('loader').resolve(), {'uuid':node_uuid})
+        return Step('loader', CommandLink('loader').resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
     def __init__(self, flow_datum, datum_factory):
@@ -89,7 +88,7 @@ class FolderDataDestAppender():
         """
         saverコマンドのstepを作成する
         """
-        return Step(str(uuid.uuid4()) + str(type(cmd)), cmd, args)
+        return Step(str(type(cmd)), cmd, args)
 
     # TODO: 解りづらい関数化
     # engineのリファクタリングで見直し予定
@@ -218,7 +217,7 @@ class VisDataDestAppender():
         """
         visualizerコマンドのstepを作成する
         """
-        return Step(str(uuid.uuid4()), cmd, args)
+        return Step(str(type(cmd)), cmd, args)
 
 class ActivityDataDestAppender():
     def __init__(self, flow_uuid):
@@ -234,7 +233,7 @@ class ActivityDataDestAppender():
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'points':{}}
         # Activity Stepを作成する
-        self.activity_step = Step(str(uuid.uuid4()) + '_activity', activity_cmd, activity_args, ex_acceptable=True)
+        self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
         self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self.next_port_no = 0
@@ -274,7 +273,7 @@ class RunsCommandAppender():
         runs_cmd = CommandLink('runs').resolve()
         # Runsステップを作成する
         # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
-        self.runs_step = Step(str(uuid.uuid4()) + '_runs', runs_cmd, {}, ex_acceptable=True)
+        self.runs_step = Step('runs', runs_cmd, {}, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue

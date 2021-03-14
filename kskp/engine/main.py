@@ -61,7 +61,7 @@ def make_job(link, args, inputs):
     runnable = link.resolve()
 
     # runnableからstepを作成する
-    step = Step('', runnable, args)
+    step = Step('main_flow', runnable, args)
 
     # port情報から、pointを作成する
     # points = domains(step, inputs)
