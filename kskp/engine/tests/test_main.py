@@ -3210,6 +3210,212 @@ class MainTest(TestCaseBase):
         lasts['d3'].delete()
         frame.delete()
 
+    def test_same_inputs(self):
+        """
+        一つのデータソースから二入力して結合する
+        """
+        flow_json = {
+          "label": "mcat", 
+          "nodes": [
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+              "label": "testData", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "label": "c1", 
+              "commandId": "mcat", 
+              "type": "command", 
+              "args": {}, 
+              "srcs": {
+                "*0": "d1", 
+                "*1": "d1"
+              }, 
+              "dsts": {
+                "o": "d2"
+              }, 
+              "srcsOrder": [
+                "*0", 
+                "*1"
+              ]
+            },
+            {
+              "id": "d2", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d2", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+          ], 
+          "ports": [
+            [],
+            [
+                {
+                  "type": "frame", 
+                  "label": "d2", 
+                  "nodeId": "d2"
+                }
+            ]
+          ],
+          "params": [], 
+          "creator": "ユーザー管理者", 
+          "createdAt": "2021-03-14 08:50:40", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # 入力データを作成する
+        data = [
+            ['顧客', '数量', '金額'],
+            ["A", 1, 10],
+            ["A", 2, 20],
+            ["B", 1, 30],
+            ["B", 3, 40],
+            ["B", 1, 50]
+        ]
+        frame = self.create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
+        
+        # フローJSONの入力データにUUIDを設定する
+        update_flow_node_uuid(flow_json, 'd1', frame.uuid)
+
+        # フローを作成する
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity(lasts)
+
+        # frameデータは2つ生成されているか
+        self.assertEqual(1, len(lasts))
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d2 = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50'],
+                      ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(correct_d2, result_d2)
+
+        # 結果ファイルを削除する
+        lasts['d2'].delete()
+        # データソースを削除する
+        frame.delete()
+
+    def test_same_frame_inputs(self):
+        """
+        同じフレームを共有する二つのデータソースを結合する
+        """
+        flow_json = {
+          "label": "mcat", 
+          "nodes": [
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+              "error": {}, 
+              "label": "testData", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+              "label": "testData", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+            {
+              "id": "c1", 
+              "label": "c1", 
+              "commandId": "mcat", 
+              "type": "command", 
+              "args": {}, 
+              "srcs": {
+                "*0": "d1", 
+                "*1": "d"
+              }, 
+              "dsts": {
+                "o": "d2"
+              }, 
+              "srcsOrder": [
+                "*0", 
+                "*1"
+              ]
+            },
+            {
+              "id": "d2", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d2", 
+              "makeCache": False, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            }, 
+          ], 
+          "ports": [
+            [],
+            [
+                {
+                  "type": "frame", 
+                  "label": "d2", 
+                  "nodeId": "d2"
+                }
+            ]
+          ],
+          "params": [], 
+          "creator": "ユーザー管理者", 
+          "createdAt": "2021-03-14 08:50:40", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # 入力データを作成する
+        data = [
+            ['顧客', '数量', '金額'],
+            ["A", 1, 10],
+            ["A", 2, 20],
+            ["B", 1, 30],
+            ["B", 3, 40],
+            ["B", 1, 50]
+        ]
+        frame = self.create_data(Path(self.TESTDATA_DIR) / 'tst.csv', data)
+        
+        # フローJSONの入力データにUUIDを設定する
+        update_flow_node_uuid(flow_json, 'd', frame.uuid)
+        update_flow_node_uuid(flow_json, 'd1', frame.uuid)
+
+        # フローを作成する
+        flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity(lasts)
+
+        # frameデータは2つ生成されているか
+        self.assertEqual(1, len(lasts))
+        # DBにframeデータが生成されているか
+        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        correct_d2 = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50'],
+                      ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
+        self.assertEqual(correct_d2, result_d2)
+
+        # 結果ファイルを削除する
+        lasts['d2'].delete()
+        # データソースを削除する
+        frame.delete()
 
     def test_two_outputs_on_onepath(self):
         """

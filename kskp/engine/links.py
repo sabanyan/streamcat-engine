@@ -23,7 +23,8 @@ class FolderDataSourcePrepender():
         Loaderは指定したstoreからデータを取ってくる
         """
         loader_step = self._make_loader_step(frame_uuid)
-        store_point = Point(frame_uuid + '_loader_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), loader_step)])
+        point_id = target_point.id + '_loader_point'
+        store_point = Point(point_id, [Tube(None, None)], store, [Tube(Port('folder', 'store'), loader_step)])
         target_point.src_tubes = [Tube(Port('o', 'frame'), loader_step)]
         flow.points.append(store_point)
         flow.substeps.append(loader_step)
