@@ -2,7 +2,7 @@ from kskp.core import Port
 from kskp.store import FlowData        
 from .stepoints import Stepoints
 from .point import Point
-from .links import FolderDataSourcePrepender
+from .appenders import FolderDataSourcePrepender
 
 class Flow(FlowData):
     """
