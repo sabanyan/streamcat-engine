@@ -56,8 +56,8 @@ class Stepoints():
         # 最初に「最後の矢印」を集める
         # last_steps = set()
         # for p in self.points:
-        #     for t_tube in p.dst_tubes:
-        #         if t_tube.runnable is None and p.datum is None:
+        #     for dst_tube in p.dst_tubes:
+        #         if dst_tube.runnable is None and p.datum is None:
         #             last_steps.add(p.src_runnable)
         last_steps = {p.src_runnable for p in self.points if p.is_last and p.datum is None}
 
@@ -75,10 +75,10 @@ class Stepoints():
         # 該当stepの実行に必要なpointを取得する
         # prev_points = set()
         # for p in self.points:
-        #     for t_tube in p.dst_tubes:
-        #         if t_tube.runnable == original_step:
+        #     for dst_tube in p.dst_tubes:
+        #         if dst_tube.runnable == original_step:
         #             prev_points.add(p)
-        prev_points = {p for p in self.points if any(t_tube.runnable == original_step for t_tube in p.dst_tubes)}
+        prev_points = {p for p in self.points if any(dst_tube.runnable == original_step for dst_tube in p.dst_tubes)}
 
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
         if all([a.datum is not None for a in prev_points]):
@@ -104,10 +104,10 @@ class Stepoints():
             # inputs = {a.dst_tube.port.label: a.datum for a in self.points if a.dst_tube.runnable == step}
             inputs = {}
             for p in self.points:
-                for t_tube in p.dst_tubes:
-                    if t_tube.runnable == step:
+                for dst_tube in p.dst_tubes:
+                    if dst_tube.runnable == step:
                         # コマンドのinputs引数に値を格納する
-                        inputs[t_tube.port.label] = p.datum
+                        inputs[dst_tube.port.label] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id

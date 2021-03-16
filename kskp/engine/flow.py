@@ -313,8 +313,8 @@ class Flow(FlowData):
     def lasts(self):
         # lasts = {}
         # for p in self.points:
-        #     for t_tube in p.dst_tubes:
-        #         if t_tube.runnable is None:
+        #     for dst_tube in p.dst_tubes:
+        #         if dst_tube.runnable is None:
         #             lasts[p.point_id] = p.datum
 
         # return lasts

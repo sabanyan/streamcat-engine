@@ -81,14 +81,14 @@ class Point:
         フローの終端のものかどうか（サブ、rootどちらでも良い）
         targetのrunnableにNoneがある場合は終端となっている
         """
-        return any(t_tube.runnable is None for t_tube in self.dst_tubes)
+        return any(dst_tube.runnable is None for dst_tube in self.dst_tubes)
 
     @property
     def is_root_last(self):
         """
         rootのフローの終端かどうか
         """
-        return any(t_tube.runnable is None and t_tube.port is None for t_tube in self.dst_tubes)
+        return any(dst_tube.runnable is None and dst_tube.port is None for dst_tube in self.dst_tubes)
 
     @property
     def is_first(self):
