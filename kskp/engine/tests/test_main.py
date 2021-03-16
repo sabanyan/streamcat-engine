@@ -5613,6 +5613,7 @@ class MainTest(TestCaseBase):
         フローの途中に入力ポイントを配置するサブフローを呼び出せること
         """
 
+        # フローJSONでのNodeの並び順によって結果が変わってしまう
         sub_flow_json = {
             "label": "subflow2",
             "nodes": [

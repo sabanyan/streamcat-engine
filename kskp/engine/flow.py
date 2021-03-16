@@ -116,7 +116,7 @@ class Flow(FlowData):
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 src_point = self._upsert_point(flow=self, point_id=s_node_id, is_in=is_in, is_out=is_out,
-                                              src_tubes=Tube(None, None), dst_tubes=Tube(src_port, step))
+                                              src_tube=Tube(None, None), dst_tube=Tube(src_port, step))
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
@@ -140,7 +140,7 @@ class Flow(FlowData):
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 dst_point = self._upsert_point(flow=self, point_id=d_node_id, is_in=is_in, is_out=is_out,
-                                              src_tubes=Tube(dst_port, step), dst_tubes=Tube(None, None))
+                                              src_tube=Tube(dst_port, step), dst_tube=Tube(None, None))
 
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにdst_tubesを置き換える
@@ -259,7 +259,7 @@ class Flow(FlowData):
                 ret.append(src_port)
         return ret
 
-    def _upsert_point(self, flow, point_id, is_in, is_out, src_tubes, dst_tubes):
+    def _upsert_point(self, flow, point_id, is_in, is_out, src_tube, dst_tube):
         """
         指定したpoint_idのpointを作成する
         対象のpointがすでに存在していればそのpointを更新する
@@ -268,12 +268,12 @@ class Flow(FlowData):
         if point_id in point_ids:
             point = flow.select_point_by_id(point_id)
             # 既存のpointを更新する
-            src_tubes.is_None or point.add_src_tube(src_tubes)
-            dst_tubes.is_None or point.add_dst_tube(dst_tubes)
+            src_tube.is_None or point.add_src_tube(src_tube)
+            dst_tube.is_None or point.add_dst_tube(dst_tube)
             point.is_in = is_in
             point.is_out = is_out
         else:
-            point = Point(point_id, [src_tubes], None, [dst_tubes], is_in, is_out)
+            point = Point(point_id, src_tube, None, dst_tube, is_in, is_out)
             flow.points.append(point)
         return point
 

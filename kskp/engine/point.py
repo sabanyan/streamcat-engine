@@ -1,17 +1,19 @@
+from .tube import Tubes
+
 class Point:
     """
     データノードのインスタンスを表現するクラス
     """
-    def __init__(self, point_id, src_tubes, datum, dst_tubes, is_in=False, is_out=False, cache=False):
+    def __init__(self, point_id, src_tube, datum, dst_tube, is_in=False, is_out=False, cache=False):
         if point_id is None:
             raise Exception('point_idにNoneは指定できません')
 
         self.id = point_id
         self.label = ''
 
-        self.src_tubes = src_tubes
+        self.src_tubes = Tubes(src_tube)
         self.datum = datum
-        self.dst_tubes = dst_tubes
+        self.dst_tubes = Tubes(dst_tube)
 
         # フローの入力ポートか
         self.is_in = is_in
@@ -58,6 +60,7 @@ class Point:
     @property
     def is_for_input(self):
         return self.src_runnable is None and self.src_port is not None and self.datum is None
+        # return self.is_in and self.src_port is not None and self.datum is None
 
     @property
     def is_store(self):
@@ -97,12 +100,12 @@ class Point:
         """
         return self.src_runnable is None
 
-    @property
-    def is_root_first(self):
-        """
-        rootのフローの始端かどうか
-        """
-        return self.src_runnable is None and self.src_port is None
+    # @property
+    # def is_root_first(self):
+    #     """
+    #     rootのフローの始端かどうか
+    #     """
+    #     return self.src_runnable is None and self.src_port is None
 
     @property
     def is_cache(self):
@@ -116,7 +119,10 @@ class Point:
         指定したTubeでsrc_tubesを更新する
         複数のsrc_tubeをもつPointはないので、上書きだけ（appendする必要がない）
         """
-        self.src_tubes = [tube]
+        if self.src_tubes is None or len(self.src_tubes)==0 or self.src_tubes[0].is_None:
+            self.src_tubes = Tubes(tube)
+        else:
+            self.src_tubes.add(tube)
 
     def add_dst_tube(self, tube):
         """
@@ -128,6 +134,6 @@ class Point:
         なので、上書きしている
         """
         if self.is_root_last:
-            self.dst_tubes = [tube]
+            self.dst_tubes = Tubes(tube)
         else:
-            self.dst_tubes.append(tube)
+            self.dst_tubes.add(tube)

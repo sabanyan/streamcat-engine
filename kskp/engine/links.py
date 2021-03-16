@@ -202,12 +202,12 @@ class FlowJsonLink:
             port_label = 'o_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
             # データデストからの入力ポート名は'o'固定
-            src_tubes = [Tube(Port('o', 'frame'), step)]
+            src_tube = Tube(Port('o', 'frame'), step)
         else:
-            src_tubes = [Tube(Port(port_label, 'mcmd'), step)]
+            src_tube = Tube(Port(port_label, 'mcmd'), step)
 
         # NOTE: stepとnew_pointのidが重複するが、フローエディタにロードされない上、保存もされないので問題にはならないだろう
-        new_point = Point(step.id, src_tubes, None, [Tube(None, None)], is_in=False, is_out=True)
+        new_point = Point(step.id, src_tube, None, Tube(None, None), is_in=False, is_out=True)
         flow.points.append(new_point)
         self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_label))
 
@@ -225,10 +225,10 @@ class FlowJsonLink:
             port_label = 'u_' + str(self.context.port_suffix_num)
             self.context.port_suffix_num += 1
             # データデスト空の入力ポート名は'u'固定
-            src_tubes = [Tube(Port('u', 'frame'), step)]
+            src_tube = Tube(Port('u', 'frame'), step)
         else:
-            src_tubes = [Tube(Port(port_label, 'frame'), step)]
-        new_point = Point(step.id, src_tubes, None, [Tube(None, None)], is_in=False, is_out=True)
+            src_tube = Tube(Port(port_label, 'frame'), step)
+        new_point = Point(step.id, src_tube, None, Tube(None, None), is_in=False, is_out=True)
         flow.points.append(new_point)
         self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_label))
 
@@ -303,7 +303,7 @@ class FlowJsonLink:
             # if len(flow.o_ports) == 0:
             if self.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
-                # lasts_point.dst_tubes = [Tube(None, None)]
+                # lasts_point.dst_tubes = Tube(None, None)
                 lasts_point.is_out = True
 
             # lasts_pointの上に繋がっているpointsを取得する

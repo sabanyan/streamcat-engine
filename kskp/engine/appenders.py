@@ -2,7 +2,7 @@ from kskp.core import Port
 from kskp.depo.std.commands import CommandLink
 from .point import Point
 from .step import Step
-from .tube import Tube
+from .tube import Tubes, Tube
 
 class FolderDataSourcePrepender():
     def __init__(self, datum_factory):
@@ -23,8 +23,8 @@ class FolderDataSourcePrepender():
         """
         loader_step = self._make_loader_step(frame_uuid)
         point_id = target_point.id + '_loader_point'
-        store_point = Point(point_id, [Tube(None, None)], store, [Tube(Port('folder', 'store'), loader_step)])
-        target_point.src_tubes = [Tube(Port('o', 'frame'), loader_step)]
+        store_point = Point(point_id, Tube(None, None), store, Tube(Port('folder', 'store'), loader_step))
+        target_point.src_tubes = Tubes(Tube(Port('o', 'frame'), loader_step))
         flow.points.append(store_point)
         flow.substeps.append(loader_step)
 
@@ -72,9 +72,9 @@ class FolderDataDestAppender():
         args['start_time'] = start_time
 
         saver_step = self._make_step(args, saver)
-        # store_point = Point(point.id + '_store_point', [Tube(None, None)], store, [Tube(Port('folder', 'store'), saver_step)])
-        saver_point = Point(point.id + '_saver', [Tube(Port('o', 'mcmd'), saver_step)], None, [Tube(None, None)])
-        # saver_point2 = Point(str(uuid.uuid4()), [Tube(Port('u', 'uuid'), saver_step)], None, [Tube(None, None)])
+        # store_point = Point(point.id + '_store_point', Tube(None, None), store, Tube(Port('folder', 'store'), saver_step))
+        saver_point = Point(point.id + '_saver', Tube(Port('o', 'mcmd'), saver_step), None, Tube(None, None))
+        # saver_point2 = Point(str(uuid.uuid4()), Tube(Port('u', 'uuid'), saver_step), None, Tube(None, None))
 
         self.switch_target(point, saver_step, saver_point)
 
@@ -95,10 +95,10 @@ class FolderDataDestAppender():
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.dst_tubes = [Tube(Port('i', 'frame'), saver_step)]
+            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), saver_step))
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.dst_tubes.append(Tube(Port('i', 'frame'), saver_step))
+            point.dst_tubes.add(Tube(Port('i', 'frame'), saver_step))
 
 class CacheDataDestAppender(FolderDataDestAppender):
 
@@ -113,11 +113,11 @@ class CacheDataDestAppender(FolderDataDestAppender):
     def switch_target(self, point, saver_step, saver_point):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.dst_tubes = [Tube(Port('i', 'frame'), saver_step)]
+            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), saver_step))
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
             tmp_tubes = point.dst_tubes
-            point.dst_tubes = [Tube(Port('i', 'frame'), saver_step)]
+            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), saver_step))
             saver_point.dst_tubes = tmp_tubes
             
 class VisDataDestAppender():
@@ -153,16 +153,16 @@ class VisDataDestAppender():
 
         # ConvToUtf8 Stepを繋げる
         point_id = point.id + '_convtoutf8'
-        convtoutf8_point = Point(point_id, [Tube(Port('o', 'frame'), convtoutf8_step)], None, [Tube(Port('i', 'frame'), rowrange_step)])
+        convtoutf8_point = Point(point_id, Tube(Port('o', 'frame'), convtoutf8_step), None, Tube(Port('i', 'frame'), rowrange_step))
         # RowRange Stepを繋げる
         point_id = point.id + '_rowrange'
-        rowrange_point = Point(point_id, [Tube(Port('o', 'frame'), rowrange_step)], None, [Tube(Port('i', 'frame'), mchkcsv_step)])
+        rowrange_point = Point(point_id, Tube(Port('o', 'frame'), rowrange_step), None, Tube(Port('i', 'frame'), mchkcsv_step))
         # MchkCsv Stepを繋げる
         point_id = point.id + '_mchkcsv'
-        mchkcsv_point = Point(point_id, [Tube(Port('o', 'frame'), mchkcsv_step)], None, [Tube(Port('i', 'frame'), tolist_step)])
+        mchkcsv_point = Point(point_id, Tube(Port('o', 'frame'), mchkcsv_step), None, Tube(Port('i', 'frame'), tolist_step))
         # ToListコマンドを繋げる
         point_id = point.id + '_tolist'
-        tolist_point = Point(point_id, [Tube(Port('o', 'frame'), tolist_step)], None, [Tube(None, None)])
+        tolist_point = Point(point_id, Tube(Port('o', 'frame'), tolist_step), None, Tube(None, None))
 
         self.switch_target(point, convtoutf8_step)
 
@@ -180,10 +180,10 @@ class VisDataDestAppender():
     def switch_target(self, point, step):
         if point.is_last:
             # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.dst_tubes = [Tube(Port('i', 'frame'), step)]
+            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), step))
         else:
             # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.dst_tubes.append(Tube(Port('i', 'frame'), step))
+            point.dst_tubes.add(Tube(Port('i', 'frame'), step))
 
     def do_append_after_runs(self, flow, point, original_out_point):
         visualizer_step, visualizer_point = self._put_visualizer(flow, point, original_out_point)
@@ -202,11 +202,11 @@ class VisDataDestAppender():
         visualizer_cmd_name = visualizer_args['visualizer']
         visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
         visualizer_step = self._make_step(visualizer_args, visualizer_cmd)
-        visualizer_point = Point(point.id + '_v', [Tube(Port('o', 'datum'), visualizer_step)], None, [Tube(None, None)])
+        visualizer_point = Point(point.id + '_v', Tube(Port('o', 'datum'), visualizer_step), None, Tube(None, None))
 
         # VisPointにVisualizerフローを繋げる
         # point.id = str(uuid.uuid4())
-        point.dst_tubes = [Tube(Port('i', 'frame'), visualizer_step)]
+        point.dst_tubes = Tubes(Tube(Port('i', 'frame'), visualizer_step))
 
         flow.substeps.append(visualizer_step)
         flow.points.append(visualizer_point)
@@ -246,14 +246,14 @@ class ActivityDataDestAppender():
         self.activity_step.args['points'][port_label] = original_out_point
 
         # PointにActivity Stepを繋げる
-        point.dst_tubes = [Tube(Port(port_label, 'datum'), self.activity_step)]
+        point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))
 
         # Activity_pointを作成し、これにActivity Stepを繋げる
         point_id = point.id + '_activity_' + port_label
         activity_point = Point(point_id,
-                               [Tube(Port('o', 'activity'), self.activity_step)],
+                               Tube(Port('o', 'activity'), self.activity_step),
                                None,
-                               [Tube(None, None)])
+                               Tube(None, None))
 
         # Stepのportsに追加する
         self.activity_step.i_ports.append(Port(port_label, 'datum'))
@@ -283,14 +283,14 @@ class RunsCommandAppender():
         # RunsCommandに繋げるPointを作成する
         port_label = str(self.next_port_no)
         point_id = point.id + '_runs'
-        runs_point = Point(point_id, [Tube(Port(port_label, 'datum?'), self.runs_step)], None, [Tube(None, None)])
+        runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step), None, Tube(None, None))
 
         # Stepのportsに追加する
         self.runs_step.i_ports.append(Port(port_label, 'mcmd'))
         self.runs_step.o_ports.append(Port(port_label, 'datum?'))
 
         # ここでRunsCommandを繋げる
-        point.dst_tubes = [Tube(Port(port_label, 'mcmd'), self.runs_step)]
+        point.dst_tubes = Tubes(Tube(Port(port_label, 'mcmd'), self.runs_step))
 
         if not self._already_step_added:
             flow.substeps.append(self.runs_step)
