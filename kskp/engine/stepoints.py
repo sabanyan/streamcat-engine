@@ -33,18 +33,25 @@ class Stepoints():
         # 実行すべきrunnableがもう残っていないなら、終了
         return self._make_outputs()
 
+    def _select_src_port(self, point):
+        """
+        Pointの入力Portから、データを取得する入力Portを1つ選択する
+        """
+        src_tube = point.src_tubes.get_flow_tube() or point.src_tubes[0]
+        return src_tube.port
+
     def _prepare_inputs(self, inputs):
         """
-        inputsを必要な部分に配置する
+        inputsで渡されたDatumを、フローの入力PortのPointに格納する
         """
-
         input_points = [p for p in self.points if p.is_for_input]
 
         for input_point in input_points:
-            if input_point.src_port.label not in inputs:
+            src_port_label = self._select_src_port(input_point).label
+            if src_port_label not in inputs:
                 # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
-                raise Exception(f'ポイント({input_point.id})の入力ポート({input_point.src_port.label})にデータが入力されませんでした')
-            input_point.datum = inputs[input_point.src_port.label]
+                raise Exception(f'ポイント({input_point.id})の入力ポート({src_port_label})にデータが入力されませんでした')
+            input_point.datum = inputs[src_port_label]
 
     def _search_invokable_steps(self):
         """
@@ -124,10 +131,11 @@ class Stepoints():
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
-                if not output_point.src_port.label in results:
-                    raise Exception(f'STEP({step.id})に出力ポート{(output_point.src_port.label)}が存在しません')
+                src_port_label = self._select_src_port(output_point).label
+                if not src_port_label in results:
+                    raise Exception(f'STEP({step.id})に出力ポート{(src_port_label)}が存在しません')
                 # 親フローに結果を戻す場合は戻す
-                output_point.datum = results.pop(output_point.src_port.label)
+                output_point.datum = results.pop(src_port_label)
 
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。

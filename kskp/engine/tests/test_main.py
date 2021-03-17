@@ -5607,13 +5607,12 @@ class MainTest(TestCaseBase):
         self.assertEqual(len(results['d2']), 1)
         self.assertIsInstance(results['d2'][0], CommandException)
 
-    # @unittest.skip('フローの途中に入力ポイントを配置するサブフローは不具合により呼び出せない')
-    def test_subflow_with_input_on_way(self):
+    def test_subflow_with_input_on_way1(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出せること
+        (フローJSONでのNodeの並び順によって結果が変わらないこと)
         """
 
-        # フローJSONでのNodeの並び順によって結果が変わってしまう
         sub_flow_json = {
             "label": "subflow2",
             "nodes": [
@@ -5672,6 +5671,192 @@ class MainTest(TestCaseBase):
                     },
                     "type": "command",
                     "label": "c2",
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "d3",
+                        "nodeId": "d3"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        flow_json = {
+            "label": "main2",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "args": {},
+                    "dsts": {
+                        "d1": "d1"
+                    },
+                    "srcs": {
+                        "d3": "d"
+                    },
+                    "type": "flow",
+                    "uuid": "5cd94ccf-a1bb-4cae-82ed-d75ddb77c535",
+                    "label": "f1",
+                    "srcsOrder": [
+                        "d3"
+                    ]
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # サブフローを作成する
+        sub_flow = self.root.create_flow('', FlowData(sub_flow_json))
+        sub_flow.uuid = '5cd94ccf-a1bb-4cae-82ed-d75ddb77c535'
+        sub_flow.save()
+
+        # フローを作成する
+        flow = self.root.create_flow('', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+        # フローを削除する
+        sub_flow.delete()
+
+    def test_subflow_with_input_on_way2(self):
+        """
+        フローの途中に入力ポイントを配置するサブフローを呼び出せること
+        (フローJSONでのNodeの並び順によって結果が変わらないこと)
+        """
+
+        sub_flow_json = {
+            "label": "subflow2",
+            "nodes": [
+                {
+                    "id": "d2",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客0", "数量1", "金額2"],
+                              ["x", 10, 100],
+                              ["x", 20, 200],
+                              ["y", 10, 300],
+                              ["y", 30, 400],
+                              ["y", 10, 500]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c2",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "d2"
+                    },
+                    "dsts": {
+                        "o": "d3"
+                    },
+                    "type": "command",
+                    "label": "c2",
+                    "commandId": "mcut",
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d3",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d3",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "d3"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    },
+                    "type": "command",
+                    "label": "c1",
                     "commandId": "mcut",
                     "srcsOrder": [
                         "i"

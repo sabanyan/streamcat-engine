@@ -23,13 +23,15 @@ class Point:
         self.cache = cache
 
     def __repr__(self):
-        if self.src_port is not None:
-            if self.src_runnable is None:
-                dom_o = f'self.{self.src_port.label}'
+        dom_o = ''
+        for tube in self.src_tubes:
+            if tube.port is not None:
+                if self.src_runnable is None:
+                    dom_o += f'(self.{tube.port.label})'
+                else:
+                    dom_o += f'({tube.runnable}.{tube.port.label})'
             else:
-                dom_o = f'{self.src_runnable}.{self.src_port.label}'
-        else:
-            dom_o = f'{self.src_runnable}.None'
+                dom_o += f'({tube.runnable}.None)'
 
         cod_i = ''
         for tube in self.dst_tubes:
@@ -59,8 +61,10 @@ class Point:
 
     @property
     def is_for_input(self):
-        return self.src_runnable is None and self.src_port is not None and self.datum is None
-        # return self.is_in and self.src_port is not None and self.datum is None
+        """
+        親フローに繋がるPointで、かつDatumが格納されていなければTrueを返す
+        """
+        return self.src_tubes.get_flow_tube() is not None and self.datum is None
 
     @property
     def is_store(self):

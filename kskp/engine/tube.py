@@ -36,7 +36,7 @@ class Tubes:
     def add(self, tube):
         self._tubes.append(tube)
 
-    def get_flow_tube(self):
+    def get_flow_tube(self) -> Tube:
         """
         親フローに繋がるTubeがあれば返す
         """
@@ -44,6 +44,7 @@ class Tubes:
             if tube.is_flow_tube:
                 # 1つのPointoに、フローに繋がるTubeが複数存在することはない
                 return tube
+        # フローに繋がるTubeが無ければNoneを返す
         return None
 
     def __iter__(self):
