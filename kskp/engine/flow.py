@@ -25,7 +25,7 @@ class Flow(FlowData):
         self.datum_factory = datum_factory
         self.folder_data_source_prepender = FolderDataSourcePrepender(datum_factory)
 
-        self.stepoints = Stepoints(steps=[], points=[], o_ports=self.o_ports)
+        self.stepoints = Stepoints(steps=[], points=[], o_ports=self.o_ports, is_root=is_root)
 
         # flowを設定する
         if flow_data.has_nodes:
@@ -33,7 +33,7 @@ class Flow(FlowData):
             # そのため、use_exec_auth=Trueを指定する
             substeps, points = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
             # StepsとPointsを格納する
-            self.stepoints = Stepoints(steps=substeps, points=points, o_ports=self.o_ports)
+            self.stepoints = Stepoints(steps=substeps, points=points, o_ports=self.o_ports, is_root=is_root)
             # 
             self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
 
@@ -314,7 +314,7 @@ class Flow(FlowData):
         # lasts = {}
         # for p in self.points:
         #     for dst_tube in p.dst_tubes:
-        #         if dst_tube.runnable is None:
+        #         if dst_tube.step is None:
         #             lasts[p.point_id] = p.datum
 
         # return lasts

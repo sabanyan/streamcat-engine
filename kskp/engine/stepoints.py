@@ -1,9 +1,15 @@
+from typing import List
+from kskp.core import Port
+from .step import Step
+from .point import Point
+
 class Stepoints():
 
-    def __init__(self, steps, points, o_ports):
+    def __init__(self, steps:List[Step], points:List[Point], o_ports:List[Port], is_root:bool):
         self.substeps = steps
         self.points = points
         self.o_ports = o_ports
+        self.is_root = is_root
 
     def run(self, args, inputs):
         """
@@ -33,13 +39,6 @@ class Stepoints():
         # 実行すべきrunnableがもう残っていないなら、終了
         return self._make_outputs()
 
-    def _select_src_port(self, point):
-        """
-        Pointの入力Portから、データを取得する入力Portを1つ選択する
-        """
-        src_tube = point.src_tubes.get_flow_tube() or point.src_tubes[0]
-        return src_tube.port
-
     def _prepare_inputs(self, inputs):
         """
         inputsで渡されたDatumを、フローの入力PortのPointに格納する
@@ -47,11 +46,16 @@ class Stepoints():
         input_points = [p for p in self.points if p.is_for_input]
 
         for input_point in input_points:
-            src_port_label = self._select_src_port(input_point).label
-            if src_port_label not in inputs:
+            src_port_label = input_point.src_tubes.select_flow_tube().port.label
+
+            if src_port_label in inputs:
+                input_point.datum = inputs[src_port_label]
+            elif not self.is_root:
                 # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
                 raise Exception(f'ポイント({input_point.id})の入力ポート({src_port_label})にデータが入力されませんでした')
-            input_point.datum = inputs[src_port_label]
+            else:
+                # メインフローの場合は、入力PortのPointは無視するのでDatumの格納はしない
+                pass
 
     def _search_invokable_steps(self):
         """
@@ -63,10 +67,10 @@ class Stepoints():
         # 最初に「最後の矢印」を集める
         # last_steps = set()
         # for p in self.points:
-        #     for dst_tube in p.dst_tubes:
-        #         if dst_tube.runnable is None and p.datum is None:
-        #             last_steps.add(p.src_runnable)
-        last_steps = {p.src_runnable for p in self.points if p.is_last and p.datum is None}
+        #     if p.is_last and p.datum is None:
+        #         for src_tube in p.src_tubes:
+        #             last_steps.add(src_tube.step)
+        last_steps = {src_tube.step for p in self.points if p.is_last and p.datum is None for src_tube in p.src_tubes}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self._search_first_steps_to_run(s) for s in last_steps)
@@ -82,17 +86,17 @@ class Stepoints():
         # 該当stepの実行に必要なpointを取得する
         # prev_points = set()
         # for p in self.points:
-        #     for dst_tube in p.dst_tubes:
-        #         if dst_tube.runnable == original_step:
-        #             prev_points.add(p)
-        prev_points = {p for p in self.points if any(dst_tube.runnable == original_step for dst_tube in p.dst_tubes)}
+        #     if p.dst_tubes.have_step(original_step):
+        #         prev_points.add(p)
+        prev_points = {p for p in self.points if p.dst_tubes.have_step(original_step)}
 
         # 全ての引数が埋まっていれば、実行可能とみなして走査終了
         if all([a.datum is not None for a in prev_points]):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self._search_first_steps_to_run(a.src_runnable) for a in prev_points if a.datum is None and a.src_runnable is not None)
+        return union(self._search_first_steps_to_run(src_tube.step) 
+                     for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
 
     def _run_invokable_steps(self, steps, flow_args):
         """
@@ -108,13 +112,11 @@ class Stepoints():
                 step.replace_args(flow_args)
 
             # jobを作るためにinputsを集める
-            # inputs = {a.dst_tube.port.label: a.datum for a in self.points if a.dst_tube.runnable == step}
             inputs = {}
             for p in self.points:
-                for dst_tube in p.dst_tubes:
-                    if dst_tube.runnable == step:
-                        # コマンドのinputs引数に値を格納する
-                        inputs[dst_tube.port.label] = p.datum
+                for dst_tube in p.dst_tubes.filter_by_step(step):
+                    # コマンドのinputs引数に値を格納する
+                    inputs[dst_tube.port.label] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.runnable.context['step_id'] = step.id
@@ -127,11 +129,11 @@ class Stepoints():
 
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
-            output_points = {point for point in self.points if point.src_runnable == step}
+            output_points = {point for point in self.points if point.src_tubes.have_step(step)}
 
             # それぞれのpointに結果を格納する
             for output_point in output_points:
-                src_port_label = self._select_src_port(output_point).label
+                src_port_label = output_point.src_tubes.filter_by_step(step)[0].port.label
                 if not src_port_label in results:
                     raise Exception(f'STEP({step.id})に出力ポート{(src_port_label)}が存在しません')
                 # 親フローに結果を戻す場合は戻す

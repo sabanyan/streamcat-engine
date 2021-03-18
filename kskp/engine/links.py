@@ -73,10 +73,10 @@ class FlowJsonLink:
         # Runs/Activity Commandへ渡すポートを中継する
         for p in flow.points:
             for p_dst_tube in p.dst_tubes:
-                if p_dst_tube.runnable is None:
+                if p_dst_tube.step is None:
                     continue
 
-                step = p_dst_tube.runnable
+                step = p_dst_tube.step
                 # データデストの場合
                 if step.is_datadst:
                     # oポートの中継
@@ -269,7 +269,7 @@ class FlowJsonLink:
             for dst_tube in point.dst_tubes:
                 if dst_tube.is_None:
                     continue
-                if dst_tube.runnable is not None and len(dst_tube.runnable.runnable.o_ports) == 0: 
+                if dst_tube.step is not None and len(dst_tube.step.runnable.o_ports) == 0: 
                     ret.append(point.id)
         return ret
 
@@ -326,9 +326,17 @@ class FlowJsonLink:
         for point in points:
             for p_dst_tube in point.dst_tubes:
                 # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
-                if p_dst_tube.runnable is current_point.src_runnable:
+
+                # if p_dst_tube.step is current_point.src_runnable:
+                #     necessary_points.append(point)
+                #     if not (point.datum is not None or point.is_first):
+                #         necessary_points.extend(self._search_necessary_point(points, point))
+
+                if current_point.src_tubes.have_step(p_dst_tube.step):
                     necessary_points.append(point)
-                    if not (point.datum is not None or point.is_first):
+                    # pointの出力Tubeが無い、またはサブフローとして実行される場合は、入力Pointの場合、is_first=True
+                    is_first = point.dst_tubes.is_null or (not self.is_root and point.is_in)
+                    if point.datum is None and not is_first:
                         necessary_points.extend(self._search_necessary_point(points, point))
 
         return necessary_points

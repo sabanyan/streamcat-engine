@@ -10,7 +10,7 @@ class DataSourceTest(TestCaseBase):
     フローの入出力指定の検証
     """
 
-    def test_subflow_with_input_on_way1(self):
+    def test_subflow_with_input_on_way(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -207,3 +207,197 @@ class DataSourceTest(TestCaseBase):
 
         # フローを削除する
         sub_flow.delete()
+
+    def test_mainflow_with_input_on_way(self):
+        """
+        フローの途中に入力ポイントを配置するフローをメインフローとして実行した場合、
+        入力ポイントは無視されること
+        """
+
+        flow_json = {
+            "label": "test",
+            "nodes": [
+                {
+                "id": "d",
+                "label": "testData",
+                "type": "frame",
+                "uuid": None,
+                "value": [["顧客", "数量", "金額"],
+                            ["x", 1, 10],
+                            ["x", 2, 20],
+                            ["y", 1, 30],
+                            ["y", 3, 40],
+                            ["z", 1, 50]],
+                "makeCache": False,
+                "dataSource": "csv",
+                "cacheCreatedAt": None
+                },
+                {
+                "id": "c1",
+                "label": "c1",
+                "type": "command",
+                "commandId": "mcut",
+                "args": {
+                    "f": "*"
+                },
+                "srcs": {
+                    "i": "d"
+                },
+                "dsts": {
+                    "o": "d1"
+                },          
+                "srcsOrder": [
+                    "i"
+                ]
+                }, 
+                {
+                "id": "d1",
+                "label": "d1",
+                "type": "frame",
+                "uuid": None,
+                "makeCache": False,
+                "dataSource": "csv",
+                "cacheCreatedAt": None
+                },
+                {
+                "id": "c2",
+                "label": "c2",
+                "type": "command",
+                "commandId": "mcut",
+                "args": {
+                    "f": "*"
+                },
+                "srcs": {
+                    "i": "d1"
+                },
+                "dsts": {
+                    "o": "d2"
+                },
+                "srcsOrder": [
+                    "i"
+                ]
+                },
+                {
+                "id": "d2",
+                "label": "d2",
+                "type": "frame",
+                "uuid": None,
+                "makeCache": False,
+                "dataSource": "csv",
+                "cacheCreatedAt": None
+                },
+                {
+                "id": "c3",
+                "label": "c3",
+                "type": "command",
+                "commandId": "mcut",
+                "args": {
+                    "f": "*"
+                },
+                "srcs": {
+                    "i": "d2"
+                },
+                "dsts": {
+                    "o": "d3"
+                },
+                "srcsOrder": [
+                    "i"
+                ]
+                },
+                {
+                "id": "d3",
+                "label": "d3",
+                "type": "frame",
+                "uuid": None,
+                "makeCache": False,
+                "dataSource": "csv",
+                "cacheCreatedAt": None
+                },
+            ],
+            "ports": [
+                [
+                {
+                    "type": "frame",
+                    "label": "d1",
+                    "nodeId": "d1"
+                },
+                {
+                    "type": "frame",
+                    "label": "d2",
+                    "nodeId": "d2"
+                },
+                {
+                    "type": "frame",
+                    "label": "d3",
+                    "nodeId": "d3"
+                }
+                ],
+                [
+                {
+                    "type": "frame",
+                    "label": "d1",
+                    "nodeId": "d1"
+                },
+                {
+                    "type": "frame",
+                    "label": "d2",
+                    "nodeId": "d2"
+                },
+                {
+                    "type": "frame",
+                    "label": "d3",
+                    "nodeId": "d3"
+                }
+                ]
+            ],
+            "params": [],
+            "creator": "ユーザー管理者",
+            "createdAt": "2021-03-17 11:35:39",
+            "projectId": None,
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # フローを作成する
+        flow = root.create_flow('', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          },
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          },
+          "d3": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは3つ生成されているか
+        self.assertEqual(3, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['x','1','10'], ['x','2','20'],['y','1','30'], ['y','3','40'], ['z','1','50']],
+                   'd2': [['x','1','10'], ['x','2','20'],['y','1','30'], ['y','3','40'], ['z','1','50']],
+                   'd3': [['x','1','10'], ['x','2','20'],['y','1','30'], ['y','3','40'], ['z','1','50']]}
+        self.assertDictEqual(lasts, correct)

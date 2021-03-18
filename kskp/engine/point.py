@@ -26,22 +26,22 @@ class Point:
         dom_o = ''
         for tube in self.src_tubes:
             if tube.port is not None:
-                if self.src_runnable is None:
+                if tube.step is None:
                     dom_o += f'(self.{tube.port.label})'
                 else:
-                    dom_o += f'({tube.runnable}.{tube.port.label})'
+                    dom_o += f'({tube.step}.{tube.port.label})'
             else:
-                dom_o += f'({tube.runnable}.None)'
+                dom_o += f'({tube.step}.None)'
 
         cod_i = ''
         for tube in self.dst_tubes:
             if tube.port is not None:
-                if tube.runnable is None:
+                if tube.step is None:
                     cod_i += f'(self.{tube.port.label})'
                 else:
-                    cod_i += f'({tube.runnable}.{tube.port.label})'
+                    cod_i += f'({tube.step}.{tube.port.label})'
             else:
-                cod_i += f'({tube.runnable}.None)'
+                cod_i += f'({tube.step}.None)'
 
         if self.datum is None:
             return f'{self.id}<{dom_o} -> {cod_i}>'
@@ -64,7 +64,7 @@ class Point:
         """
         親フローに繋がるPointで、かつDatumが格納されていなければTrueを返す
         """
-        return self.src_tubes.get_flow_tube() is not None and self.datum is None
+        return self.src_tubes.find_flow_tube() is not None and self.datum is None
 
     @property
     def is_store(self):
@@ -80,7 +80,7 @@ class Point:
         """
         入力元Tubeのうち1番目のRunnableオブジェクト
         """
-        return self.src_tubes[0].runnable
+        return self.src_tubes[0].step
 
     @property
     def is_last(self):
@@ -88,21 +88,14 @@ class Point:
         フローの終端のものかどうか（サブ、rootどちらでも良い）
         targetのrunnableにNoneがある場合は終端となっている
         """
-        return any(dst_tube.runnable is None for dst_tube in self.dst_tubes)
+        return any(dst_tube.step is None for dst_tube in self.dst_tubes)
 
     @property
     def is_root_last(self):
         """
         rootのフローの終端かどうか
         """
-        return any(dst_tube.runnable is None and dst_tube.port is None for dst_tube in self.dst_tubes)
-
-    @property
-    def is_first(self):
-        """
-        フローの始端のものかどうか（サブ、rootどちらでも良い）
-        """
-        return self.src_runnable is None
+        return self.dst_tubes.is_null
 
     # @property
     # def is_root_first(self):
@@ -137,7 +130,12 @@ class Point:
         初期値が[Tube(None, None)]のため、appendするとTube(None, None)が残る
         なので、上書きしている
         """
-        if self.is_root_last:
+        # if self.is_root_last:
+        #     self.dst_tubes = Tubes(tube)
+        # else:
+        #     self.dst_tubes.add(tube)
+
+        if self.dst_tubes is None or len(self.dst_tubes)==0 or self.dst_tubes[0].is_None:
             self.dst_tubes = Tubes(tube)
         else:
             self.dst_tubes.add(tube)

@@ -88,7 +88,7 @@ class FolderDataDestAppender():
         """
         saverコマンドのstepを作成する
         """
-        return Step(str(type(cmd)), cmd, args)
+        return Step(cmd.label, cmd, args)
 
     # TODO: 解りづらい関数化
     # engineのリファクタリングで見直し予定
@@ -217,7 +217,7 @@ class VisDataDestAppender():
         """
         visualizerコマンドのstepを作成する
         """
-        return Step(str(type(cmd)), cmd, args)
+        return Step(cmd.label, cmd, args)
 
 class ActivityDataDestAppender():
     def __init__(self, flow_uuid):
