@@ -267,7 +267,7 @@ class FlowJsonLink:
         ret = []
         for point in points:
             for dst_tube in point.dst_tubes:
-                if dst_tube.is_None:
+                if dst_tube.is_null:
                     continue
                 if dst_tube.step is not None and len(dst_tube.step.runnable.o_ports) == 0: 
                     ret.append(point.id)

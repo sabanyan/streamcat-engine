@@ -116,7 +116,7 @@ class Point:
         指定したTubeでsrc_tubesを更新する
         複数のsrc_tubeをもつPointはないので、上書きだけ（appendする必要がない）
         """
-        if self.src_tubes is None or len(self.src_tubes)==0 or self.src_tubes[0].is_None:
+        if self.src_tubes is None or len(self.src_tubes)==0 or self.src_tubes[0].is_null:
             self.src_tubes = Tubes(tube)
         else:
             self.src_tubes.add(tube)
@@ -135,7 +135,7 @@ class Point:
         # else:
         #     self.dst_tubes.add(tube)
 
-        if self.dst_tubes is None or len(self.dst_tubes)==0 or self.dst_tubes[0].is_None:
+        if self.dst_tubes is None or len(self.dst_tubes)==0 or self.dst_tubes[0].is_null:
             self.dst_tubes = Tubes(tube)
         else:
             self.dst_tubes.add(tube)

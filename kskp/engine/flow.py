@@ -191,7 +191,8 @@ class Flow(FlowData):
                 continue
 
             # 入力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
-            if not target_point.is_in:
+            # ただし、メインフローの場合は入力Pointか否かを条件にしない
+            if self.is_root or not target_point.is_in:
                 if self._is_value_node(node):
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
@@ -268,8 +269,8 @@ class Flow(FlowData):
         if point_id in point_ids:
             point = flow.select_point_by_id(point_id)
             # 既存のpointを更新する
-            src_tube.is_None or point.add_src_tube(src_tube)
-            dst_tube.is_None or point.add_dst_tube(dst_tube)
+            src_tube.is_null or point.add_src_tube(src_tube)
+            dst_tube.is_null or point.add_dst_tube(dst_tube)
             point.is_in = is_in
             point.is_out = is_out
         else:

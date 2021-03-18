@@ -9,13 +9,13 @@ class Tube:
         self.step = step
 
     def __repr__(self):
-        if self.is_None:
+        if self.is_null:
             return f'(None.None)'
         else:
             return f'({self.step}.{self.port.label})'
 
     @property
-    def is_None(self):
+    def is_null(self):
         return self.port is None and self.step is None
 
     @property
@@ -41,8 +41,8 @@ class Tubes:
 
     @property
     def is_null(self):
-        # return len([tube for tube in self._tubes if not tube.is_None]) == 0
-        return len(self._tubes) == 0 or all(tube.is_None for tube in self._tubes)
+        # return len([tube for tube in self._tubes if not tube.is_null]) == 0
+        return len(self._tubes) == 0 or all(tube.is_null for tube in self._tubes)
 
     @property
     def is_in(self):
