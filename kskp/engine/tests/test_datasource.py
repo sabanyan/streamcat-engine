@@ -633,7 +633,8 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    # 対策できていないためエラーになる
+    # 入力ポイントより前のコマンドの実行を許可するか否か、仕様が未定
+    # そのため、エラーになる
     def test_subflow_with_outin_on_way(self):
         """
         フローの途中に出力と入力ポイントの順に配置するサブフローを呼び出した場合、
@@ -972,3 +973,379 @@ class DataSourceTest(TestCaseBase):
                          ["B","20180107","4000"]]}
 
         self.assertDictEqual(lasts, correct)
+
+    def test_subflow_output_on_way(self):
+        """
+        フローの途中に出力ポイントを配置するサブフローを呼び出した場合、
+        出力ポイントより後ろのコマンドは実行されないこと
+        """
+
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "testData", 
+                    "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                }, 
+                {
+                    "id": "c1", 
+                    "label": "c1", 
+                    "type": "command", 
+                    "commandId": "msetstr", 
+                    "args": {
+                        "a": "str", 
+                        "v": "文字列です"
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d1", 
+                    "label": "d1", 
+                    "type": "frame", 
+                    "uuid": None, 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c2", 
+                    "label": "c2", 
+                    "type": "command", 
+                    "commandId": "raise", 
+                    "args": {}, 
+                    "srcs": {
+                        "i": "d1"
+                    }, 
+                    "dsts": {
+                        "o": "d2"
+                    }, 
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d2", 
+                    "label": "d2", 
+                    "type": "frame", 
+                    "uuid": None, 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                },
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ], 
+            "params": []
+        }
+
+        flow_json = {
+            "label": "main",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "args": {},
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {
+                        "d1": "d1"
+                    },
+                    "type": "flow",
+                    "uuid": "ebb8d60e-fcb6-44c1-8db0-1c3330c83dbc",
+                    "label": "f1",
+                    "srcsOrder": [
+                        "d3"
+                    ]
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('', FlowData(sub_flow_json))
+        sub_flow.uuid = 'ebb8d60e-fcb6-44c1-8db0-1c3330c83dbc'
+        sub_flow.save()
+
+        # フローを作成する
+        flow = root.create_flow('', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10','文字列です'],
+                          ['A','2','20','文字列です'],
+                          ['B','1','30','文字列です'],
+                          ['B','3','40','文字列です'],
+                          ['B','1','50','文字列です']]}
+        self.assertDictEqual(lasts, correct)
+
+        # フローを削除する
+        sub_flow.delete()
+
+    def test_subflow_with_in_and_out_point(self):
+        """
+        フローの途中に入力かつ出力ポイントを配置するサブフローを呼び出した場合、
+        入力ポイントより手前のコマンドは実行されないこと
+        出力ポイントより後ろのコマンドは実行されないこと
+        """
+
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "testData", 
+                    "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                }, 
+                {
+                    "id": "c1", 
+                    "label": "c1", 
+                    "type": "command", 
+                    "commandId": "raise", 
+                    "args": {
+                        "message": "Here we go! ⚡️"
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d1", 
+                    "label": "d1", 
+                    "type": "frame", 
+                    "uuid": None, 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c2", 
+                    "label": "c2", 
+                    "type": "command", 
+                    "commandId": "raise", 
+                    "args": {
+                        "message": "Hoho! ⚡️"
+                    }, 
+                    "srcs": {
+                        "i": "d1"
+                    }, 
+                    "dsts": {
+                        "o": "d2"
+                    }, 
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d2", 
+                    "label": "d2", 
+                    "type": "frame", 
+                    "uuid": None, 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                },
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ], 
+            "params": []
+        }
+
+        flow_json = {
+            "label": "main",
+            "nodes": [
+                {
+                    "id": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                              ["A", 1, 10],
+                              ["A", 2, 20],
+                              ["B", 1, 30],
+                              ["B", 3, 40],
+                              ["B", 1, 50]],
+                    "label": "percent",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "args": {},
+                    "srcs": {
+                        "d1": "d"
+                    },
+                    "dsts": {
+                        "d1": "d1"
+                    },
+                    "type": "flow",
+                    "uuid": "deb9a201-02aa-4afc-9502-4fafb5104ea4",
+                    "label": "f1",
+                    "srcsOrder": [
+                        "d3"
+                    ]
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "label": "d1",
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('', FlowData(sub_flow_json))
+        sub_flow.uuid = 'deb9a201-02aa-4afc-9502-4fafb5104ea4'
+        sub_flow.save()
+
+        # フローを作成する
+        flow = root.create_flow('', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # フローを実行する
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','1','10'],
+                          ['A','2','20'],
+                          ['B','1','30'],
+                          ['B','3','40'],
+                          ['B','1','50']]}
+        self.assertDictEqual(lasts, correct)
+
+        # フローを削除する
+        sub_flow.delete()

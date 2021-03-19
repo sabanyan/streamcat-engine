@@ -312,13 +312,6 @@ class Flow(FlowData):
 
     @property
     def lasts(self):
-        # lasts = {}
-        # for p in self.points:
-        #     for dst_tube in p.dst_tubes:
-        #         if dst_tube.step is None:
-        #             lasts[p.point_id] = p.datum
-
-        # return lasts
         return {p.id: p.datum for p in self.points if p.is_last}
 
     @property

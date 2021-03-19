@@ -65,12 +65,13 @@ class Stepoints():
         # まず、グラフ構造を解析する必要がある
 
         # 最初に「最後の矢印」を集める
+        # 「最後」とはis_out=TrueのPointのことである
         # last_steps = set()
         # for p in self.points:
-        #     if p.is_last and p.datum is None:
+        #     if p.is_out and p.datum is None:
         #         for src_tube in p.src_tubes:
         #             last_steps.add(src_tube.step)
-        last_steps = {src_tube.step for p in self.points if p.is_last and p.datum is None for src_tube in p.src_tubes}
+        last_steps = {src_tube.step for p in self.points if p.is_out and p.datum is None for src_tube in p.src_tubes}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
         first_steps = union(self._search_first_steps_to_run(s) for s in last_steps)

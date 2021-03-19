@@ -219,54 +219,6 @@ class VisDataDestAppender():
         """
         return Step(cmd.label, cmd, args)
 
-class ActivityDataDestAppender():
-    def __init__(self, flow_uuid):
-        # core.pyで定義されているFlowはf
-        # flow.pyで定義されているFlowはflowと表記する
-        self.flow_uuid = flow_uuid
-
-        # Activityコマンドを取得する
-        activity_cmd = CommandLink('activity').resolve()
-        # Activity Datumを作成する
-        from kskp.store import Activity
-        activity = Activity(None, None, 'activity', flow_uuid)
-        # Activity Stepへの引数を作成する
-        activity_args = {'activity': activity, 'points':{}}
-        # Activity Stepを作成する
-        self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
-        self.activity_uuid = activity.uuid
-        # ポート名は0番から順に採番する
-        self.next_port_no = 0
-        # Flow.substepsにruns_stepをすでに追加した場合はTrue
-        self._already_step_added = set()
-
-    def do_append(self, flow, point, original_out_point):
-        # Activity Stepのargsにpointを追加する
-        port_label = str(self.next_port_no)
-        self.activity_step.args['points'][port_label] = original_out_point
-
-        # PointにActivity Stepを繋げる
-        point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))
-
-        # Activity_pointを作成し、これにActivity Stepを繋げる
-        point_id = point.id + '_activity_' + port_label
-        activity_point = Point(point_id,
-                               Tube(Port('o', 'activity'), self.activity_step),
-                               None,
-                               Tube(None, None))
-
-        # Stepのportsに追加する
-        self.activity_step.i_ports.append(Port(port_label, 'datum'))
-
-        if flow.uuid not in self._already_step_added:
-            flow.substeps.append(self.activity_step)
-            flow.points.append(activity_point)
-            self._already_step_added.add(flow.uuid)
-
-        self.next_port_no += 1
-
-        return activity_point
-
 class RunsCommandAppender():
     def __init__(self):
         # Runsコマンドを取得する
@@ -300,4 +252,57 @@ class RunsCommandAppender():
         self.next_port_no += 1
 
         return runs_point
+
+class ActivityDataDestAppender():
+    def __init__(self, flow_uuid):
+        # core.pyで定義されているFlowはf
+        # flow.pyで定義されているFlowはflowと表記する
+        self.flow_uuid = flow_uuid
+
+        # Activityコマンドを取得する
+        activity_cmd = CommandLink('activity').resolve()
+        # Activity Datumを作成する
+        from kskp.store import Activity
+        activity = Activity(None, None, 'activity', flow_uuid)
+        # Activity Stepへの引数を作成する
+        activity_args = {'activity': activity, 'points':{}}
+        # Activity Stepを作成する
+        self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
+        self.activity_uuid = activity.uuid
+        # ポート名は0番から順に採番する
+        self.next_port_no = 0
+        # Flow.substepsにruns_stepをすでに追加した場合はTrue
+        self._already_step_added = set()
+
+    def do_append(self, flow, point, original_out_point):
+        # Activity Stepのargsにpointを追加する
+        port_label = str(self.next_port_no)
+        self.activity_step.args['points'][port_label] = original_out_point
+
+        # 出力Point設定を元のPointからActivity_pointに変更する
+        original_out_point.is_out = False
+
+        # PointにActivity Stepを繋げる
+        point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))
+
+        # Activity_pointを作成し、これにActivity Stepを繋げる
+        # (Activity_pointを出力Pointに設定する)
+        point_id = point.id + '_activity_' + port_label
+        activity_point = Point(point_id,
+                               Tube(Port('o', 'activity'), self.activity_step),
+                               None,
+                               Tube(None, None),
+                               is_out=True)
+
+        # Stepのportsに追加する
+        self.activity_step.i_ports.append(Port(port_label, 'datum'))
+
+        if flow.uuid not in self._already_step_added:
+            flow.substeps.append(self.activity_step)
+            flow.points.append(activity_point)
+            self._already_step_added.add(flow.uuid)
+
+        self.next_port_no += 1
+
+        return activity_point
 

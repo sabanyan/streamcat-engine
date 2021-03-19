@@ -241,6 +241,8 @@ class FlowJsonLink:
         """
         指定するPointを出力PointとするPortを、フローに設定する
         """
+        # 出力Pointのis_outをTrueにする
+        out_point.is_out = True
         flow.o_ports.append(out_port)
         out_point.add_dst_tube(Tube(out_port, None))
 
