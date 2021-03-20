@@ -7034,7 +7034,122 @@ windows_dst = {
 	]
 }
 
+# Folderデータソース
+folder_src_json = {
+    "label": "Folderデータソース",
+    "creator": "開発用",
+    "createdAt": "2021-03-20 09:21:00",
+    "projectId": None,
+    "description": "",
+    "params": [
+      {
+        "name" : "frame_uuid",
+        "label": "入力ファイルのUUID",
+        "type" : "frame"
+      }
+    ],
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "label": "フォルダ",
+        "type": "store",
+        "uuid": "4062d99c-54e8-477c-8c3b-b08958e0d2f3"
+      },
+      {
+        "id": "c1",
+        "label": "c1",
+        "type": "command",
+        "commandId": "loader",
+        "args": {
+          "uuid": "@[frame_uuid]"
+        },
+        "srcs": {
+          "folder": "d"
+        },
+        "dsts": {
+          "o": "d1"
+        }
+      },
+      {
+        "id": "d1",
+        "label": "d1",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      }
+    ]
+}
 
+# Folderデータデスト
+folder_dst_json = {
+    "label": "Folderデータデスト",
+    "creator": "開発用",
+    "createdAt": "2021-03-20 09:29:00",
+    "projectId": None,
+    "description": "",
+    "params": [],
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "label": "フォルダ",
+        "type": "store",
+        "uuid": "634c1d1c-f224-45b8-b615-82b5e97b6643"
+      },
+      {
+        "id": "d1",
+        "label": "d1",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "label": "c1",
+        "type": "command",
+        "commandId": "saver",
+        "args": {},
+        "srcs": {
+          "i": "d1"
+        },
+        "dsts": {
+          "o": "d2"
+        }
+      },
+      {
+        "id": "d2",
+        "label": "d2",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      }
+    ]
+}
 
 test_json = {
     'sub1': sub1,

@@ -37,10 +37,18 @@ class Flow(FlowData):
             # 
             self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
 
-        # self.params = []
 
-        # self.points = []
-        # self.substeps = []
+        # 
+        # データデストか否かの判定をする
+        # 
+        # データデストのself.o_portsには、データデストの出力を親フローに繋げる為に、Portを追加するので
+        # Flowオブジェクトの生成時に判定する
+        # 
+        # TODO: いい条件が思い浮かばない,,,
+        # has_store = any (p for p in self.points if p.is_store)
+        # self._is_datadst = len(self.i_ports) == 1 and len(self.lasts) == 1 and has_store
+        self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
+
 
         from kskp.store import ModuleStore
         self.module_store = ModuleStore()
@@ -299,6 +307,13 @@ class Flow(FlowData):
         return node['type'] == 'command' or node['type'] == 'flow'
 
     @property
+    def is_datadst(self):
+        """
+        データデストの場合はTrueを返す
+        """
+        return self._is_datadst
+
+    @property
     def points(self):
         return self.stepoints.points
 
@@ -317,15 +332,6 @@ class Flow(FlowData):
     @property
     def outs(self):
         return {p.id: p.datum for p in self.points if p.is_out}
-
-    @property
-    def is_datadst(self):
-        """
-        データデストの場合はTrueを返す
-        """
-        # TODO: いい条件が思い浮かばない,,,
-        has_store = any (p for p in self.points if p.is_store)
-        return len(self.i_ports) == 1 and len(self.lasts) == 1 and has_store
 
     def run(self, args, inputs):
         """

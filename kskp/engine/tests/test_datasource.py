@@ -1,9 +1,13 @@
 import copy
 import unittest
+import shutil
+from pathlib import Path
+
+from kskp.core import Datum
 from kskp.store import FlowData
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowJsonLink
-from .test_main import convert_from_activity_vis
+from .test_main import convert_from_activity, convert_from_activity_vis
 
 class DataSourceTest(TestCaseBase):
     """
@@ -1349,3 +1353,164 @@ class DataSourceTest(TestCaseBase):
 
         # フローを削除する
         sub_flow.delete()
+
+
+    def test_subflow_with_datasource_and_dest(self):
+        """
+        データソースとデストを持つサブフローを実行・プレビューすると、その入出力も実行されること
+        (プレビューであってもデータデストを実行して出力を実行する)
+        """
+
+        sub_flow_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2021-3-20 09:39:00",
+            "projectId": None,
+            "description": "",
+            "params": [
+                {
+                    "name" : "frame_uuid",
+                    "label": "入力ファイルのUUID",
+                    "type" : "frame"
+                }
+            ],
+            "ports": [
+                [],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "f",
+                    "label": "Folderデータソース",
+                    "type": "flow",
+                    "uuid": "5befab77-d9e8-4bba-b581-cbaf2537f3de",
+                    "args": {
+                        "frame_uuid": "@[frame_uuid]"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "d1": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "label": "Folderデータデスト",
+                    "type": "flow",
+                    "uuid": "7ed12207-e7fe-416d-b97c-682020ffa797",
+                    "args": {},
+                    "srcs": {
+                        "d1": "d"
+                    },
+                    "dsts": {}
+                }
+            ]
+        }
+
+        flow_json = {
+            "label": "main",
+            "params": [
+                {
+                    "name" : "frame_uuid",
+                    "label": "入力ファイルのUUID",
+                    "type" : "frame"
+                }
+            ],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "f0",
+                    "label": "f0",
+                    "type": "flow",
+                    "uuid": "de29a88c-f1f4-4e00-b9ff-1f1083a2f4c4",
+                    "args": {
+                        "frame_uuid": "@[frame_uuid]"
+                    },
+                    "srcs": {},
+                    "dsts": {},
+                    "srcsOrder": []
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # 入力フォルダを作成する
+        in_folder = root.create_folder('入力フォルダ')
+        in_folder.uuid = '4062d99c-54e8-477c-8c3b-b08958e0d2f3'
+        in_folder.save()
+        in_folder = in_folder.reload()
+
+        # 出力フォルダを作成する
+        out_folder = root.create_folder('出力フォルダ')
+        out_folder.uuid = '634c1d1c-f224-45b8-b615-82b5e97b6643'
+        out_folder.save()
+
+        # 入力CSVファイルを作成する
+        MY_TESTDATA_DIR = Path('../kskp-flow-engine/kskp/engine/tests/test_data/')
+        in_file_path = in_folder.path / '2500.csv'
+        shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
+
+        # 入力CSVフレームを作成する
+        in_frame = in_folder.create_frame('2500.csv', None)
+        in_frame.save(file_path=in_file_path)
+
+        # サブフロー(フォルダデータソース)の作成
+        from .make_flow_json import folder_src_json
+        folder_src = root.create_flow('folder_src', FlowData(folder_src_json))
+        folder_src.uuid = '5befab77-d9e8-4bba-b581-cbaf2537f3de'
+        folder_src.save()
+        folder_src = folder_src.reload()
+
+        # サブフロー(フォルダデータデスト)の作成
+        from .make_flow_json import folder_dst_json
+        folder_dst = root.create_flow('folder_dst', FlowData(folder_dst_json))
+        folder_dst.uuid = '7ed12207-e7fe-416d-b97c-682020ffa797'
+        folder_dst.save()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = 'de29a88c-f1f4-4e00-b9ff-1f1083a2f4c4'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        # 0入力0出力のフローは実行されないため結果は0件になる
+        self.assertEqual(len(lasts), 0)
+
+        # サブフローを実行する
+        flow_link = FlowJsonLink(sub_flow, self.factory)
+        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['f1'], 'SaverCommandは結果(Datasource)を出力しませんでした')
+        out_frame = lasts['f1']
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.file_exists)
+
+        # ほかす
+        sub_flow.throw_away()
+        folder_dst.throw_away()
+        folder_src.throw_away()
+        out_folder.throw_away()
+        in_folder.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
