@@ -1354,7 +1354,6 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-
     def test_subflow_with_datasource_and_dest(self):
         """
         データソースとデストを持つサブフローを実行・プレビューすると、その入出力も実行されること
@@ -1514,3 +1513,307 @@ class DataSourceTest(TestCaseBase):
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
+
+    def test_subflow_with_datasource(self):
+        """
+        データソースを持つサブフローを実行・プレビューすると、その入力も実行されること
+        (プレビューであってもデータデストを実行して出力を実行する)
+        """
+
+        sub_flow_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2021-3-21 10:51:00",
+            "projectId": None,
+            "description": "",
+            "params": [
+                {
+                    "name" : "frame_uuid",
+                    "label": "入力ファイルのUUID",
+                    "type" : "frame"
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ]
+            ],
+            "nodes": [
+                {
+                    "id": "f",
+                    "label": "Folderデータソース",
+                    "type": "flow",
+                    "uuid": "6f1cf477-9ce8-41cc-be74-0c3fe6068d8f",
+                    "args": {
+                        "frame_uuid": "@[frame_uuid]"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "d1": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ]
+        }
+
+        flow_json = {
+            "label": "main",
+            "params": [
+                {
+                    "name" : "frame_uuid",
+                    "label": "入力ファイルのUUID",
+                    "type" : "frame"
+                }
+            ],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "f0",
+                    "label": "f0",
+                    "type": "flow",
+                    "uuid": "8b21e5fa-98a8-489c-b341-4a5836c3132a",
+                    "args": {
+                        "frame_uuid": "@[frame_uuid]"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "d": "d"
+                    },
+                    "srcsOrder": []
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # 入力フォルダを作成する
+        in_folder = root.create_folder('入力フォルダ')
+        in_folder.uuid = '4062d99c-54e8-477c-8c3b-b08958e0d2f3'
+        in_folder.save()
+        in_folder = in_folder.reload()
+
+        # 入力CSVファイルを作成する
+        MY_TESTDATA_DIR = Path('../kskp-flow-engine/kskp/engine/tests/test_data/')
+        in_file_path = in_folder.path / '2500.csv'
+        shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
+
+        # 入力CSVフレームを作成する
+        in_frame = in_folder.create_frame('2500.csv', None)
+        in_frame.save(file_path=in_file_path)
+
+        # サブフロー(フォルダデータソース)の作成
+        from .make_flow_json import folder_src_json
+        folder_src = root.create_flow('folder_src', FlowData(folder_src_json))
+        folder_src.uuid = '6f1cf477-9ce8-41cc-be74-0c3fe6068d8f'
+        folder_src.save()
+        folder_src = folder_src.reload()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '8b21e5fa-98a8-489c-b341-4a5836c3132a'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['d'], 'Point"d"のプレビュー結果が得られませんでした')
+
+        # 正しいVisが得られるか
+        correct = [ '0.00191406997683585',
+                    '-0.132273064191617',
+                    '-0.0147741509760956',
+                    '0.259594465851272',
+                    '-0.148865534552684',
+                    '-0.0980084224351297',
+                    '-0.0808126083466136',
+                    '-0.0391955180039139',
+                    '0.182718539741551',
+                    '-0.0563577925748503',
+                    '0.00560793908366534',
+                    '-0.0391716076320939',
+                    '0.338283323489066',
+                    '0.234739185309381',
+                    '0.0760165884860558',
+                    '0.114321024266145',
+                    '-0.0182433456461233',
+                    '-0.177497756007984',
+                    '-0.184204068167331',
+                    '-0.0326978744618395',
+                    '0.0315082338369781']
+        self.assertEqual(lasts['d'][0], correct)
+
+        # ほかす
+        sub_flow.throw_away()
+        folder_src.throw_away()
+        in_folder.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_subflow_with_datadest(self):
+        """
+        データデストを持つサブフローを実行・プレビューすると、その出力も実行されること
+        (プレビューであってもデータデストを実行して出力を実行する)
+        """
+
+        sub_flow_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2021-3-21 11:41:00",
+            "projectId": None,
+            "description": "",
+            "params": [],
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ],
+                []
+            ],
+            "nodes": [
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "label": "Folderデータデスト",
+                    "type": "flow",
+                    "uuid": "b724993c-12cc-4ae3-b5e6-7b893f89346a",
+                    "args": {},
+                    "srcs": {
+                        "d1": "d"
+                    },
+                    "dsts": {}
+                }
+            ]
+        }
+
+        flow_json = {
+            "label": "main",
+            "params": [],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                                ["x", 1, 10],
+                                ["x", 2, 20],
+                                ["y", 1, 30],
+                                ["y", 3, 40],
+                                ["z", 1, 50]],
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f0",
+                    "label": "f0",
+                    "type": "flow",
+                    "uuid": "beefe9ba-7ccb-4536-9642-54207bcbddc7",
+                    "args": {},
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {},
+                    "srcsOrder": []
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # 出力フォルダを作成する
+        out_folder = root.create_folder('出力フォルダ')
+        out_folder.uuid = '634c1d1c-f224-45b8-b615-82b5e97b6643'
+        out_folder.save()
+
+        # サブフロー(フォルダデータデスト)の作成
+        from .make_flow_json import folder_dst_json
+        folder_dst = root.create_flow('folder_dst', FlowData(folder_dst_json))
+        folder_dst.uuid = 'b724993c-12cc-4ae3-b5e6-7b893f89346a'
+        folder_dst.save()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = 'beefe9ba-7ccb-4536-9642-54207bcbddc7'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['f0'], 'SaverCommandは結果(Datasource)を出力しませんでした')
+        out_frame = lasts['f0']
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.file_exists)
+
+        # ほかす
+        sub_flow.throw_away()
+        folder_dst.throw_away()
+        out_folder.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
