@@ -89,7 +89,7 @@ class Flow(FlowData):
                         'flow_label'   : self.link_context.flow_label,
                         'result_folder': self.link_context.flow_datum.find_parent(),
                         'start_time'   : self.link_context.start_time,
-                        'activity_uuid': self.link_context.activity_data_dest_appender.activity_uuid}
+                        'activity_uuid': self.link_context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(node['args'])
             else:

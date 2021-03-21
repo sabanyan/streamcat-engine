@@ -18,18 +18,19 @@ class FlowJsonLink:
         """
         FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
         """
-        def __init__(self, flow_datum):
+        def __init__(self, flow_datum, activity_uuid):
             self.flow_datum = flow_datum
             self.flow_uuid = flow_datum.uuid
             self.flow_label = flow_datum.label
 
+            # 処理のAcitivityのUUID
+            self.activity_uuid = activity_uuid
+
             # 処理の開始時刻を取得する
             from datetime import datetime, timezone
             self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
-            self.runs_command_appender = RunsCommandAppender()
-            self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
 
-            # {flow_uuid:, [(original_out_point:, points: ,port_label:)]}
+            # {flow_uuid: [(original_out_point, points ,port_label)]}
             self.detadst_o_points = {}
             # データデストの'u'ポートは削除したので、以下の処理を削除する
             # self.detadst_u_points = {}
@@ -56,8 +57,13 @@ class FlowJsonLink:
 
         self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory)
 
+        if is_root:
+            self.runs_command_appender = RunsCommandAppender()
+            self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
+
+
         if context is None:
-            self.context = FlowJsonLink.FlowLinkContext(flow_datum)
+            self.context = FlowJsonLink.FlowLinkContext(flow_datum, self.activity_data_dest_appender.activity_uuid)
         else:
             self.context = context
             
@@ -120,11 +126,11 @@ class FlowJsonLink:
                     # Visualizerコマンドのための前処理コマンドを付加する
                     out_point = self.vis_data_dest_appender.do_append(flow, first_out_point)
                     # Runsコマンドを付加する
-                    out_point = self.context.runs_command_appender.do_append(flow, out_point)
+                    out_point = self.runs_command_appender.do_append(flow, out_point)
                     # Visualizeコマンドを付加する
                     visualizer_point = self.vis_data_dest_appender.do_append_after_runs(flow, out_point, first_out_point)
                     # Activity Stepを付加する
-                    self.context.activity_data_dest_appender.do_append(flow, visualizer_point, first_out_point)
+                    self.activity_data_dest_appender.do_append(flow, visualizer_point, first_out_point)
 
             else:
 
@@ -136,9 +142,9 @@ class FlowJsonLink:
                         for detadst_o_points in self.context.detadst_o_points[flow.uuid]:
                             if detadst_o_points[1] == first_out_point:
                                 # Runsコマンドを付加する
-                                out_point = self.context.runs_command_appender.do_append(flow, first_out_point)
+                                out_point = self.runs_command_appender.do_append(flow, first_out_point)
                                 # Activity Stepを付加する
-                                self.context.activity_data_dest_appender.do_append(flow, out_point, first_out_point)
+                                self.activity_data_dest_appender.do_append(flow, out_point, first_out_point)
                                 point_is_input_datadest = True
 
                         # データデストの'u'ポートは削除したので、以下の処理を削除する
@@ -146,16 +152,16 @@ class FlowJsonLink:
                         #     if detadst_u_points[1] == first_out_point:
                         #         # Activity Stepを付加する
                         #         original_out_point = detadst_u_points[0]
-                        #         self.context.activity_data_dest_appender.do_append(flow, first_out_point, original_out_point)
+                        #         self.activity_data_dest_appender.do_append(flow, first_out_point, original_out_point)
                         #         point_is_input_datadest = True
 
                     if not point_is_input_datadest:
                         # Saverコマンドを付加する
                         out_point = self.folder_data_dest_appender.do_append(flow, first_out_point, self.context.start_time)
                         # Runsコマンドを付加する
-                        out_point = self.context.runs_command_appender.do_append(flow, out_point)
+                        out_point = self.runs_command_appender.do_append(flow, out_point)
                         # Activity Stepを付加する
-                        self.context.activity_data_dest_appender.do_append(flow, out_point, first_out_point)
+                        self.activity_data_dest_appender.do_append(flow, out_point, first_out_point)
 
         elif flow.is_datadst:
             # 1出力StepのCommandの出力Pointを取得する
@@ -189,13 +195,14 @@ class FlowJsonLink:
             # Cache Stepを付加する
             out_point = self.cache_data_dest_appender.do_append(flow, cache_point, self.context.start_time)
             # Activity Stepを付加する
-            # self.context.activity_data_dest_appender.do_append(flow, activity_point, cache_point)
+            # self.activity_data_dest_appender.do_append(flow, activity_point, cache_point)
 
         return flow
 
     def _relay_o_port(self, flow, step, out_point, port_label=None):
         """
         フローの'o'ポートを親フローに中継する
+        out_point: データデストの直前のPoint
         """
         # oポートの中継
         if port_label is None:
