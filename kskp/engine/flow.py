@@ -225,8 +225,8 @@ class Flow(FlowData):
             # ret = FlowUuidLink(node['uuid'], {}, self.link_context)
             from kskp.store.auth import NotAuthorizedException
             try:
-                flow = self.datum_factory.find_by_uuid(node['uuid'])
-                ret = FlowJsonLink(flow, None, {}, self.link_context)
+                sub_flow = self.datum_factory.find_by_uuid(node['uuid'])
+                ret = FlowJsonLink(sub_flow, None, {}, self.link_context, is_root=False)
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 

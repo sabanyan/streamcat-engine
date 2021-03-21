@@ -31,7 +31,7 @@ def execute(link, args={}, inputs={}, job_complete_handler=None):
 
     try:
         # ここで実行するlinkは一番上の親であることを定義する
-        link.is_root = True
+        # link.is_root = True
 
         # jobを作成する
         job = make_job(link, args, inputs)

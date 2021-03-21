@@ -36,7 +36,7 @@ class FlowJsonLink:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, factory=None, vis_args={}, context=None):
+    def __init__(self, flow_datum, factory=None, vis_args={}, context=None, is_root=True):
 
         # フローJSONの書式の検証をする
         flow_datum.flow_data.valid_flow_json_or_raise()
@@ -47,7 +47,7 @@ class FlowJsonLink:
 
         self.label = flow_datum.label
         self.flow_data = flow_datum.flow_data
-        self.is_root = False
+        self.is_root = is_root
         self.vis_ids = vis_args.keys()
 
         self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory)
