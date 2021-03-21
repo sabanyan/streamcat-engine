@@ -275,24 +275,24 @@ class FlowJsonLink:
                     ret.append(point.id)
         return ret
 
-    def _pick_necessary_dst_ids(self, nodes, datum_ids):
-        """
-        指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
-        """
-        ids = []
-        for datum_id in datum_ids:
-            for node in nodes['nodes']:
-                if self._is_outputting_datum_node(node, datum_id):
-                    # 対象のnode
-                    ids.extend(self._pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
-            ids.append(datum_id)
-        return list(set(ids))
+    # def _pick_necessary_dst_ids(self, nodes, datum_ids):
+    #     """
+    #     指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
+    #     """
+    #     ids = []
+    #     for datum_id in datum_ids:
+    #         for node in nodes['nodes']:
+    #             if self._is_outputting_datum_node(node, datum_id):
+    #                 # 対象のnode
+    #                 ids.extend(self._pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
+    #         ids.append(datum_id)
+    #     return list(set(ids))
 
-    def _is_outputting_datum_node(self, node, datum_id):
-        """
-        指定したdatumを出力するnodeかを調べる
-        """
-        return self._is_runnable_node(node) and datum_id in list(node['dsts'].values())
+    # def _is_outputting_datum_node(self, node, datum_id):
+    #     """
+    #     指定したdatumを出力するnodeかを調べる
+    #     """
+    #     return self._is_runnable_node(node) and datum_id in list(node['dsts'].values())
 
     def _pick_necessary_points(self, flow, last_ids, is_vis):
         """
