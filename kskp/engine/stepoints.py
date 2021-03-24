@@ -83,7 +83,6 @@ class Stepoints():
         与えられたstepからフロー構造を逆に辿って、
         実行準備が整ったstepを見つけ出す
         """
-
         # 該当stepの実行に必要なpointを取得する
         # prev_points = set()
         # for p in self.points:
@@ -91,12 +90,16 @@ class Stepoints():
         #         prev_points.add(p)
         prev_points = {p for p in self.points if p.dst_tubes.have_step(original_step)}
 
-        # 全ての引数が埋まっていれば、実行可能とみなして走査終了
-        if all([a.datum is not None for a in prev_points]):
+        # Stepの入力にフローの出力Pointが含まれていたら、そこで試合終了ですよ
+        if any([p.is_out for p in prev_points]):
+            return set()
+
+        # 全ての入力値が埋まっていれば、実行可能とみなして走査終了
+        if all([p.datum is not None for p in prev_points]):
             return {original_step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self._search_first_steps_to_run(src_tube.step) 
+        return union(self._search_first_steps_to_run(src_tube.step)
                      for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
 
     def _run_invokable_steps(self, steps, flow_args):
@@ -164,7 +167,7 @@ class Stepoints():
         points = []
         for point in self.points:
             for dst_tube in point.dst_tubes:
-                if dst_tube.port == o_port:
+                if dst_tube.port is not None and dst_tube.port == o_port:
                     return point
         # 一応、何かの間違いで当てはまるものがなかった時のためにNone返しておく
         # 何かの間違いがあった。
