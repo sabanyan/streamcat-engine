@@ -23,7 +23,7 @@ class FolderDataSourcePrepender():
         """
         loader_step = self._make_loader_step(frame_uuid)
         point_id = target_point.id + '_loader_point'
-        store_point = Point(point_id, Tube(None, None), store, Tube(Port('folder', 'store'), loader_step))
+        store_point = Point(point_id, None, store, Tube(Port('folder', 'store'), loader_step))
         target_point.src_tubes = Tubes(Tube(Port('o', 'frame'), loader_step))
         flow.points.append(store_point)
         flow.substeps.append(loader_step)
@@ -72,9 +72,9 @@ class FolderDataDestAppender():
         args['start_time'] = start_time
 
         saver_step = self._make_step(args, saver)
-        # store_point = Point(point.id + '_store_point', Tube(None, None), store, Tube(Port('folder', 'store'), saver_step))
-        saver_point = Point(point.id + '_saver', Tube(Port('o', 'mcmd'), saver_step), None, Tube(None, None))
-        # saver_point2 = Point(str(uuid.uuid4()), Tube(Port('u', 'uuid'), saver_step), None, Tube(None, None))
+        # store_point = Point(point.id + '_store_point', None, store, Tube(Port('folder', 'store'), saver_step))
+        saver_point = Point(point.id + '_saver', Tube(Port('o', 'mcmd'), saver_step))
+        # saver_point2 = Point(str(uuid.uuid4()), Tube(Port('u', 'uuid'), saver_step), None, None)
 
         self.switch_target(point, saver_step, saver_point)
 
@@ -162,7 +162,7 @@ class VisDataDestAppender():
         mchkcsv_point = Point(point_id, Tube(Port('o', 'frame'), mchkcsv_step), None, Tube(Port('i', 'frame'), tolist_step))
         # ToListコマンドを繋げる
         point_id = point.id + '_tolist'
-        tolist_point = Point(point_id, Tube(Port('o', 'frame'), tolist_step), None, Tube(None, None))
+        tolist_point = Point(point_id, Tube(Port('o', 'frame'), tolist_step))
 
         self.switch_target(point, convtoutf8_step)
 
@@ -202,7 +202,7 @@ class VisDataDestAppender():
         visualizer_cmd_name = visualizer_args['visualizer']
         visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
         visualizer_step = self._make_step(visualizer_args, visualizer_cmd)
-        visualizer_point = Point(point.id + '_v', Tube(Port('o', 'datum'), visualizer_step), None, Tube(None, None))
+        visualizer_point = Point(point.id + '_v', Tube(Port('o', 'datum'), visualizer_step))
 
         # VisPointにVisualizerフローを繋げる
         # point.id = str(uuid.uuid4())
@@ -235,7 +235,7 @@ class RunsCommandAppender():
         # RunsCommandに繋げるPointを作成する
         port_label = str(self.next_port_no)
         point_id = point.id + '_runs'
-        runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step), None, Tube(None, None))
+        runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step))
 
         # Stepのportsに追加する
         self.runs_step.i_ports.append(Port(port_label, 'mcmd'))
@@ -284,10 +284,7 @@ class ActivityDataDestAppender():
 
         # Activity_pointを作成し、これにActivity Stepを繋げる
         point_id = point.id + '_activity_' + port_label
-        activity_point = Point(point_id,
-                               Tube(Port('o', 'activity'), self.activity_step),
-                               None,
-                               Tube(None, None))
+        activity_point = Point(point_id, Tube(Port('o', 'activity'), self.activity_step))
 
         # Stepのportsに追加する
         self.activity_step.i_ports.append(Port(port_label, 'datum'))

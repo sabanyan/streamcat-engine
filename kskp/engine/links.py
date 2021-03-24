@@ -60,7 +60,6 @@ class FlowJsonLink:
             self.runs_command_appender = RunsCommandAppender()
             self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
 
-
         if context is None:
             self.context = FlowJsonLink.FlowLinkContext(flow_datum, self.activity_data_dest_appender.activity_uuid)
         else:
@@ -179,7 +178,7 @@ class FlowJsonLink:
         src_tube = Tube(Port(port_label, 'mcmd'), step)
 
         # NOTE: 同じフロー内であれば、port_labelは重複しないだろう
-        new_out_point = Point(f'{step.id}_{port_label}', src_tube, None, Tube(None, None), is_in=False, is_out=True)
+        new_out_point = Point(f'{step.id}_{port_label}', src_tube, is_out=True)
         flow.points.append(new_out_point)
 
         if flow.is_root:
@@ -251,7 +250,7 @@ class FlowJsonLink:
             # if len(flow.o_ports) == 0:
             if flow.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
-                # lasts_point.dst_tubes = Tube(None, None)
+                # lasts_point.dst_tubes = None
                 lasts_point.is_out = True
 
             # lasts_pointの上に繋がっているpointsを取得する

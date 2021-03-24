@@ -47,11 +47,7 @@ class Tubes:
         """
         Tubeを追加する
         """
-        if self.is_null:
-            # 初期値が[Tube(None, None)]のため、appendするとTube(None, None)が残る、なので上書きしている
-            self._tubes = [tube]
-        else:
-            self._tubes.append(tube)
+        self._tubes.append(tube)
 
     @property
     def is_null(self):

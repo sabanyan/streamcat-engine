@@ -123,8 +123,7 @@ class Flow(FlowData):
                 is_out = self.has_as_out_point(s_node_id)
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                src_point = self._upsert_point(flow=self, point_id=s_node_id, is_in=is_in, is_out=is_out,
-                                              src_tube=Tube(None, None), dst_tube=Tube(src_port, step))
+                src_point = self._upsert_point(s_node_id, dst_tube=Tube(src_port, step), is_in=is_in, is_out=is_out)
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
@@ -147,8 +146,7 @@ class Flow(FlowData):
                 is_out = self.has_as_out_point(d_node_id)
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                dst_point = self._upsert_point(flow=self, point_id=d_node_id, is_in=is_in, is_out=is_out,
-                                              src_tube=Tube(dst_port, step), dst_tube=Tube(None, None))
+                dst_point = self._upsert_point(d_node_id, src_tube=Tube(dst_port, step), is_in=is_in, is_out=is_out)
 
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにdst_tubesを置き換える
@@ -268,22 +266,22 @@ class Flow(FlowData):
                 ret.append(src_port)
         return ret
 
-    def _upsert_point(self, flow, point_id, is_in, is_out, src_tube, dst_tube):
+    def _upsert_point(self, point_id, src_tube=None, dst_tube=None, is_in=False, is_out=False):
         """
         指定したpoint_idのpointを作成する
         対象のpointがすでに存在していればそのpointを更新する
         """
-        point_ids = [point.id for point in flow.points]
+        point_ids = [point.id for point in self.points]
         if point_id in point_ids:
-            point = flow.select_point_by_id(point_id)
+            point = self.select_point_by_id(point_id)
             # 既存のpointを更新する
-            src_tube.is_null or point.src_tubes.add(src_tube)
-            dst_tube.is_null or point.dst_tubes.add(dst_tube)
+            src_tube is None or point.src_tubes.add(src_tube)
+            dst_tube is None or point.dst_tubes.add(dst_tube)
             point.is_in = is_in
             point.is_out = is_out
         else:
             point = Point(point_id, src_tube, None, dst_tube, is_in, is_out)
-            flow.points.append(point)
+            self.points.append(point)
         return point
 
 

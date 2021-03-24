@@ -4,7 +4,7 @@ class Point:
     """
     データノードのインスタンスを表現するクラス
     """
-    def __init__(self, point_id, src_tube, datum, dst_tube, is_in=False, is_out=False, cache=False):
+    def __init__(self, point_id, src_tube=None, datum=None, dst_tube=None, is_in=False, is_out=False, cache=False):
         if point_id is None:
             raise Exception('point_idにNoneは指定できません')
 
@@ -12,9 +12,15 @@ class Point:
         self.label = ''
 
         # 親フローに繋がるPoint、かつコマンドの出力Pointの場合、src_tubesは2つのTubeを持つ
-        self.src_tubes = Tubes(src_tube)
+        if src_tube is None:
+            self.src_tubes = Tubes()
+        else:
+            self.src_tubes = Tubes(src_tube)
         self.datum = datum
-        self.dst_tubes = Tubes(dst_tube)
+        if dst_tube is None:
+            self.dst_tubes = Tubes()
+        else:
+            self.dst_tubes = Tubes(dst_tube)
 
         # フローの入力ポートか
         self.is_in = is_in
