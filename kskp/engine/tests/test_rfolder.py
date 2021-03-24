@@ -173,8 +173,8 @@ class RemoteFolderTest(TestCaseBase):
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
-        self.assertIsNotNone(lasts['f1'], 'SaverCommandは結果(Datasource)を出力しませんでした')
-        datasource_f1 = lasts['f1']
+        self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
+        datasource_f1 = lasts['f1_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
 
         # 後片付け
@@ -218,10 +218,10 @@ class RemoteFolderTest(TestCaseBase):
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
-        self.assertIsNotNone(lasts['f1'], 'SaverCommandは結果(Datasource)を出力しませんでした')
-        self.assertIsNotNone(lasts['f2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
-        datasource_f1 = lasts['f1']
-        datasource_f2 = lasts['f2']
+        self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
+        self.assertIsNotNone(lasts['f2_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
+        datasource_f1 = lasts['f1_d2']
+        datasource_f2 = lasts['f2_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
         self.assertTrue(self.factory.data.exists(datasource_f2.uuid, type=Datum.FLOW_TYPE))
 

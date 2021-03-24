@@ -174,7 +174,7 @@ class DbTest(TestCaseBase):
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
-        datasource_f1 = lasts['f1']
+        datasource_f1 = lasts['f1_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
 
         # 後片付け
@@ -213,8 +213,8 @@ class DbTest(TestCaseBase):
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
-        datasource_f1 = lasts['f1']
-        datasource_f2 = lasts['f2']
+        datasource_f1 = lasts['f1_d2']
+        datasource_f2 = lasts['f2_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
         self.assertTrue(self.factory.data.exists(datasource_f2.uuid))
 

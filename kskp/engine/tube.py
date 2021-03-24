@@ -19,6 +19,13 @@ class Tube:
         return self.port is None and self.step is None
 
     @property
+    def is_command_tube(self):
+        """
+        コマンドに繋がるTubeの場合はTrueを返す
+        """
+        return self.port is not None and self.step is not None
+
+    @property
     def is_flow_tube(self):
         """
         親フローに繋がるTubeの場合はTrueを返す
@@ -37,7 +44,14 @@ class Tubes:
             self._tubes = list(tubes)
 
     def add(self, tube):
-        self._tubes.append(tube)
+        """
+        Tubeを追加する
+        """
+        if self.is_null:
+            # 初期値が[Tube(None, None)]のため、appendするとTube(None, None)が残る、なので上書きしている
+            self._tubes = [tube]
+        else:
+            self._tubes.append(tube)
 
     @property
     def is_null(self):
@@ -50,6 +64,16 @@ class Tubes:
         フローの開始Pointの場合にTrueを返す
         """
         return any(tube.is_flow_tube for tube in self._tubes)
+
+    def find_command_tube(self) -> Tube:
+        """
+        コマンドに繋がるTubeを返す
+        """
+        for tube in self._tubes:
+            # Pointの入力Tubeの場合、1つのPointに、コマンドに繋がるTubeが複数存在することはないだろう
+            if tube.is_command_tube:
+                return tube
+        return None 
 
     def find_flow_tube(self) -> Tube:
         """

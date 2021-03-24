@@ -279,20 +279,15 @@ class ActivityDataDestAppender():
         port_label = str(self.next_port_no)
         self.activity_step.args['points'][port_label] = original_out_point
 
-        # 出力Point設定を元のPointからActivity_pointに変更する
-        original_out_point.is_out = False
-
         # PointにActivity Stepを繋げる
         point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))
 
         # Activity_pointを作成し、これにActivity Stepを繋げる
-        # (Activity_pointを出力Pointに設定する)
         point_id = point.id + '_activity_' + port_label
         activity_point = Point(point_id,
                                Tube(Port('o', 'activity'), self.activity_step),
                                None,
-                               Tube(None, None),
-                               is_out=True)
+                               Tube(None, None))
 
         # Stepのportsに追加する
         self.activity_step.i_ports.append(Port(port_label, 'datum'))

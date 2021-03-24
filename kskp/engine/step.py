@@ -22,7 +22,15 @@ class Step:
 
     @property
     def is_datadst(self):
-        return self.is_flow and self.runnable.is_datadst
+        """
+        データデストの場合はTrueを返す
+        """
+        if self.is_flow:
+            # フローの場合はフロー作成時のポート数で判定する
+            return self.runnable.is_datadst
+        else:
+            # コマンドのポートはエンジンで追加削除しないので、is_datadst呼び出し時のポート数で判定する
+            return len(self.i_ports) == 1 and len(self.o_ports) == 0
 
     def run(self, inputs):
         """

@@ -69,45 +69,60 @@ class FlowJsonLink:
             
     def resolve(self):
         # Flowを生成する
+        from kskp.depo.std.commands.scmd.script import SaverCommand
         from .flow import Flow
         flow = Flow(self.flow_data, self.is_root, self.context, self.datum_factory)
 
         self.context.detadst_o_points[flow.uuid] = []
-        # データデストの'u'ポートは削除したので、以下の処理を削除する
-        # self.context.detadst_u_points[flow.uuid] = []
 
-        # Runs/Activity Commandへ渡すポートを中継する
+        # SaverCommandの出力PointをRootフローに中継する
+        # TODO : ここの処理、再設計の必要あり！！
         for p in flow.points:
-            for p_dst_tube in p.dst_tubes:
-                if p_dst_tube.step is None:
+
+            # Rootフローの出力Pointから辿れないコマンドは実行されない
+            # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
+            # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
+            src_tube = p.src_tubes.find_command_tube()
+            if src_tube is not None:
+                step = src_tube.step
+                # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
+                if isinstance(step.runnable, SaverCommand):
+                    flow.open_o_port(Port(p.id, 'mcmd'), p)
+
+            for dst_tube in p.dst_tubes:
+                step = dst_tube.step
+                if step is None:
                     continue
 
-                step = p_dst_tube.step
-                # データデストの場合
-                if step.is_datadst:
-                    # oポートの中継
-                    self._relay_o_port(flow, step, p)
-                    # データデストの'u'ポートは削除したので、以下の処理を削除する
-                    # # uポートの中継
-                    # self._relay_u_port(flow, step, p)
+                # コマンドにはポートを動的に追加できないため、コマンドがデータデストの場合は、そのコマンドは実行できない
+                if not step.is_flow:
+                    continue
 
-                elif step.is_flow:
-                    # データデスト以外のサブフローの場合
-                    inner_flow = step.runnable
-                    # フローが'o','u'の出力ポートを持っている場合
-                    if inner_flow.uuid in self.context.detadst_o_points:
-                        for i in range(len(self.context.detadst_o_points[inner_flow.uuid])):
-                            original_out_point, out_point, port_label = self.context.detadst_o_points[inner_flow.uuid][i]
-                            # oポートの中継
-                            self._relay_o_port(flow, step, original_out_point, port_label)
-                        # データデストの'u'ポートは削除したので、以下の処理を削除する
-                        # for i in range(len(self.context.detadst_u_points[inner_flow.uuid])):
-                        #     original_out_point, out_point, port_label = self.context.detadst_u_points[inner_flow.uuid][i]
-                        #     # uポートの中継
-                        #     self._relay_u_port(flow, step, original_out_point, port_label)
+                # フローがデータデストでない場合は、ポート中継の処理対象ではない？
+                if not step.is_datadst:
+                    continue
 
+                inner_flow = step.runnable
+                # フローが'o','u'の出力ポートを持っている場合
+                relayed = False
+                if inner_flow.uuid in self.context.detadst_o_points:
+                    for i in range(len(self.context.detadst_o_points[inner_flow.uuid])):
+                        original_out_point, out_point, port_label = self.context.detadst_o_points[inner_flow.uuid][i]
+                        # oポートの中継
+                        self._relay_o_port(flow, step, original_out_point, port_label)
+                        relayed = True
+
+                if not relayed:
+                    # is_datadst=TrueのStepについて、全てのo_portsはflow.open_o_port()で開いたPortである
+                    for port in step.runnable.o_ports:
+                        # oポートの中継
+                        self._relay_o_port(flow, step, p, port_label=port.label)
+                        print(self.context.detadst_o_points)
+
+
+        # 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
-
+        # 
         # self.vis_idsには
         # メインフローの場合 ： /vizsするdatumのid群
         # サブフローの場合　 ： 親の実行に必要なlastのid群
@@ -119,73 +134,38 @@ class FlowJsonLink:
         is_vis = len(self.vis_ids) > 0
         flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
 
-        if self.is_root:
+        if flow.is_root:
             # lasts出力処理（メインフローの場合のみ）
             if is_vis:
-                for first_out_point in [flow.select_point_by_id(pid) for pid in self.vis_ids]:
+                for original_out_point in [flow.select_point_by_id(pid) for pid in self.vis_ids]:
                     # Visualizerコマンドのための前処理コマンドを付加する
-                    out_point = self.vis_data_dest_appender.do_append(flow, first_out_point)
+                    out_point = self.vis_data_dest_appender.do_append(flow, original_out_point)
                     # Runsコマンドを付加する
                     out_point = self.runs_command_appender.do_append(flow, out_point)
                     # Visualizeコマンドを付加する
-                    visualizer_point = self.vis_data_dest_appender.do_append_after_runs(flow, out_point, first_out_point)
+                    out_point = self.vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point)
                     # Activity Stepを付加する
-                    self.activity_data_dest_appender.do_append(flow, visualizer_point, first_out_point)
-
+                    out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
+                    # 出力Point設定を元のPointからActivity_pointに変更する
+                    original_out_point.is_out = False
+                    out_point.is_out = True
             else:
 
-                for first_out_point in [point for point in flow.points if point.is_out]:
-                    point_is_input_datadest = False
-
-                    if first_out_point.src_runnable is not None and first_out_point.src_runnable.is_flow:
-                        # ↓どちらかのFor文しか通らない、いまいちなコード
-                        for detadst_o_points in self.context.detadst_o_points[flow.uuid]:
-                            if detadst_o_points[1] == first_out_point:
-                                # Runsコマンドを付加する
-                                out_point = self.runs_command_appender.do_append(flow, first_out_point)
-                                # Activity Stepを付加する
-                                self.activity_data_dest_appender.do_append(flow, out_point, first_out_point)
-                                point_is_input_datadest = True
-
-                        # データデストの'u'ポートは削除したので、以下の処理を削除する
-                        # for detadst_u_points in self.context.detadst_u_points[flow.uuid]:
-                        #     if detadst_u_points[1] == first_out_point:
-                        #         # Activity Stepを付加する
-                        #         original_out_point = detadst_u_points[0]
-                        #         self.activity_data_dest_appender.do_append(flow, first_out_point, original_out_point)
-                        #         point_is_input_datadest = True
-
-                    if not point_is_input_datadest:
+                for original_out_point in [point for point in flow.points if point.is_out]:
+                    src_tube = original_out_point.src_tubes.find_command_tube()
+                    if src_tube is not None and src_tube.step.is_datadst:
+                        # フローの出力Pointが、データデストの出力Pointでもある場合、そのPointにSaverコマンドを付加しない
+                        out_point = original_out_point
+                    else:
                         # Saverコマンドを付加する
-                        out_point = self.folder_data_dest_appender.do_append(flow, first_out_point, self.context.start_time)
-                        # Runsコマンドを付加する
-                        out_point = self.runs_command_appender.do_append(flow, out_point)
-                        # Activity Stepを付加する
-                        self.activity_data_dest_appender.do_append(flow, out_point, first_out_point)
-
-        elif flow.is_datadst:
-            # 1出力StepのCommandの出力Pointを取得する
-            out_point = None
-            # activity_point = None
-            for p in flow.points:
-                if p.src_runnable is None or \
-                   p.src_runnable.is_flow or \
-                   len(p.src_runnable.runnable.o_ports) != 1:
-                    continue
-                if p.src_port.label == 'o':
-                    out_point = p
-                # elif p.src_port.label =='u':
-                #     activity_point = p
-
-            # if out_point is None or activity_point is None:
-            if out_point is None:
-                raise Exception('saver output [o] is required !')
-            
-            # データデストの出力を親フローに繋げる
-            o_port = Port('o', 'mcmd')
-            # u_port = Port('u', 'frame')
-            self._open_flow_out_port(flow, o_port, out_point)
-            # self._open_flow_out_port(flow, u_port, activity_point)
+                        out_point = self.folder_data_dest_appender.do_append(flow, original_out_point, self.context.start_time)
+                    # Runsコマンドを付加する
+                    out_point = self.runs_command_appender.do_append(flow, out_point)
+                    # Activity Stepを付加する
+                    out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
+                    # 出力Point設定を元のPointからActivity_pointに変更する
+                    original_out_point.is_out = False
+                    out_point.is_out = True
 
 
         # キャッシュ作成処理
@@ -213,45 +193,20 @@ class FlowJsonLink:
         else:
             src_tube = Tube(Port(port_label, 'mcmd'), step)
 
-        # NOTE: stepとnew_pointのidが重複するが、フローエディタにロードされない上、保存もされないので問題にはならないだろう
-        new_point = Point(step.id, src_tube, None, Tube(None, None), is_in=False, is_out=True)
+        # NOTE: 同じフロー内であれば、port_labelは重複しないだろう
+        new_point = Point(f'{step.id}_{port_label}', src_tube, None, Tube(None, None), is_in=False, is_out=True)
         flow.points.append(new_point)
         self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_label))
 
-        # データデストの出力を親フローに繋げる)
-        if not self.is_root:
-            port = Port(port_label, 'mcmd')
-            self._open_flow_out_port(flow, port, new_point)
-
-    def _relay_u_port(self, flow, step, out_point, port_label=None):
-        """
-        フローの'u'ポートを親フローに中継する
-        """
-        # uポートの中継
-        if port_label is None:
-            port_label = 'u_' + str(self.context.port_suffix_num)
-            self.context.port_suffix_num += 1
-            # データデスト空の入力ポート名は'u'固定
-            src_tube = Tube(Port('u', 'frame'), step)
+        if flow.is_root:
+            # 親フローでは、Runsコマンドの出力がその親フローの出力ポイントに設定され、これがフロー探索の開始ポイントになる
+            # そのため、ここでデータデストの出力を、出力ポイントに設定する必要はない
+            pass
         else:
-            src_tube = Tube(Port(port_label, 'frame'), step)
-        new_point = Point(step.id, src_tube, None, Tube(None, None), is_in=False, is_out=True)
-        flow.points.append(new_point)
-        self.context.detadst_u_points[flow.uuid].append((out_point, new_point, port_label))
+            # データデストの出力を親フローに繋げる
+            port = Port(port_label, 'mcmd')
+            flow.open_o_port(port, new_point)
 
-        # データデストの出力を親フローに繋げる)
-        if not self.is_root:
-            port = Port(port_label, 'frame')
-            self._open_flow_out_port(flow, port, new_point)
-
-    def _open_flow_out_port(self, flow, out_port, out_point):
-        """
-        指定するPointを出力PointとするPortを、フローに設定する
-        """
-        # 出力Pointのis_outをTrueにする
-        out_point.is_out = True
-        flow.o_ports.append(out_port)
-        out_point.add_dst_tube(Tube(out_port, None))
 
     def _pick_out_points(self, flow, outs, points):
         # /vizsなど、lastsが指定されている場合
@@ -310,7 +265,7 @@ class FlowJsonLink:
         for id in last_ids:
             lasts_point = flow.select_point_by_id(id)
             # if len(flow.o_ports) == 0:
-            if self.is_root and is_vis:
+            if flow.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
                 # lasts_point.dst_tubes = Tube(None, None)
                 lasts_point.is_out = True

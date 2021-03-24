@@ -7112,11 +7112,58 @@ folder_dst_json = {
     ],
     "nodes": [
       {
-        "id": "d",
-        "label": "フォルダ",
-        "type": "store",
-        "uuid": "634c1d1c-f224-45b8-b615-82b5e97b6643"
+        "id": "d1",
+        "label": "d1",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
       },
+      {
+        "id": "c1",
+        "label": "c1",
+        "type": "command",
+        "commandId": "saver",
+        "args": {},
+        "srcs": {
+          "i": "d1"
+        },
+        "dsts": {
+          "o": "d2"
+        }
+      },
+      {
+        "id": "d2",
+        "label": "d2",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      }
+    ]
+}
+
+# 二つのセーバを持つFolderデータデスト
+two_savers_folder_dst_json = {
+    "label": "複雑なFolderデータデスト",
+    "creator": "開発用",
+    "createdAt": "2021-03-23 18:57:00",
+    "projectId": None,
+    "description": "",
+    "params": [],
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
       {
         "id": "d1",
         "label": "d1",
@@ -7142,6 +7189,28 @@ folder_dst_json = {
       {
         "id": "d2",
         "label": "d2",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c2",
+        "label": "c2",
+        "type": "command",
+        "commandId": "saver",
+        "args": {},
+        "srcs": {
+          "i": "d1"
+        },
+        "dsts": {
+          "o": "d3"
+        }
+      },
+      {
+        "id": "d3",
+        "label": "d3",
         "type": "frame",
         "uuid": None,
         "makeCache": False,

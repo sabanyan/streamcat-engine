@@ -128,7 +128,7 @@ class Flow(FlowData):
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
-                [src_point.add_src_tube(Tube(i_port, None)) for i_port in self.i_ports if i_port.label == src_point.id]
+                [src_point.src_tubes.add(Tube(i_port, None)) for i_port in self.i_ports if i_port.label == src_point.id]
 
                 # Pointを集める
                 points.add(src_point)
@@ -154,7 +154,7 @@ class Flow(FlowData):
                 # 繋げるためにdst_tubesを置き換える
                 # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にdst_tubes変数が必要なので、何もしない)
                 if not self.is_root:
-                    [dst_point.add_dst_tube(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
+                    [dst_point.dst_tubes.add(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
 
                 from kskp.depo.std.commands import AssertCommand
                 if isinstance(cmd_or_flow, AssertCommand):
@@ -277,8 +277,8 @@ class Flow(FlowData):
         if point_id in point_ids:
             point = flow.select_point_by_id(point_id)
             # 既存のpointを更新する
-            src_tube.is_null or point.add_src_tube(src_tube)
-            dst_tube.is_null or point.add_dst_tube(dst_tube)
+            src_tube.is_null or point.src_tubes.add(src_tube)
+            dst_tube.is_null or point.dst_tubes.add(dst_tube)
             point.is_in = is_in
             point.is_out = is_out
         else:
@@ -338,7 +338,22 @@ class Flow(FlowData):
         pointではなくstepを基軸にして書き直し
         """
         return self.stepoints.run(args, inputs)
-        
+
+    def open_o_port(self, o_port, point):
+        """
+        指定するPointを出力Pointに設定する
+        """
+        if o_port in self.o_ports:
+            raise Exception(f'指定されたPort({o_port})と同じlabelのPortがFlow({self.label})にあります')
+        if point not in self.points:
+            raise Exception(f'指定されたPoint({point.id})がFlow({self.label})にありませんでした')
+
+        # is_outは単なるフラグなのでTrueに設定する
+        point.is_out = True
+        from .tube import Tube
+        point.dst_tubes.add(Tube(o_port, None))
+        self.o_ports.append(o_port)
+
     def select_point_by_id(self, point_id):
         """
         self.pointsの中から
