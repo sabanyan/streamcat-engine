@@ -1912,13 +1912,7 @@ class DataSourceTest(TestCaseBase):
         # サブフローを実行する
         flow_link = FlowJsonLink(sub_flow, self.factory)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
-
-        print(lasts)
-
         lasts = convert_from_activity(lasts)
-
-
-        print(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)

@@ -43,7 +43,7 @@ class Stepoints():
         """
         inputsで渡されたDatumを、フローの入力PortのPointに格納する
         """
-        input_points = [p for p in self.points if p.is_for_input]
+        input_points = [p for p in self.points if p.is_in and p.datum is None]
 
         for input_point in input_points:
             src_port_label = input_point.src_tubes.select_flow_tube().port.label

@@ -61,27 +61,16 @@ class Point:
         return hash(self.id)
 
     @property
-    def is_for_input(self):
-        """
-        親フローに繋がるPointで、かつDatumが格納されていなければTrueを返す
-        """
-        return self.src_tubes.find_flow_tube() is not None and self.datum is None
-
-    @property
     def is_store(self):
         from kskp.store import Store
         return self.datum is not None and isinstance(self.datum, Store)
 
-    # @property
-    # def src_port(self):
-    #     return self.src_tubes[0].port
-
-    # @property
-    # def src_runnable(self):
-    #     """
-    #     入力元Tubeのうち1番目のRunnableオブジェクト
-    #     """
-    #     return self.src_tubes[0].step
+    @property
+    def is_cache(self):
+        """
+        キャッシュを生成するかどうか
+        """
+        return self.cache
 
     @property
     def is_last(self):
@@ -97,46 +86,3 @@ class Point:
         rootのフローの終端かどうか
         """
         return self.dst_tubes.is_null
-
-    # @property
-    # def is_root_first(self):
-    #     """
-    #     rootのフローの始端かどうか
-    #     """
-    #     return self.src_runnable is None and self.src_port is None
-
-    @property
-    def is_cache(self):
-        """
-        キャッシュを生成するかどうか
-        """
-        return self.cache
-
-    # def add_src_tube(self, tube):
-    #     """
-    #     指定したTubeでsrc_tubesを更新する
-    #     複数のsrc_tubeをもつPointはないので、上書きだけ（appendする必要がない）
-    #     """
-    #     if self.src_tubes is None or len(self.src_tubes)==0 or self.src_tubes[0].is_null:
-    #         self.src_tubes = Tubes(tube)
-    #     else:
-    #         self.src_tubes.add(tube)
-
-    # def add_dst_tube(self, tube):
-    #     """
-    #     指定したTubeでdst_tubesを更新する
-    #     既にdst_tubesに有効なTubeがあった場合は追加、
-    #     そうではなかったら上書きする
-
-    #     初期値が[Tube(None, None)]のため、appendするとTube(None, None)が残る
-    #     なので、上書きしている
-    #     """
-    #     # if self.is_root_last:
-    #     #     self.dst_tubes = Tubes(tube)
-    #     # else:
-    #     #     self.dst_tubes.add(tube)
-
-    #     if self.dst_tubes is None or len(self.dst_tubes)==0 or self.dst_tubes[0].is_null:
-    #         self.dst_tubes = Tubes(tube)
-    #     else:
-    #         self.dst_tubes.add(tube)

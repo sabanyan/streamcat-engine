@@ -387,26 +387,6 @@ class Flow(FlowData):
 
         return self.module_store.module_list
 
-    # def find_activity(self):
-    #     """
-    #     Activity Stepをメインフローから再帰的に探し出す
-    #     """
-    #     from kskp.store import Activity
-    #     # 自身がActivityを持っている場合
-    #     # for activity in self.lasts.values():
-    #     for activity in [p.datum for p in self.points]:
-    #         if isinstance(activity, Activity):
-    #             return activity
-    #     # 自身が持っていない場合、サブフローを探しに行く
-    #     # (データデストのみを用いている場合)
-    #     for substep in self.substeps:
-    #         if substep.is_flow :
-    #             result = substep.runnable.find_activity()
-    #             if result is not None:
-    #                 return result
-    #     # Activityが見つからなかった場合
-    #     return None
-
     def dtor(self, args):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:

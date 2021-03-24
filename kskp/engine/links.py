@@ -30,10 +30,9 @@ class FlowJsonLink:
             from datetime import datetime, timezone
             self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
 
-            # {flow_uuid: [(original_out_point, points ,port_label)]}
-            self.detadst_o_points = {}
-            # データデストの'u'ポートは削除したので、以下の処理を削除する
-            # self.detadst_u_points = {}
+            # {flow_uuid: [port_label]}
+            self.relay_ports = {}
+
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
@@ -73,7 +72,7 @@ class FlowJsonLink:
         from .flow import Flow
         flow = Flow(self.flow_data, self.is_root, self.context, self.datum_factory)
 
-        self.context.detadst_o_points[flow.uuid] = []
+        self.context.relay_ports[flow.uuid] = []
 
         # SaverCommandの出力PointをRootフローに中継する
         # TODO : ここの処理、再設計の必要あり！！
@@ -87,7 +86,10 @@ class FlowJsonLink:
                 step = src_tube.step
                 # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
                 if isinstance(step.runnable, SaverCommand):
-                    flow.open_o_port(Port(p.id, 'mcmd'), p)
+                    o_port = Port(p.id, 'mcmd')
+                    flow.open_o_port(o_port, p)
+                    # 
+                    self.context.relay_ports[flow.uuid].append(o_port.label)
 
             for dst_tube in p.dst_tubes:
                 step = dst_tube.step
@@ -98,26 +100,16 @@ class FlowJsonLink:
                 if not step.is_flow:
                     continue
 
-                # フローがデータデストでない場合は、ポート中継の処理対象ではない？
-                if not step.is_datadst:
-                    continue
+                # # フローがデータデストでない場合は、ポート中継の処理対象ではない？
+                # if not step.is_datadst:
+                #     continue
 
-                inner_flow = step.runnable
                 # フローが'o','u'の出力ポートを持っている場合
-                relayed = False
-                if inner_flow.uuid in self.context.detadst_o_points:
-                    for i in range(len(self.context.detadst_o_points[inner_flow.uuid])):
-                        original_out_point, out_point, port_label = self.context.detadst_o_points[inner_flow.uuid][i]
-                        # oポートの中継
-                        self._relay_o_port(flow, step, original_out_point, port_label)
-                        relayed = True
-
-                if not relayed:
-                    # is_datadst=TrueのStepについて、全てのo_portsはflow.open_o_port()で開いたPortである
-                    for port in step.runnable.o_ports:
-                        # oポートの中継
-                        self._relay_o_port(flow, step, p, port_label=port.label)
-                        print(self.context.detadst_o_points)
+                for port_label in self.context.relay_ports[step.runnable.uuid]:
+                    # oポートの中継
+                    self._relay_o_port(flow, step, port_label)
+                    # 
+                    self.context.relay_ports[flow.uuid].append(port_label)
 
 
         # 
@@ -179,24 +171,16 @@ class FlowJsonLink:
 
         return flow
 
-    def _relay_o_port(self, flow, step, out_point, port_label=None):
+    def _relay_o_port(self, flow, step, port_label):
         """
-        フローの'o'ポートを親フローに中継する
-        out_point: データデストの直前のPoint
+        フローの出力ポートを親フローに中継する
         """
-        # oポートの中継
-        if port_label is None:
-            port_label = 'o_' + str(self.context.port_suffix_num)
-            self.context.port_suffix_num += 1
-            # データデストからの入力ポート名は'o'固定
-            src_tube = Tube(Port('o', 'frame'), step)
-        else:
-            src_tube = Tube(Port(port_label, 'mcmd'), step)
+        # 出力ポートの中継
+        src_tube = Tube(Port(port_label, 'mcmd'), step)
 
         # NOTE: 同じフロー内であれば、port_labelは重複しないだろう
-        new_point = Point(f'{step.id}_{port_label}', src_tube, None, Tube(None, None), is_in=False, is_out=True)
-        flow.points.append(new_point)
-        self.context.detadst_o_points[flow.uuid].append((out_point, new_point, port_label))
+        new_out_point = Point(f'{step.id}_{port_label}', src_tube, None, Tube(None, None), is_in=False, is_out=True)
+        flow.points.append(new_out_point)
 
         if flow.is_root:
             # 親フローでは、Runsコマンドの出力がその親フローの出力ポイントに設定され、これがフロー探索の開始ポイントになる
@@ -204,8 +188,8 @@ class FlowJsonLink:
             pass
         else:
             # データデストの出力を親フローに繋げる
-            port = Port(port_label, 'mcmd')
-            flow.open_o_port(port, new_point)
+            o_port = Port(port_label, 'mcmd')
+            flow.open_o_port(o_port, new_out_point)
 
 
     def _pick_out_points(self, flow, outs, points):
