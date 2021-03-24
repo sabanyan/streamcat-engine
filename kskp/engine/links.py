@@ -80,15 +80,16 @@ class FlowJsonLink:
             # Rootフローの出力Pointから辿れないコマンドは実行されない
             # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
             # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
-            src_tube = p.src_tubes.find_command_tube()
-            if src_tube is not None:
-                step = src_tube.step
-                # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
-                if isinstance(step.runnable, SaverCommand):
-                    o_port = Port(p.id, 'mcmd')
-                    flow.open_o_port(o_port, p)
-                    # 
-                    self.context.relay_ports[flow.uuid].append(o_port.label)
+            if not p.is_out:
+                src_tube = p.src_tubes.find_command_tube()
+                if src_tube is not None:
+                    step = src_tube.step
+                    # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
+                    if isinstance(step.runnable, SaverCommand):
+                        o_port = Port(p.id, 'mcmd')
+                        flow.open_o_port(o_port, p)
+                        # 
+                        self.context.relay_ports[flow.uuid].append(o_port.label)
 
             for dst_tube in p.dst_tubes:
                 step = dst_tube.step
