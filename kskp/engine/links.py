@@ -1,13 +1,4 @@
 from kskp.core import Port
-from .point import Point
-from .tube import Tube
-from .appenders import (
-    FolderDataDestAppender,
-    CacheDataDestAppender,
-    VisDataDestAppender,
-    ActivityDataDestAppender,
-    RunsCommandAppender
-)
 
 class FlowJsonLink:
     """
@@ -37,6 +28,14 @@ class FlowJsonLink:
             self.port_suffix_num = 0
 
     def __init__(self, flow_datum, factory=None, vis_args={}, context=None, is_root=True):
+        from .appenders import (
+            FolderDataDestAppender,
+            CacheDataDestAppender,
+            VisDataDestAppender,
+            ActivityDataDestAppender,
+            RunsCommandAppender
+        )
+
         # フローJSONの書式の検証をする
         flow_datum.flow_data.valid_flow_json_or_raise()
 
@@ -71,9 +70,7 @@ class FlowJsonLink:
         self.context.relay_ports[flow] = []
 
         # SaverCommandの出力PointをRootフローに中継する
-        # TODO : ここの処理、再設計の必要あり！！
         for p in flow.points:
-
             # Rootフローの出力Pointから辿れないコマンドは実行されない
             # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
             # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
@@ -90,16 +87,10 @@ class FlowJsonLink:
 
             for dst_tube in p.dst_tubes:
                 step = dst_tube.step
-                if step is None:
-                    continue
 
                 # コマンドにはポートを動的に追加できないため、コマンドがデータデストの場合は、そのコマンドは実行できない
-                if not step.is_flow:
+                if step is None or not step.is_flow:
                     continue
-
-                # # フローがデータデストでない場合は、ポート中継の処理対象ではない？
-                # if not step.is_datadst:
-                #     continue
 
                 # フローが'o','u'の出力ポートを持っている場合
                 for port_label in self.context.relay_ports[step.runnable]:
@@ -107,7 +98,6 @@ class FlowJsonLink:
                     self._relay_o_port(flow, step, port_label)
                     # 
                     self.context.relay_ports[flow].append(port_label)
-
 
         # 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
@@ -123,53 +113,60 @@ class FlowJsonLink:
         is_vis = len(self.vis_ids) > 0
         flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
 
-        if flow.is_root:
-            # lasts出力処理（メインフローの場合のみ）
-            if is_vis:
-                for original_out_point in [flow.points[pid] for pid in self.vis_ids]:
-                    # Visualizerコマンドのための前処理コマンドを付加する
-                    out_point = self.vis_data_dest_appender.do_append(flow, original_out_point)
-                    # Runsコマンドを付加する
-                    out_point = self.runs_command_appender.do_append(flow, out_point)
-                    # Visualizeコマンドを付加する
-                    out_point = self.vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point)
-                    # Activity Stepを付加する
-                    out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
-                    # 出力Point設定を元のPointからActivity_pointに変更する
-                    original_out_point.is_out = False
-                    out_point.is_out = True
-            else:
+        if not flow.is_root:
+            # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
+            # また、キャッシュの出力処理もしない
+            return flow
 
-                for original_out_point in [p for p in flow.points if p.is_out]:
-                    src_tube = original_out_point.src_tubes.find_command_tube()
-                    if src_tube is not None and src_tube.step.is_datadst:
-                        # フローの出力Pointが、データデストの出力Pointでもある場合、そのPointにSaverコマンドを付加しない
-                        out_point = original_out_point
-                    else:
-                        # Saverコマンドを付加する
-                        out_point = self.folder_data_dest_appender.do_append(flow, original_out_point)
-                    # Runsコマンドを付加する
-                    out_point = self.runs_command_appender.do_append(flow, out_point)
-                    # Activity Stepを付加する
-                    out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
-                    # 出力Point設定を元のPointからActivity_pointに変更する
-                    original_out_point.is_out = False
-                    out_point.is_out = True
+        # lasts出力処理（メインフローの場合のみ）
+        if is_vis:
+            for original_out_point in [flow.points[pid] for pid in self.vis_ids]:
+                # Visualizerコマンドのための前処理コマンドを付加する
+                out_point = self.vis_data_dest_appender.do_append(flow, original_out_point)
+                # Runsコマンドを付加する
+                out_point = self.runs_command_appender.do_append(flow, out_point)
+                # Visualizeコマンドを付加する
+                out_point = self.vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point)
+                # Activity Stepを付加する
+                out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
+                # 出力Point設定を元のPointからActivity_pointに変更する
+                original_out_point.is_out = False
+                out_point.is_out = True
 
-
-            # キャッシュ作成処理
-            # サブフロー内ではキャッシュは作成しない
-            # is_outかつis_cacheなPointにも対応できるよう
-            # データデストを付加した後にキャッシュデータデストを付加すること
-            for cache_point in [p for p in flow.points if p.is_cache]:
-                # Cache Stepを付加する
-                out_point = self.cache_data_dest_appender.do_append(flow, cache_point)
+        else:
+            for original_out_point in [p for p in flow.points if p.is_out]:
+                # original_out_pointが、中継したフロー出力Pointの場合はTrue
+                src_tube = original_out_point.src_tubes.find_command_tube()
+                in_port_label_exists = src_tube is not None and src_tube.port is not None
+                out_point_is_relayed = in_port_label_exists and src_tube.port.label in self.context.relay_ports[flow]
+                if out_point_is_relayed:
+                    # フローの出力Pointが、中継したフロー出力Pointでもある場合、
+                    # 既にSaverコマンドが繋がっているので、そのPointにSaverコマンドを付加しない
+                    out_point = original_out_point
+                else:
+                    # Saverコマンドを付加する
+                    out_point = self.folder_data_dest_appender.do_append(flow, original_out_point)
                 # Runsコマンドを付加する
                 out_point = self.runs_command_appender.do_append(flow, out_point)
                 # Activity Stepを付加する
-                out_point = self.activity_data_dest_appender.do_append(flow, out_point, cache_point)
-                # Activity_pointを出力Pointに設定する
+                out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
+                # 出力Point設定を元のPointからActivity_pointに変更する
+                original_out_point.is_out = False
                 out_point.is_out = True
+
+        # キャッシュ作成処理
+        # サブフロー内ではキャッシュは作成しない
+        # is_outかつis_cacheなPointにも対応できるよう
+        # データデストを付加した後にキャッシュデータデストを付加すること
+        for cache_point in [p for p in flow.points if p.is_cache]:
+            # Cache Stepを付加する
+            out_point = self.cache_data_dest_appender.do_append(flow, cache_point)
+            # Runsコマンドを付加する
+            out_point = self.runs_command_appender.do_append(flow, out_point)
+            # Activity Stepを付加する
+            out_point = self.activity_data_dest_appender.do_append(flow, out_point, cache_point)
+            # Activity_pointを出力Pointに設定する
+            out_point.is_out = True
 
         return flow
 
@@ -177,6 +174,9 @@ class FlowJsonLink:
         """
         フローの出力ポートを親フローに中継する
         """
+        from .point import Point
+        from .tube import Tube
+
         # 出力ポートの中継
         src_tube = Tube(Port(port_label, 'mcmd'), step)
 

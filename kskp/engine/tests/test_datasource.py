@@ -1930,3 +1930,186 @@ class DataSourceTest(TestCaseBase):
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
+
+    def test_subflow_with_datedst_and_out_point(self):
+        """
+        サブフローがデータデストとフロー出力Pointをもつ場合、
+        実行・プレビューすると、その入出力も実行されること
+        """
+
+        sub_flow_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2021-3-25 19:55:00",
+            "projectId": None,
+            "description": "",
+            "params": [],
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "nodes": [
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "label": "Folderデータデスト",
+                    "type": "flow",
+                    "uuid": "683cfa29-b431-495f-b617-078123a6518c",
+                    "args": {},
+                    "srcs": {
+                        "d1": "d"
+                    },
+                    "dsts": {}
+                },
+                {
+                    "id": "c1",
+                    "label": "c1",
+                    "type": "command",
+                    "commandId": "mnumber",
+                    "args": {
+                        "I": "1",
+                        "S": "1",
+                        "a": "no",
+                        "e": "seq",
+                        "s": "金額"
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    },
+                    "srcsOrder": [
+                        "i"
+                    ]
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ]
+        }
+
+        flow_json = {
+            "label": "main",
+            "params": [],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "nodes": [
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                                ["x", 1, 10],
+                                ["x", 2, 20],
+                                ["y", 1, 30],
+                                ["y", 3, 40],
+                                ["z", 1, 50]],
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f0",
+                    "label": "f0",
+                    "type": "flow",
+                    "uuid": "dcf3c775-b504-4b06-bd7b-7ee9738f3b2f",
+                    "args": {},
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {
+                        "d1": "d1"
+                    },
+                    "srcsOrder": []
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフロー(フォルダデータデスト)の作成
+        from .make_flow_json import folder_dst_json
+        folder_dst = root.create_flow('folder_dst', FlowData(folder_dst_json))
+        folder_dst.uuid = '683cfa29-b431-495f-b617-078123a6518c'
+        folder_dst.save()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = 'dcf3c775-b504-4b06-bd7b-7ee9738f3b2f'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 2)
+        # 
+        self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
+        out_frame1 = lasts['f0_d2']
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame1.file_exists)
+        # 
+        self.assertIsNotNone(lasts['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
+        out_frame2 = lasts['d1']
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame2.file_exists)
+
+        # ほかす
+        sub_flow.throw_away()
+        folder_dst.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
