@@ -1,10 +1,12 @@
+from typing import Iterator
 from kskp.core import Port
+from .step import Step
 
 class Tube:
     """
     portとstepの入れ物
     """
-    def __init__(self, port:Port, step):
+    def __init__(self, port:Port, step:Step):
         self.port = port
         self.step = step
 
@@ -99,7 +101,7 @@ class Tubes:
     def have_step(self, step):
         return len(self.filter_by_step(step)) > 0
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Tube]:
         yield from self._tubes
 
     def __getitem__(self, index) -> Tube:

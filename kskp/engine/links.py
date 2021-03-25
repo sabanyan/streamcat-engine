@@ -30,14 +30,13 @@ class FlowJsonLink:
             from datetime import datetime, timezone
             self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
 
-            # {flow_uuid: [port_label]}
+            # {flow : [port_label]}
             self.relay_ports = {}
 
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
     def __init__(self, flow_datum, factory=None, vis_args={}, context=None, is_root=True):
-
         # フローJSONの書式の検証をする
         flow_datum.flow_data.valid_flow_json_or_raise()
 
@@ -50,12 +49,6 @@ class FlowJsonLink:
         self.is_root = is_root
         self.vis_ids = vis_args.keys()
 
-        self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory)
-
-        self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
-
-        self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory)
-
         if is_root:
             self.runs_command_appender = RunsCommandAppender()
             self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
@@ -64,6 +57,10 @@ class FlowJsonLink:
             self.context = FlowJsonLink.FlowLinkContext(flow_datum, self.activity_data_dest_appender.activity_uuid)
         else:
             self.context = context
+
+        self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
+        self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
+        self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
             
     def resolve(self):
         # Flowを生成する
@@ -71,7 +68,7 @@ class FlowJsonLink:
         from .flow import Flow
         flow = Flow(self.flow_data, self.is_root, self.context, self.datum_factory)
 
-        self.context.relay_ports[flow.uuid] = []
+        self.context.relay_ports[flow] = []
 
         # SaverCommandの出力PointをRootフローに中継する
         # TODO : ここの処理、再設計の必要あり！！
@@ -89,7 +86,7 @@ class FlowJsonLink:
                         o_port = Port(p.id, 'mcmd')
                         flow.open_o_port(o_port, p)
                         # 
-                        self.context.relay_ports[flow.uuid].append(o_port.label)
+                        self.context.relay_ports[flow].append(o_port.label)
 
             for dst_tube in p.dst_tubes:
                 step = dst_tube.step
@@ -105,11 +102,11 @@ class FlowJsonLink:
                 #     continue
 
                 # フローが'o','u'の出力ポートを持っている場合
-                for port_label in self.context.relay_ports[step.runnable.uuid]:
+                for port_label in self.context.relay_ports[step.runnable]:
                     # oポートの中継
                     self._relay_o_port(flow, step, port_label)
                     # 
-                    self.context.relay_ports[flow.uuid].append(port_label)
+                    self.context.relay_ports[flow].append(port_label)
 
 
         # 
@@ -143,14 +140,14 @@ class FlowJsonLink:
                     out_point.is_out = True
             else:
 
-                for original_out_point in [point for point in flow.points if point.is_out]:
+                for original_out_point in [p for p in flow.points if p.is_out]:
                     src_tube = original_out_point.src_tubes.find_command_tube()
                     if src_tube is not None and src_tube.step.is_datadst:
                         # フローの出力Pointが、データデストの出力Pointでもある場合、そのPointにSaverコマンドを付加しない
                         out_point = original_out_point
                     else:
                         # Saverコマンドを付加する
-                        out_point = self.folder_data_dest_appender.do_append(flow, original_out_point, self.context.start_time)
+                        out_point = self.folder_data_dest_appender.do_append(flow, original_out_point)
                     # Runsコマンドを付加する
                     out_point = self.runs_command_appender.do_append(flow, out_point)
                     # Activity Stepを付加する
@@ -160,14 +157,19 @@ class FlowJsonLink:
                     out_point.is_out = True
 
 
-        # キャッシュ作成処理
-        # is_outかつis_cacheなPointにも対応できるよう
-        # データデストを付加した後にキャッシュデータデストを付加すること
-        for cache_point in [point for point in flow.points if point.is_cache]:
-            # Cache Stepを付加する
-            out_point = self.cache_data_dest_appender.do_append(flow, cache_point, self.context.start_time)
-            # Activity Stepを付加する
-            # self.activity_data_dest_appender.do_append(flow, activity_point, cache_point)
+            # キャッシュ作成処理
+            # サブフロー内ではキャッシュは作成しない
+            # is_outかつis_cacheなPointにも対応できるよう
+            # データデストを付加した後にキャッシュデータデストを付加すること
+            for cache_point in [p for p in flow.points if p.is_cache]:
+                # Cache Stepを付加する
+                out_point = self.cache_data_dest_appender.do_append(flow, cache_point)
+                # Runsコマンドを付加する
+                out_point = self.runs_command_appender.do_append(flow, out_point)
+                # Activity Stepを付加する
+                out_point = self.activity_data_dest_appender.do_append(flow, out_point, cache_point)
+                # Activity_pointを出力Pointに設定する
+                out_point.is_out = True
 
         return flow
 
@@ -180,7 +182,7 @@ class FlowJsonLink:
 
         # NOTE: 同じフロー内であれば、port_labelは重複しないだろう
         new_out_point = Point(f'{step.id}_{port_label}', src_tube, is_out=True)
-        flow.points.append(new_out_point)
+        flow.points.add(new_out_point)
 
         if flow.is_root:
             # 親フローでは、Runsコマンドの出力がその親フローの出力ポイントに設定され、これがフロー探索の開始ポイントになる
@@ -244,7 +246,9 @@ class FlowJsonLink:
         """
         実行するのに必要なpointを取得する
         """
-        necessary_points = []
+        from .point import Points
+        
+        necessary_points = set()
 
         for id in last_ids:
             lasts_point = flow.select_point_by_id(id)
@@ -255,10 +259,10 @@ class FlowJsonLink:
                 lasts_point.is_out = True
 
             # lasts_pointの上に繋がっているpointsを取得する
-            necessary_points.extend(self._search_necessary_point(flow.points, lasts_point))
-            necessary_points.append(lasts_point)
+            necessary_points.update(self._search_necessary_point(flow.points, lasts_point))
+            necessary_points.add(lasts_point)
 
-        return list(set(necessary_points))
+        return Points(necessary_points)
 
     def _search_necessary_point(self, points, current_point):
         """
@@ -269,22 +273,22 @@ class FlowJsonLink:
         2. 始点のsrc_tubes.runnableをdst_tubes.runnableにもつpointを保持する（上に上がっていく）
         3. 保持対象のpointのidを新たな始点として再帰的に再びsearch_necessary_pointに潜る
         """
-        necessary_points = []
+        necessary_points = set()
         # current_pointの上につながっているPointを探す
         for point in points:
             for p_dst_tube in point.dst_tubes:
                 # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
 
                 # if p_dst_tube.step is current_point.src_runnable:
-                #     necessary_points.append(point)
+                #     necessary_points.add(point)
                 #     if not (point.datum is not None or point.is_first):
                 #         necessary_points.extend(self._search_necessary_point(points, point))
 
                 if current_point.src_tubes.have_step(p_dst_tube.step):
-                    necessary_points.append(point)
+                    necessary_points.add(point)
                     # pointの出力Tubeが無い、またはサブフローとして実行される場合は、入力Pointの場合、is_first=True
                     is_first = point.dst_tubes.is_null or (not self.is_root and point.is_in)
                     if point.datum is None and not is_first:
-                        necessary_points.extend(self._search_necessary_point(points, point))
+                        necessary_points.update(self._search_necessary_point(points, point))
 
         return necessary_points

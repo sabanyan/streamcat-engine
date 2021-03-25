@@ -1,11 +1,11 @@
 from typing import List
 from kskp.core import Port
+from .point import Point, Points
 from .step import Step
-from .point import Point
 
 class Stepoints():
 
-    def __init__(self, steps:List[Step], points:List[Point], o_ports:List[Port], is_root:bool):
+    def __init__(self, steps:List[Step], points:Points, o_ports:List[Port], is_root:bool):
         self.substeps = steps
         self.points = points
         self.o_ports = o_ports

@@ -1,3 +1,4 @@
+from typing import Iterator
 from .tube import Tubes
 
 class Point:
@@ -92,3 +93,52 @@ class Point:
         rootのフローの終端かどうか
         """
         return self.dst_tubes.is_null
+
+
+class Points:
+
+    def __init__(self, points:set=set()):
+        # pointsはset型なのでPointの重複は無い
+        self._points = list(points)
+
+    def add(self, point:Point):
+        """
+        Pointを追加する
+        """
+        if point in self._points:
+            raise Exception(f'同じid({point.id})のPointが既に存在します')
+        self._points.append(point)
+
+    def update(self, points):
+        """
+        Pointを全て追加する
+        重複する場合は引数で追加したPointで上書きする
+        """
+        for point in points:
+            if point in self._points:
+                i = self._points.index(point)
+                self._points[i] = point
+            else:
+                self._points.append(point)
+
+    def get(self, point_id:str) -> Point:
+        for point in self._points:
+            if point.id == point_id:
+                return point
+        return None
+
+    def __iter__(self) -> Iterator[Point]:
+        yield from self._points
+
+    def __contains__(self, point:Point):
+        return point in self._points
+
+    def __getitem__(self, point_id:str):
+        point = self.get(point_id)
+        if point is None:
+            raise Exception(f'PointsにPoint({point.id})は存在しません')
+        else:
+            return point
+        
+    def __len__(self):
+        return len(self._points)

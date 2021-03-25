@@ -21,38 +21,35 @@ class FolderDataSourcePrepender():
         LoaderStepとStorePointをくっつける
         Loaderは指定したstoreからデータを取ってくる
         """
-        loader_step = self._make_loader_step(frame_uuid)
-        point_id = target_point.id + '_loader_point'
+        loader_cmd = CommandLink('loader').resolve()
+        loader_step = Step('loader', loader_cmd, {'uuid':frame_uuid})
+        point_id = target_point.id + '_loader'
         store_point = Point(point_id, None, store, Tube(Port('folder', 'store'), loader_step))
         target_point.src_tubes = Tubes(Tube(Port('o', 'frame'), loader_step))
-        flow.points.append(store_point)
+        flow.points.add(store_point)
         flow.substeps.append(loader_step)
 
-    def _make_loader_step(self, node_uuid):
-        """
-        指定したuuidのデータを取ってくるLoaderStepを作成する
-        """
-        return Step('loader', CommandLink('loader').resolve(), {'uuid':node_uuid})
 
 class FolderDataDestAppender():
-    def __init__(self, flow_datum, datum_factory):
+    def __init__(self, flow_datum, datum_factory, start_time):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow_datum = flow_datum
         self._datum_factory = datum_factory
+        self._start_time = start_time
 
-    def do_append(self, flow, point, start_time):
+    def do_append(self, flow, point):
         # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
         folder_store = self.flow_datum.find_parent()
         saver = CommandLink('saver').resolve()
         # saver_step, saver_point, saver_point2 = self._put_saver(point, flow, folder_store, saver, start_time)
-        saver_step, saver_point = self._put_saver(point, flow, folder_store, saver, start_time)
+        saver_point = self._put_saver(point, flow, folder_store, saver, 'saver')
         # # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
-        # flow.points.append(saver_point2)
+        # flow.points.add(saver_point2)
         # return saver_point, saver_point2
         return saver_point
 
-    def _put_saver(self, point, flow, store, saver, start_time):
+    def _put_saver(self, point, flow, store, saver, command_id):
         """
         指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
@@ -69,57 +66,33 @@ class FolderDataDestAppender():
         args['flow_label'] = flow.label if flow.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
         args['point'] = point
-        args['start_time'] = start_time
+        args['start_time'] = self._start_time
 
-        saver_step = self._make_step(args, saver)
+        # saverコマンドのstepを作成する
+        saver_step = Step(saver.label, saver, args)
         # store_point = Point(point.id + '_store_point', None, store, Tube(Port('folder', 'store'), saver_step))
-        saver_point = Point(point.id + '_saver', Tube(Port('o', 'mcmd'), saver_step))
+        saver_point = Point(f'{point.id}_{command_id}', Tube(Port('o', 'mcmd'), saver_step))
         # saver_point2 = Point(str(uuid.uuid4()), Tube(Port('u', 'uuid'), saver_step), None, None)
 
-        self.switch_target(point, saver_step, saver_point)
+        # pointにsaverコマンドを付加する
+        # (pointが終端でない場合は、二股の出力Portになる)
+        point.dst_tubes.add(Tube(Port('i', 'frame'), saver_step))
 
         flow.substeps.append(saver_step)
-        flow.points.append(saver_point)
+        flow.points.add(saver_point)
 
         # return saver_step, saver_point, saver_point2
-        return saver_step, saver_point
-
-    def _make_step(self, args, cmd):
-        """
-        saverコマンドのstepを作成する
-        """
-        return Step(cmd.label, cmd, args)
-
-    # TODO: 解りづらい関数化
-    # engineのリファクタリングで見直し予定
-    def switch_target(self, point, saver_step, saver_point):
-        if point.is_last:
-            # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), saver_step))
-        else:
-            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.dst_tubes.add(Tube(Port('i', 'frame'), saver_step))
-
-class CacheDataDestAppender(FolderDataDestAppender):
-
-    def do_append(self, flow, point, start_time):
-        folder_store = self._datum_factory.load_cache_folder()
-        saver = CommandLink('cachesaver').resolve()
-        saver_step, saver_point = self._put_saver(point, flow, folder_store, saver, start_time)
-
-        # flow.points.append(saver_point2)
         return saver_point
 
-    def switch_target(self, point, saver_step, saver_point):
-        if point.is_last:
-            # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), saver_step))
-        else:
-            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            tmp_tubes = point.dst_tubes
-            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), saver_step))
-            saver_point.dst_tubes = tmp_tubes
-            
+
+class CacheDataDestAppender(FolderDataDestAppender):
+    def do_append(self, flow, point):
+        folder_store = self._datum_factory.load_cache_folder()
+        saver = CommandLink('cachesaver').resolve()
+        saver_point = self._put_saver(point, flow, folder_store, saver, 'cachesaver')
+        return saver_point
+
+
 class VisDataDestAppender():
     def __init__(self, flow_uuid, vis_args={}):
         self.vis_args = vis_args
@@ -135,21 +108,21 @@ class VisDataDestAppender():
         # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
         convtoutf8 = CommandLink('convtoutf8').resolve()
-        convtoutf8_step = self._make_step({'target_encoding':'utf-8','target_newline':'\n'}, convtoutf8)
+        convtoutf8_step = Step(convtoutf8.label, convtoutf8, {'target_encoding':'utf-8','target_newline':'\n'})
 
         # RowRange Stepへの引数を作成する
         rowrange_args = self.vis_args[point.id]['args']
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
-        rowrange_step = self._make_step(rowrange_args, rowrange_cmd)
+        rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
 
         # MchkCsv Stepを作成する
         mchkcsv_cmd = CommandLink('mchkcsv').resolve()
-        mchkcsv_step = self._make_step({}, mchkcsv_cmd)
+        mchkcsv_step = Step(mchkcsv_cmd.label, mchkcsv_cmd)
 
         # ToList Stepを作成する 
         tolist_cmd = CommandLink('to_list').resolve()
-        tolist_step = self._make_step({}, tolist_cmd)
+        tolist_step = Step(tolist_cmd.label, tolist_cmd)
 
         # ConvToUtf8 Stepを繋げる
         point_id = point.id + '_convtoutf8'
@@ -164,32 +137,22 @@ class VisDataDestAppender():
         point_id = point.id + '_tolist'
         tolist_point = Point(point_id, Tube(Port('o', 'frame'), tolist_step))
 
-        self.switch_target(point, convtoutf8_step)
+        # pointにsaverコマンドを付加する
+        # (pointが終端でない場合は、二股の出力Portになる)
+        point.dst_tubes.add(Tube(Port('i', 'frame'), convtoutf8_step))
 
         flow.substeps.append(convtoutf8_step)
         flow.substeps.append(rowrange_step)
         flow.substeps.append(mchkcsv_step)
         flow.substeps.append(tolist_step)
-        flow.points.append(convtoutf8_point)
-        flow.points.append(rowrange_point)
-        flow.points.append(mchkcsv_point)
-        flow.points.append(tolist_point)
+        flow.points.add(convtoutf8_point)
+        flow.points.add(rowrange_point)
+        flow.points.add(mchkcsv_point)
+        flow.points.add(tolist_point)
 
         return tolist_point
 
-    def switch_target(self, point, step):
-        if point.is_last:
-            # lastsの場合は、pointをruns_stepに繋げるだけ
-            point.dst_tubes = Tubes(Tube(Port('i', 'frame'), step))
-        else:
-            # lastsでない場合は、pointをと次のstepとruns_stepに繋げる(二股になる)
-            point.dst_tubes.add(Tube(Port('i', 'frame'), step))
-
     def do_append_after_runs(self, flow, point, original_out_point):
-        visualizer_step, visualizer_point = self._put_visualizer(flow, point, original_out_point)
-        return visualizer_point
-
-    def _put_visualizer(self, flow, point, original_out_point):
         """
         Visualizerコマンドを付加する
         """
@@ -201,7 +164,7 @@ class VisDataDestAppender():
             raise Exception('visualizer属性を指定してください')
         visualizer_cmd_name = visualizer_args['visualizer']
         visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
-        visualizer_step = self._make_step(visualizer_args, visualizer_cmd)
+        visualizer_step = Step(visualizer_cmd.label, visualizer_cmd, visualizer_args)
         visualizer_point = Point(point.id + '_v', Tube(Port('o', 'datum'), visualizer_step))
 
         # VisPointにVisualizerフローを繋げる
@@ -209,15 +172,10 @@ class VisDataDestAppender():
         point.dst_tubes = Tubes(Tube(Port('i', 'frame'), visualizer_step))
 
         flow.substeps.append(visualizer_step)
-        flow.points.append(visualizer_point)
+        flow.points.add(visualizer_point)
 
-        return visualizer_step, visualizer_point
+        return visualizer_point
 
-    def _make_step(self, args, cmd):
-        """
-        visualizerコマンドのstepを作成する
-        """
-        return Step(cmd.label, cmd, args)
 
 class RunsCommandAppender():
     def __init__(self):
@@ -225,7 +183,7 @@ class RunsCommandAppender():
         runs_cmd = CommandLink('runs').resolve()
         # Runsステップを作成する
         # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
-        self.runs_step = Step('runs', runs_cmd, {}, ex_acceptable=True)
+        self.runs_step = Step('runs', runs_cmd, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self.next_port_no = 0
         # Flow.substepsにruns_stepをすでに追加した場合はTrue
@@ -247,7 +205,7 @@ class RunsCommandAppender():
         if not self._already_step_added:
             flow.substeps.append(self.runs_step)
             self._already_step_added = True
-        flow.points.append(runs_point)
+        flow.points.add(runs_point)
 
         self.next_port_no += 1
 
@@ -289,10 +247,10 @@ class ActivityDataDestAppender():
         # Stepのportsに追加する
         self.activity_step.i_ports.append(Port(port_label, 'datum'))
 
-        if flow.uuid not in self._already_step_added:
+        if flow not in self._already_step_added:
             flow.substeps.append(self.activity_step)
-            flow.points.append(activity_point)
-            self._already_step_added.add(flow.uuid)
+            flow.points.add(activity_point)
+            self._already_step_added.add(flow)
 
         self.next_port_no += 1
 

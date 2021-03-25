@@ -2485,8 +2485,8 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'dd4', 'label':'lbl', 'type':'frame'},
-                                  {'nodeId':'dd5', 'label':'lbl', 'type':'frame'}]]
+        flow_json['ports'] = [[],[{'nodeId':'dd4', 'label':'lbl1', 'type':'frame'},
+                                  {'nodeId':'dd5', 'label':'lbl2', 'type':'frame'}]]
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'

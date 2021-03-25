@@ -1,7 +1,7 @@
 from kskp.core import Port
 from kskp.store import FlowData        
 from .stepoints import Stepoints
-from .point import Point
+from .point import Point, Points
 from .appenders import FolderDataSourcePrepender
 
 class Flow(FlowData):
@@ -14,7 +14,7 @@ class Flow(FlowData):
 
         # UUIDを採番する
         import uuid
-        self.uuid = str(uuid.uuid4())
+        self._uuid = str(uuid.uuid4())
 
         # Portを設定する
         self.i_ports = self._parse_ports(self.ports[0])
@@ -25,7 +25,7 @@ class Flow(FlowData):
         self.datum_factory = datum_factory
         self.folder_data_source_prepender = FolderDataSourcePrepender(datum_factory)
 
-        self.stepoints = Stepoints(steps=[], points=[], o_ports=self.o_ports, is_root=is_root)
+        self.stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
 
         # flowを設定する
         if flow_data.has_nodes:
@@ -68,6 +68,7 @@ class Flow(FlowData):
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
         from kskp.depo.std.commands import SCommand
+        from .point import Points
         from .step import Step
         from .tube import Tube
 
@@ -165,25 +166,24 @@ class Flow(FlowData):
                 points.add(dst_point)
 
         # 作成したStep及びPointのリストを返す
-        return substeps, list(points)
+        return substeps, Points(points)
 
     def _update_flow_by_other_than_runnable(self, nodes):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
         # 実行に関係ないnodeのtype群
-        except_type_list = ['note']
+        EXCEPT_TYPES = ['note']
 
         for node in nodes:
             # pointにdatumを入れていく
-            if self._is_runnable_node(node) or node['type'] in except_type_list:
-                continue
-                
-            target_points = [point for point in self.points if point.id == node['id']]
-            if len(target_points) < 1:
+            if self._is_runnable_node(node) or node['type'] in EXCEPT_TYPES:
                 continue
 
-            target_point = target_points[0]
+            target_point = self.points.get(node['id'])
+            if target_point is None:
+                continue
+
             target_point.cache = node.get('makeCache')
             target_point.label = node.get('label')
 
@@ -281,7 +281,7 @@ class Flow(FlowData):
             point.is_out = is_out
         else:
             point = Point(point_id, src_tube, None, dst_tube, is_in, is_out)
-            self.points.append(point)
+            self.points.add(point)
         return point
 
 
@@ -304,6 +304,9 @@ class Flow(FlowData):
         """
         return node['type'] == 'command' or node['type'] == 'flow'
 
+    def __hash__(self):
+        return hash(self._uuid)
+
     @property
     def is_datadst(self):
         """
@@ -316,7 +319,7 @@ class Flow(FlowData):
         return self.stepoints.points
 
     @points.setter
-    def points(self, points):
+    def points(self, points:Points):
         self.stepoints.points = points
 
     @property
