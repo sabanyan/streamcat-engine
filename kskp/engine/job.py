@@ -12,29 +12,6 @@ class Job:
             self.errors.append(e)
             raise
 
-    # def runs(self):
-    #     """
-    #     runsを実行する
-    #     """
-    #     try:
-    #         last_modules = []
-    #         for point_datum in self.step.runnable.results.values():
-    #             last_modules.append(point_datum.content)
-
-    #         module_list = self.step.runnable.get_module_list()
-    #         last_modules.extend(module_list)
-
-    #         # import pprint
-    #         # pprint.pprint('runs :')  
-    #         # pprint.pprint(last_modules)
-
-    #         # 実行
-    #         import nysol.mcmd as nm
-    #         nm.runs(last_modules, msg='on')
-    #     except Exception as e:
-    #         self.errors.append(e)
-    #         raise
-
     def dtor(self):
         from kskp.core import Tmp
         from .flow import Flow

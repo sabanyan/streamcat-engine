@@ -126,7 +126,7 @@ class FlowJsonLink:
         if flow.is_root:
             # lasts出力処理（メインフローの場合のみ）
             if is_vis:
-                for original_out_point in [flow.select_point_by_id(pid) for pid in self.vis_ids]:
+                for original_out_point in [flow.points[pid] for pid in self.vis_ids]:
                     # Visualizerコマンドのための前処理コマンドを付加する
                     out_point = self.vis_data_dest_appender.do_append(flow, original_out_point)
                     # Runsコマンドを付加する
@@ -251,7 +251,7 @@ class FlowJsonLink:
         necessary_points = set()
 
         for id in last_ids:
-            lasts_point = flow.select_point_by_id(id)
+            lasts_point = flow.points[id]
             # if len(flow.o_ports) == 0:
             if flow.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）

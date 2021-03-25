@@ -273,7 +273,7 @@ class Flow(FlowData):
         """
         point_ids = [point.id for point in self.points]
         if point_id in point_ids:
-            point = self.select_point_by_id(point_id)
+            point = self.points[point_id]
             # 既存のpointを更新する
             src_tube is None or point.src_tubes.add(src_tube)
             dst_tube is None or point.dst_tubes.add(dst_tube)
@@ -355,17 +355,6 @@ class Flow(FlowData):
         point.dst_tubes.add(Tube(o_port, None))
         self.o_ports.append(o_port)
 
-    def select_point_by_id(self, point_id):
-        """
-        self.pointsの中から
-        指定したidのpointを取得する
-        """
-        for point in self.points:
-            if point.id == point_id:
-                return point
- 
-        raise Exception(f'指定されたPoint({point_id})がFlow({self.label})にありませんでした')
-
     def has_as_in_point(self, node_id):
         for port in self.i_ports:
             if port.label == node_id:
@@ -377,16 +366,6 @@ class Flow(FlowData):
             if port.label == node_id:
                 return True
         return False
-
-    def get_module_list(self):
-        """
-        substepsのmoduleをextendして返す
-        """
-        for substep in self.substeps:
-            if isinstance(substep.runnable, Flow):
-                self.module_store.extend(substep.runnable.get_module_list())
-
-        return self.module_store.module_list
 
     def dtor(self, args):
         # 配下のflowのdtorも動かす
