@@ -1903,12 +1903,6 @@ class DataSourceTest(TestCaseBase):
         # フローを作成する
         flow = root.create_flow('Main', FlowData(flow_json))
 
-        # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
-        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
-        # 0入力0出力のフローは実行されないため結果は0件になる
-        self.assertEqual(len(lasts), 0)
-
         # サブフローを実行する
         flow_link = FlowJsonLink(sub_flow, self.factory)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
@@ -1918,6 +1912,18 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(f1_d2)を出力しませんでした')
         out_frame = lasts['f1_d2']
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.file_exists)
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
+        out_frame = lasts['f0_d2']
         self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
         self.assertTrue(out_frame.file_exists)
 
@@ -2109,6 +2115,209 @@ class DataSourceTest(TestCaseBase):
         # ほかす
         sub_flow.throw_away()
         folder_dst.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_subflow_without_in_and_out_point(self):
+        """
+        入出力Portの無いサブフローであっても、SaverCommandは実行されること
+        """
+
+        sub_flow_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2021-3-26 06:43:00",
+            "projectId": None,
+            "description": "",
+            "params": [],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                                ["x", 1, 10],
+                                ["x", 2, 20],
+                                ["y", 1, 30],
+                                ["y", 3, 40],
+                                ["z", 1, 50]],
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "f1",
+                    "label": "Folderデータデスト",
+                    "type": "flow",
+                    "uuid": "d6c92ed6-a8d0-403a-af1e-c0d32cde2146",
+                    "args": {},
+                    "srcs": {
+                        "d1": "d"
+                    },
+                    "dsts": {}
+                }
+            ]
+        }
+
+        flow_json = {
+            "label": "main",
+            "params": [],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "f0",
+                    "label": "f0",
+                    "type": "flow",
+                    "uuid": "2aae0735-aeb7-4000-b9ff-393aae5802ae",
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {},
+                    "srcsOrder": []
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフロー(フォルダデータデスト)の作成
+        from .make_flow_json import folder_dst_json
+        folder_dst = root.create_flow('folder_dst', FlowData(folder_dst_json))
+        folder_dst.uuid = 'd6c92ed6-a8d0-403a-af1e-c0d32cde2146'
+        folder_dst.save()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '2aae0735-aeb7-4000-b9ff-393aae5802ae'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        print(lasts)
+
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
+        out_frame = lasts['f0_d2']
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.file_exists)
+
+        # ほかす
+        sub_flow.throw_away()
+        folder_dst.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_subflow_without_in_and_out_point2(self):
+        """
+        入出力Portが無いサブフローで、かつSaverCommandも含まれていない場合、
+        そのサブフローは実行されないこと
+        """
+
+        sub_flow_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2021-3-26 08:58:00",
+            "projectId": None,
+            "description": "",
+            "params": [],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "value": [["顧客", "数量", "金額"],
+                                ["x", 1, 10],
+                                ["x", 2, 20],
+                                ["y", 1, 30],
+                                ["y", 3, 40],
+                                ["z", 1, 50]],
+                    "makeCache": False,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c2",
+                    "commandId": "mrand",
+                    "type": "command",
+                    "label": "c2",
+                    "args": {
+                        "a": "乱数"
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ]
+        }
+
+        flow_json = {
+            "label": "main",
+            "params": [],
+            "ports": [[],[]],
+            "nodes": [
+                {
+                    "id": "f0",
+                    "label": "f0",
+                    "type": "flow",
+                    "uuid": "df5dc139-17fe-4843-9aaa-6dc1306d0e9d",
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {},
+                    "srcsOrder": []
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = 'df5dc139-17fe-4843-9aaa-6dc1306d0e9d'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_link = FlowJsonLink(flow, self.factory)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力結果は0件であること
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されないこと
+        self.assertIsNone(lasts)
+
+        # ほかす
+        sub_flow.throw_away()
 
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()

@@ -67,37 +67,44 @@ class FlowJsonLink:
         from .flow import Flow
         flow = Flow(self.flow_data, self.is_root, self.context, self.datum_factory)
 
+        # 
+        # Rootフローの出力Pointから辿れないコマンドは実行されない
+        # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
+        # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
+        # 
         self.context.relay_ports[flow] = []
 
         # SaverCommandの出力PointをRootフローに中継する
-        for p in flow.points:
-            # Rootフローの出力Pointから辿れないコマンドは実行されない
-            # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
-            # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
-            if not p.is_out:
-                src_tube = p.src_tubes.find_command_tube()
-                if src_tube is not None:
-                    step = src_tube.step
-                    # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
-                    if isinstance(step.runnable, SaverCommand):
-                        o_port = Port(p.id, 'mcmd')
-                        flow.open_o_port(o_port, p)
-                        # 
-                        self.context.relay_ports[flow].append(o_port.label)
+        for point in flow.points:
+            # 既にフロー出力Pointの場合は中継しない
+            if point.is_out:
+                continue
 
-            for dst_tube in p.dst_tubes:
-                step = dst_tube.step
+            # コマンドの出力Pointでない場合も中継しない
+            src_tube = point.src_tubes.find_command_tube()
+            if src_tube is None:
+                continue
 
-                # コマンドにはポートを動的に追加できないため、コマンドがデータデストの場合は、そのコマンドは実行できない
-                if step is None or not step.is_flow:
-                    continue
+            # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
+            if isinstance(src_tube.step.runnable, SaverCommand):
+                o_port = Port(point.id, 'mcmd')
+                flow.open_o_port(o_port, point)
+                # 
+                self.context.relay_ports[flow].append(o_port.label)
 
-                # フローが'o','u'の出力ポートを持っている場合
-                for port_label in self.context.relay_ports[step.runnable]:
-                    # oポートの中継
-                    self._relay_o_port(flow, step, port_label)
-                    # 
-                    self.context.relay_ports[flow].append(port_label)
+        # 中継ポートを中継する
+        for step in flow.substeps:
+            # コマンドにはポートを動的に追加できないため、
+            # コマンドがデータデストの場合は、そのコマンドは実行できない
+            if not step.is_flow:
+                continue
+
+            # フローが中継ポートを持っている場合
+            for port_label in self.context.relay_ports[step.runnable]:
+                # 中継する
+                self._relay_o_port(flow, step, port_label)
+                # 
+                self.context.relay_ports[flow].append(port_label)
 
         # 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
