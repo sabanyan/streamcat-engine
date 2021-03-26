@@ -21,9 +21,6 @@ class FlowJsonLink:
             from datetime import datetime, timezone
             self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
 
-            # {flow : [port_label]}
-            self.relay_ports = {}
-
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
@@ -72,7 +69,6 @@ class FlowJsonLink:
         # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
         # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
         # 
-        self.context.relay_ports[flow] = []
 
         # SaverCommandの出力PointをRootフローに中継する
         for point in flow.points:
@@ -89,8 +85,8 @@ class FlowJsonLink:
             if isinstance(src_tube.step.runnable, SaverCommand):
                 o_port = Port(point.id, 'mcmd')
                 flow.open_o_port(o_port, point)
-                # 
-                self.context.relay_ports[flow].append(o_port.label)
+                # 中継済みのポートとして記録する
+                flow.relayed_o_ports.append(o_port)
 
         # 中継ポートを中継する
         for step in flow.substeps:
@@ -100,11 +96,11 @@ class FlowJsonLink:
                 continue
 
             # フローが中継ポートを持っている場合
-            for port_label in self.context.relay_ports[step.runnable]:
+            for port in step.runnable.relayed_o_ports:
                 # 中継する
-                self._relay_o_port(flow, step, port_label)
-                # 
-                self.context.relay_ports[flow].append(port_label)
+                self._relay_o_port(flow, step, port.label)
+                # 中継済みのポートとして記録する
+                flow.relayed_o_ports.append(port)
 
         # 
         # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
@@ -145,7 +141,7 @@ class FlowJsonLink:
                 # original_out_pointが、中継したフロー出力Pointの場合はTrue
                 src_tube = original_out_point.src_tubes.find_command_tube()
                 in_port_label_exists = src_tube is not None and src_tube.port is not None
-                out_point_is_relayed = in_port_label_exists and src_tube.port.label in self.context.relay_ports[flow]
+                out_point_is_relayed = in_port_label_exists and src_tube.port in flow.relayed_o_ports
                 if out_point_is_relayed:
                     # フローの出力Pointが、中継したフロー出力Pointでもある場合、
                     # 既にSaverコマンドが繋がっているので、そのPointにSaverコマンドを付加しない

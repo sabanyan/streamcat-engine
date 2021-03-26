@@ -20,12 +20,17 @@ class Flow(FlowData):
         self.i_ports = self._parse_ports(self.ports[0])
         self.o_ports = self._parse_ports(self.ports[1])
 
+        # メインフローであればTrue
         self.is_root = is_root
-        self.link_context = link_context
-        self.datum_factory = datum_factory
-        self.folder_data_source_prepender = FolderDataSourcePrepender(datum_factory)
 
-        self.stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
+        # FlowJsonLinkが中継した出力Portのリストを保持する
+        self.relayed_o_ports = []
+
+        self._link_context = link_context
+        self._datum_factory = datum_factory
+        self._folder_data_source_prepender = FolderDataSourcePrepender(datum_factory)
+
+        self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
 
         # flowを設定する
         if flow_data.has_nodes:
@@ -33,10 +38,9 @@ class Flow(FlowData):
             # そのため、use_exec_auth=Trueを指定する
             substeps, points = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
             # StepsとPointsを格納する
-            self.stepoints = Stepoints(steps=substeps, points=points, o_ports=self.o_ports, is_root=is_root)
+            self._stepoints = Stepoints(steps=substeps, points=points, o_ports=self.o_ports, is_root=is_root)
             # 
             self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
-
 
         # 
         # データデストか否かの判定をする
@@ -85,12 +89,12 @@ class Flow(FlowData):
             
             if isinstance(cmd_or_flow, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow'         : self.link_context.flow_datum,
-                        'flow_uuid'    : self.link_context.flow_uuid,
-                        'flow_label'   : self.link_context.flow_label,
-                        'result_folder': self.link_context.flow_datum.find_parent(),
-                        'start_time'   : self.link_context.start_time,
-                        'activity_uuid': self.link_context.activity_uuid}
+                args = {'flow'         : self._link_context.flow_datum,
+                        'flow_uuid'    : self._link_context.flow_uuid,
+                        'flow_label'   : self._link_context.flow_label,
+                        'result_folder': self._link_context.flow_datum.find_parent(),
+                        'start_time'   : self._link_context.start_time,
+                        'activity_uuid': self._link_context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(node['args'])
             else:
@@ -190,7 +194,7 @@ class Flow(FlowData):
             # Storeの場合、StoreオブジェクトをPointに格納する
             if self._is_store_node(node):
                 store_uuid = node.get('uuid')
-                store = self.datum_factory.find_by_uuid(store_uuid)
+                store = self._datum_factory.find_by_uuid(store_uuid)
 
                 # StoreにDatabaseを設定する
                 target_point.datum = store
@@ -209,7 +213,7 @@ class Flow(FlowData):
                 elif node.get('uuid') is not None:
                     # uuidが既に振られている場合は、loaderから取ってくるようにする
                     # self._put_loader(node.get('uuid'), target_point, self, Folder)
-                    self.folder_data_source_prepender.do_prepend(self, target_point, node.get('uuid'))
+                    self._folder_data_source_prepender.do_prepend(self, target_point, node.get('uuid'))
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.cache = False
 
@@ -220,11 +224,11 @@ class Flow(FlowData):
         if node['type'] == 'command':
             ret = CommandLink(node['commandId'])
         elif node['type'] == 'flow':
-            # ret = FlowUuidLink(node['uuid'], {}, self.link_context)
+            # ret = FlowUuidLink(node['uuid'], {}, self._link_context)
             from kskp.store.auth import NotAuthorizedException
             try:
-                sub_flow = self.datum_factory.find_by_uuid(node['uuid'])
-                ret = FlowJsonLink(sub_flow, None, {}, self.link_context, is_root=False)
+                sub_flow = self._datum_factory.find_by_uuid(node['uuid'])
+                ret = FlowJsonLink(sub_flow, None, {}, self._link_context, is_root=False)
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 
@@ -316,15 +320,15 @@ class Flow(FlowData):
 
     @property
     def points(self):
-        return self.stepoints.points
+        return self._stepoints.points
 
     @points.setter
     def points(self, points:Points):
-        self.stepoints.points = points
+        self._stepoints.points = points
 
     @property
     def substeps(self):
-        return self.stepoints.substeps
+        return self._stepoints.substeps
 
     @property
     def lasts(self):
@@ -338,7 +342,7 @@ class Flow(FlowData):
         """
         pointではなくstepを基軸にして書き直し
         """
-        return self.stepoints.run(args, inputs)
+        return self._stepoints.run(args, inputs)
 
     def open_o_port(self, o_port, point):
         """
