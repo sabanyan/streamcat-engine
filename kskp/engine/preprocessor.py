@@ -52,11 +52,11 @@ class Preprocessor:
         self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
 
-    def execute(self, flow_runnable):
+    def execute(self, flow_command):
         # Flowを生成する
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
-        flow = flow_runnable
+        flow = flow_command
 
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない

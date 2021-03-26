@@ -4,7 +4,7 @@ from .stepoints import Stepoints
 from .point import Point, Points
 from .appenders import FolderDataSourcePrepender
 
-class FlowRunnable(FlowData):
+class FlowCommand(FlowData):
     """
     実行可能フロー
     """
@@ -111,7 +111,7 @@ class FlowRunnable(FlowData):
             self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
 
         # フローを前処理する
-        self._preprocessor.execute(flow_runnable=self)
+        self._preprocessor.execute(flow_command=self)
 
     def run(self, args, inputs):
         """
@@ -141,7 +141,7 @@ class FlowRunnable(FlowData):
 
         # まず、runnableを集める
         for node_json in nodes_json:
-            node = FlowRunnable.Node(node_json)
+            node = FlowCommand.Node(node_json)
             if not node.is_runnable:
                 continue
 
@@ -223,7 +223,7 @@ class FlowRunnable(FlowData):
         EXCEPT_TYPES = ['note']
 
         for node_json in nodes_json:
-            node = FlowRunnable.Node(node_json)
+            node = FlowCommand.Node(node_json)
 
             # pointにdatumを入れていく
             if node.is_runnable or node.type in EXCEPT_TYPES:
@@ -272,7 +272,7 @@ class FlowRunnable(FlowData):
             from kskp.store.auth import NotAuthorizedException
             try:
                 sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
-                return FlowRunnable(sub_flow_datum, preprocessor=self._preprocessor, is_root=False)
+                return FlowCommand(sub_flow_datum, preprocessor=self._preprocessor, is_root=False)
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.id})の参照権限がありません')
         else:
@@ -380,7 +380,7 @@ class FlowRunnable(FlowData):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.core import Command
-            if isinstance(substep.runnable, FlowRunnable) or isinstance(substep.runnable, Command):
+            if isinstance(substep.runnable, FlowCommand) or isinstance(substep.runnable, Command):
                 substep.dtor()
             else:
                 raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')

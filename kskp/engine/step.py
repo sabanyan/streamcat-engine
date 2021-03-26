@@ -17,8 +17,8 @@ class Step:
 
     @property
     def is_flow(self):
-        from .flow_runnable import FlowRunnable
-        return isinstance(self.runnable, FlowRunnable)
+        from .flow_command import FlowCommand
+        return isinstance(self.runnable, FlowCommand)
 
     @property
     def is_datadst(self):
