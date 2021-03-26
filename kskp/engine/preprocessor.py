@@ -2,8 +2,7 @@ from kskp.core import Port
 
 class Preprocessor:
     """
-    フローへのリンク
-    TODO: Preprocesserに改名
+    実行可能フローの前処理
     """
 
     class FlowLinkContext():
@@ -52,7 +51,6 @@ class Preprocessor:
         self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
         self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
-
 
     def execute(self, flow_runnable):
         # Flowを生成する
@@ -207,7 +205,6 @@ class Preprocessor:
             # データデストの出力を親フローに繋げる
             o_port = Port(port_label, 'mcmd')
             flow.open_o_port(o_port, new_out_point)
-
 
     def _pick_out_points(self, flow, outs, points):
         # /vizsなど、lastsが指定されている場合

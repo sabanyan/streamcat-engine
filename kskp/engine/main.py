@@ -27,7 +27,7 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
     from .job import Job
 
     # 進捗を取得する準備を行う
-    prepare_observer(job_complete_handler)
+    # prepare_observer(job_complete_handler)
 
     # exs = []
 
@@ -50,7 +50,6 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
         return job.step.runnable.outs
 
     except Exception as e:
-        print('main:', e)
         raise
         # exs.append(exception_manager(e))
         # return exs

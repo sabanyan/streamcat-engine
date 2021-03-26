@@ -6,9 +6,56 @@ from .appenders import FolderDataSourcePrepender
 
 class FlowRunnable(FlowData):
     """
-    TODO: FlowRunnableに変更する？
-    TODO: FlowDataからの継承をやめる
+    実行可能フロー
     """
+
+    class Node():
+        """
+        ノード
+        """
+        def __init__(self, node_json):
+            self.id = node_json['id']
+            self.type = node_json['type']
+            self._node_json = node_json
+
+        def __repr__(self):
+            if self.type == 'command':
+                return self._node_json.get('commandId')
+            else:
+                return self._node_json.get('label')
+
+        def __getitem__(self, key:str):
+            value = self._node_json.get(key)
+            if value is None:
+                raise Exception(f'Node({self.id})に"{key}"は存在しません')
+            else:
+                return value
+
+        def get(self, key:str):
+            return self._node_json.get(key)
+
+        @property
+        def is_store(self):
+            """
+            指定されたnodeがStoreの場合はTrueを返す
+            """
+            return self.type == 'store'
+
+        @property
+        def is_runnable(self):
+            """
+            指定されたnodeがrunnableかどうかを判断する
+            """
+            return self.type == 'command' or self.type == 'flow'
+
+        @property
+        def has_value(self):
+            """
+            valueをもつnodeかどうか
+            uuidが入っていたらそっちを優先する
+            """
+            return self.get('value') is not None and self.get('uuid') is None
+
     def __init__(self, flow_datum, factory=None, vis_args={}, preprocessor=None, is_root=True):
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_datum.flow_data.to_json())
@@ -27,27 +74,13 @@ class FlowRunnable(FlowData):
         # FlowJsonLinkが中継した出力Portのリストを保持する
         self.relayed_o_ports = []
 
+        # 
         from .preprocessor import Preprocessor
-        if preprocessor is None:
-            self._preprocessor = Preprocessor(flow_datum, None, vis_args)
-        else:
-            self._preprocessor = preprocessor
+        self._preprocessor = preprocessor or Preprocessor(flow_datum, None, vis_args)
 
         from kskp.store.factory import DatumFactory
         self._datum_factory = DatumFactory(flow_datum._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
-
-        self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
-
-        # flowを設定する
-        if self.has_nodes:
-            # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
-            # そのため、use_exec_auth=Trueを指定する
-            substeps, points = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
-            # StepsとPointsを格納する
-            self._stepoints = Stepoints(steps=substeps, points=points, o_ports=self.o_ports, is_root=is_root)
-            # 
-            self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
 
         # 
         # データデストか否かの判定をする
@@ -67,8 +100,24 @@ class FlowRunnable(FlowData):
         #
         self.context = {}
 
-        # 
-        ret = self._preprocessor.execute(flow_runnable=self)
+        # フローJSONからStepointを生成する
+        if self.has_nodes:
+            # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
+            # そのため、use_exec_auth=Trueを指定する
+            self._stepoints = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
+            # runnable以外のノードを走査する
+            self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
+        else:
+            self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
+
+        # フローを前処理する
+        self._preprocessor.execute(flow_runnable=self)
+
+    def run(self, args, inputs):
+        """
+        フローを実行する
+        """
+        return self._stepoints.run(args, inputs)
 
     def _parse_ports(self, port_dict_list):
         """
@@ -78,21 +127,22 @@ class FlowRunnable(FlowData):
         # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
         return [Port(p['nodeId'], p['type']) for p in port_dict_list]
 
-    def _update_flow_by_runnable(self, nodes):
+    def _update_flow_by_runnable(self, nodes_json):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
-        from kskp.depo.std.commands import SCommand
+        from .stepoints import Stepoints
         from .point import Points
         from .step import Step
         from .tube import Tube
 
         substeps = []
-        points = set()
+        points = Points()
 
         # まず、runnableを集める
-        for node in nodes:
-            if not self._is_runnable_node(node):
+        for node_json in nodes_json:
+            node = FlowRunnable.Node(node_json)
+            if not node.is_runnable:
                 continue
 
             # CommandまたはFlowを取得する
@@ -100,7 +150,6 @@ class FlowRunnable(FlowData):
             
             # MCommandに不要な引数を設定するとエラーになる
             args = node['args']
-
             srcs = node['srcs']
             dsts = node['dsts']
 
@@ -108,7 +157,7 @@ class FlowRunnable(FlowData):
             o_ports = self._replace_multi_inputs(runnable.o_ports, dsts)
 
             # runnableのインスタンス化を行う
-            step = Step(node['id'], runnable, args, i_ports=i_ports, o_ports=o_ports)
+            step = Step(node.id, runnable, args, i_ports=i_ports, o_ports=o_ports)
             # Stepを集める
             substeps.append(step)
 
@@ -116,42 +165,39 @@ class FlowRunnable(FlowData):
             for s_port_label, s_node_id in srcs.items():
                 # 可変長引数で入力PointがNoneになる場合に備える
                 if s_node_id is None:
-                    raise Exception(f"コマンド({node['label']})の入力({s_port_label})が指定されていません")
+                    raise Exception(f'コマンド({node})の入力({s_port_label})が指定されていません')
 
                 # 定義上に存在しないポート名がsrcsに存在していないかの確認
                 src_port = self._get_port_by_label(i_ports, s_port_label)
                 if src_port is None:
-                    raise Exception(f"指定しているport名({s_port_label})がrunnable {node['id']}の定義しているポート群({i_ports})に存在しません")
+                    raise Exception(f'指定しているport名({s_port_label})が"{node}"の定義しているポート群({i_ports})に存在しません')
 
                 # out/inポートフラグの取得
                 is_in = self.has_as_in_point(s_node_id)
                 is_out = self.has_as_out_point(s_node_id)
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                src_point = self._upsert_point(s_node_id, dst_tube=Tube(src_port, step), is_in=is_in, is_out=is_out)
+                src_point = self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step), is_in=is_in, is_out=is_out)
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
                 [src_point.src_tubes.add(Tube(i_port, None)) for i_port in self.i_ports if i_port.label == src_point.id]
 
-                # Pointを集める
-                points.add(src_point)
-
             for d_port_label, d_node_id in dsts.items():
                 if d_node_id is None:
-                    raise Exception(f"コマンド({node['label']})の出力({d_port_label})が指定されていません")
+                    raise Exception(f'コマンド({node})の出力({d_port_label})が指定されていません')
 
                 # 定義上に存在しないポート名がdstsに存在していないかの確認
                 dst_port = self._get_port_by_label(step.runnable.o_ports, d_port_label)
                 if dst_port is None:
-                    raise Exception(f"指定しているport名({d_port_label})がrunnable {node['id']}の定義しているポート群({step.runnable.o_ports})に存在しません")
+                    raise Exception(f'指定しているport名({d_port_label})が"{node}"の定義しているポート群({step.runnable.o_ports})に存在しません')
 
                 # out/inポートフラグの取得
                 is_in = self.has_as_in_point(d_node_id) 
                 is_out = self.has_as_out_point(d_node_id)
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                dst_point = self._upsert_point(d_node_id, src_tube=Tube(dst_port, step), is_in=is_in, is_out=is_out)
+                dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step), is_in=is_in, is_out=is_out)
 
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにdst_tubesを置き換える
@@ -166,25 +212,24 @@ class FlowRunnable(FlowData):
                     # AssertCommandで例外を検証対象とするため、例外の入力を許可する
                     step.ex_acceptable = True
 
-                # Pointを集める
-                points.add(dst_point)
-
         # 作成したStep及びPointのリストを返す
-        return substeps, Points(points)
+        return Stepoints(substeps, points, o_ports=self.o_ports, is_root=self.is_root)
 
-    def _update_flow_by_other_than_runnable(self, nodes):
+    def _update_flow_by_other_than_runnable(self, nodes_json):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
         # 実行に関係ないnodeのtype群
         EXCEPT_TYPES = ['note']
 
-        for node in nodes:
+        for node_json in nodes_json:
+            node = FlowRunnable.Node(node_json)
+
             # pointにdatumを入れていく
-            if self._is_runnable_node(node) or node['type'] in EXCEPT_TYPES:
+            if node.is_runnable or node.type in EXCEPT_TYPES:
                 continue
 
-            target_point = self.points.get(node['id'])
+            target_point = self.points.get(node.id)
             if target_point is None:
                 continue
 
@@ -192,7 +237,7 @@ class FlowRunnable(FlowData):
             target_point.label = node.get('label')
 
             # Storeの場合、StoreオブジェクトをPointに格納する
-            if self._is_store_node(node):
+            if node.is_store:
                 store_uuid = node.get('uuid')
                 store = self._datum_factory.find_by_uuid(store_uuid)
 
@@ -203,7 +248,7 @@ class FlowRunnable(FlowData):
             # 入力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
             # ただし、メインフローの場合は入力Pointか否かを条件にしない
             if self.is_root or not target_point.is_in:
-                if self._is_value_node(node):
+                if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
                         from kskp.store import List
@@ -220,18 +265,18 @@ class FlowRunnable(FlowData):
     def _node2link(self, node):
         from kskp.depo.std.commands import CommandLink
 
-        if node['type'] == 'command':
+        if node.type == 'command':
             return CommandLink(node['commandId']).resolve()
-        elif node['type'] == 'flow':
+        elif node.type == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self._link_context)
             from kskp.store.auth import NotAuthorizedException
             try:
                 sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
                 return FlowRunnable(sub_flow_datum, preprocessor=self._preprocessor, is_root=False)
             except NotAuthorizedException:
-                raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
+                raise NotAuthorizedException(f'共有フロー({node.id})の参照権限がありません')
         else:
-            raise Exception(f'ノード({node.get("id")})のtypeが不正な値({node["type"]})です')
+            raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
     def _get_port_by_label(self, runnable_ports, port_label):
         """
@@ -257,43 +302,22 @@ class FlowRunnable(FlowData):
                 ret.append(src_port)
         return ret
 
-    def _upsert_point(self, point_id, src_tube=None, dst_tube=None, is_in=False, is_out=False):
+    def _upsert_point(self, points, id, src_tube=None, dst_tube=None, is_in=False, is_out=False):
         """
         指定したpoint_idのpointを作成する
         対象のpointがすでに存在していればそのpointを更新する
         """
-        point_ids = [point.id for point in self.points]
-        if point_id in point_ids:
-            point = self.points[point_id]
+        point = points.get(id)
+        if point is None:
+            point = Point(id, src_tube, None, dst_tube, is_in, is_out)
+            points.add(point)
+        else:
             # 既存のpointを更新する
             src_tube is None or point.src_tubes.add(src_tube)
             dst_tube is None or point.dst_tubes.add(dst_tube)
             point.is_in = is_in
-            point.is_out = is_out
-        else:
-            point = Point(point_id, src_tube, None, dst_tube, is_in, is_out)
-            self.points.add(point)
+            point.is_out = is_out 
         return point
-
-
-    def _is_value_node(self, node):
-        """
-        valueをもつnodeかどうか
-        uuidが入っていたらそっちを優先する
-        """
-        return node.get('value') is not None and node.get('uuid') is None
-
-    def _is_store_node(self, node):
-        """
-        指定されたnodeがStoreの場合はTrueを返す
-        """
-        return node['type'] == 'store'
-
-    def _is_runnable_node(self, node):
-        """
-        指定されたnodeがrunnableかどうかを判断する
-        """
-        return node['type'] == 'command' or node['type'] == 'flow'
 
     def __hash__(self):
         return hash(self._uuid)
@@ -324,15 +348,6 @@ class FlowRunnable(FlowData):
     @property
     def outs(self):
         return {p.id: p.datum for p in self.points if p.is_out}
-
-    def run(self, args, inputs):
-        """
-        pointではなくstepを基軸にして書き直し
-        """
-
-        # flow = self._preprocessor.execute(flow_runnable=self)
-
-        return self._stepoints.run(args, inputs)
 
     def open_o_port(self, o_port, point):
         """
@@ -369,4 +384,3 @@ class FlowRunnable(FlowData):
                 substep.dtor()
             else:
                 raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')
-
