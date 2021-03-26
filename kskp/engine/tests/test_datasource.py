@@ -198,7 +198,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -393,7 +393,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -623,7 +623,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -855,7 +855,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -957,7 +957,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1147,7 +1147,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1336,7 +1336,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1490,7 +1490,7 @@ class DataSourceTest(TestCaseBase):
             }
           }
         }
-        flow_link = FlowCommand(flow, self.factory, vis_args)
+        flow_link = FlowCommand(flow, vis_args)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1632,7 +1632,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -1752,7 +1752,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         
@@ -1904,7 +1904,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # サブフローを実行する
-        flow_link = FlowCommand(sub_flow, self.factory)
+        flow_link = FlowCommand(sub_flow)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
         lasts = convert_from_activity(lasts)
 
@@ -1916,7 +1916,7 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(out_frame.file_exists)
 
         # フローを実行する
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
         lasts = convert_from_activity(lasts)
 
@@ -2095,7 +2095,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -2200,7 +2200,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
 
         print(lasts)
@@ -2307,7 +2307,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
 
         # 出力結果は0件であること

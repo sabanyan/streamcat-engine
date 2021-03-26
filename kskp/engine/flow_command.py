@@ -56,7 +56,7 @@ class FlowCommand(FlowData):
             """
             return self.get('value') is not None and self.get('uuid') is None
 
-    def __init__(self, flow_datum, factory=None, vis_args={}, preprocessor=None, is_root=True):
+    def __init__(self, flow_datum, vis_args={}, is_root=True, preprocessor=None):
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_datum.flow_data.to_json())
 
@@ -146,18 +146,18 @@ class FlowCommand(FlowData):
                 continue
 
             # CommandまたはFlowを取得する
-            runnable = self._node2link(node)
+            cmd = self._create_command(node)
             
             # MCommandに不要な引数を設定するとエラーになる
             args = node['args']
             srcs = node['srcs']
             dsts = node['dsts']
 
-            i_ports = self._replace_multi_inputs(runnable.i_ports, srcs)
-            o_ports = self._replace_multi_inputs(runnable.o_ports, dsts)
+            i_ports = self._replace_multi_inputs(cmd.i_ports, srcs)
+            o_ports = self._replace_multi_inputs(cmd.o_ports, dsts)
 
             # runnableのインスタンス化を行う
-            step = Step(node.id, runnable, args, i_ports=i_ports, o_ports=o_ports)
+            step = Step(node.id, cmd, args, i_ports=i_ports, o_ports=o_ports)
             # Stepを集める
             substeps.append(step)
 
@@ -206,7 +206,7 @@ class FlowCommand(FlowData):
                     [dst_point.dst_tubes.add(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
 
                 from kskp.depo.std.commands import AssertCommand
-                if isinstance(runnable, AssertCommand):
+                if isinstance(cmd, AssertCommand):
                     # 出力情報に、AssertCommandの出力ポイントのidを含めるため
                     args['asserted_point'] = dst_point.id
                     # AssertCommandで例外を検証対象とするため、例外の入力を許可する
@@ -262,7 +262,7 @@ class FlowCommand(FlowData):
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.cache = False
 
-    def _node2link(self, node):
+    def _create_command(self, node):
         from kskp.depo.std.commands import CommandLink
 
         if node.type == 'command':
@@ -272,7 +272,7 @@ class FlowCommand(FlowData):
             from kskp.store.auth import NotAuthorizedException
             try:
                 sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
-                return FlowCommand(sub_flow_datum, preprocessor=self._preprocessor, is_root=False)
+                return FlowCommand(sub_flow_datum, is_root=False, preprocessor=self._preprocessor)
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.id})の参照権限がありません')
         else:

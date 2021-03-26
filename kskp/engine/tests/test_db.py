@@ -168,7 +168,7 @@ class DbTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -207,7 +207,7 @@ class DbTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
-        flow_link = FlowCommand(flow, self.factory)
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 

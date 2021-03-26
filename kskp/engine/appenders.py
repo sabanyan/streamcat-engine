@@ -211,6 +211,7 @@ class RunsCommandAppender():
 
         return runs_point
 
+
 class ActivityDataDestAppender():
     def __init__(self, flow_uuid):
         # core.pyで定義されているFlowはf
@@ -255,4 +256,3 @@ class ActivityDataDestAppender():
         self.next_port_no += 1
 
         return activity_point
-
