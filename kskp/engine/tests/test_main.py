@@ -3050,13 +3050,20 @@ class MainTest(TestCaseBase):
 
         flow_link = FlowJsonLink(flow, self.factory)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        caches = convert_from_activity_cache(lasts)
+        results = convert_from_activity(lasts)
+
         correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
-        result = self.get_frame_by_uuid(lasts['d1'].uuid)
+        self.assertIsNotNone(self.factory.data.find_by_uuid(results['d1'].uuid))
+        result = self.get_frame_by_uuid(results['d1'].uuid)
+        self.assertEqual(result, correct['d1'])
+
+        # キャッシュが生成されているか
+        self.assertIsNotNone(self.factory.data.find_by_uuid(caches['d1'].uuid))
+        result = self.get_frame_by_uuid(caches['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         cache_uuids = []
@@ -3072,7 +3079,7 @@ class MainTest(TestCaseBase):
 
         # 後片付け
         self.delete_flow(flow.uuid)
-        lasts['d1'].delete()
+        results['d1'].delete()
         frame.delete()
         self.delete_caches(cache_uuids)
 
@@ -4684,7 +4691,7 @@ class MainTest(TestCaseBase):
                 "x": 99, 
                 "y": 201
               }, 
-              "makeCache": False, 
+              "makeCache": True, 
               "dataSource": "csv", 
               "cacheCreatedAt": None
             }, 
@@ -4714,7 +4721,7 @@ class MainTest(TestCaseBase):
               "type": "frame", 
               "uuid": None, 
               "label": "d1", 
-              "makeCache": False, 
+              "makeCache": True, 
               "dataSource": "csv", 
               "cacheCreatedAt": None
             }, 
@@ -4773,6 +4780,12 @@ class MainTest(TestCaseBase):
         self.assertIsNone(results['d'])
         self.assertIsNone(results['d1'])
 
+        # 出力ポイントとこれに対応するcacheデータを取得する
+        caches = convert_from_activity_cache(lasts)
+        # キャッシュが作成されていないこと
+        # (frameと異なり出力ポイントの要素も返さない)
+        self.assertEqual(len(caches), 0)
+
         # 出力ポイントとこれに対応する例外を取得する
         results = convert_from_activity_exs(lasts)
         # 2つの出力ポイントが返されること
@@ -4806,7 +4819,7 @@ class MainTest(TestCaseBase):
                 "x": 99, 
                 "y": 201
               }, 
-              "makeCache": False, 
+              "makeCache": True, 
               "dataSource": "csv", 
               "cacheCreatedAt": None
             }, 
@@ -4837,7 +4850,7 @@ class MainTest(TestCaseBase):
               "type": "frame", 
               "uuid": None, 
               "label": "d1", 
-              "makeCache": False, 
+              "makeCache": True, 
               "dataSource": "csv", 
               "cacheCreatedAt": None
             }, 
@@ -4896,6 +4909,12 @@ class MainTest(TestCaseBase):
         # (1コマンドでもエラーが発生すれば全ての出力はない)
         self.assertIsNone(results['d'])
         self.assertIsNone(results['d1'])
+
+        # 出力ポイントとこれに対応するcacheデータを取得する
+        caches = convert_from_activity_cache(lasts)
+        # キャッシュが作成されていないこと
+        # (frameと異なり出力ポイントの要素も返さない)
+        self.assertEqual(len(caches), 0)
 
         # 出力ポイントとこれに対応する例外を取得する
         results = convert_from_activity_exs(lasts)
@@ -6263,6 +6282,17 @@ def convert_from_activity_vis(lasts):
     for point_id, datum in lasts.items():
         if isinstance(datum, Activity):
             return {point.id : vis.result['reader'] for point, vis in datum.lasts}
+
+def convert_from_activity_cache(lasts):
+    """
+    execute()の戻り値から
+    pointのidとcacheのDictに置き換える
+    """
+    from kskp.store import Activity
+    # Activityを取得して返り値とする
+    for point_id, datum in lasts.items():
+        if isinstance(datum, Activity):
+            return {point.id : frame for point, frame in datum.caches}
 
 def convert_from_activity_exs(lasts):
     """
