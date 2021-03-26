@@ -3,6 +3,7 @@ from kskp.core import Port
 class FlowJsonLink:
     """
     フローへのリンク
+    TODO: Preprocesserに改名
     """
 
     class FlowLinkContext():
@@ -24,7 +25,7 @@ class FlowJsonLink:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, factory=None, vis_args={}, context=None, is_root=True):
+    def __init__(self, flow_datum, factory=None, vis_args={}, context=None, is_root=True, engine_flow=None):
         from .appenders import (
             FolderDataDestAppender,
             CacheDataDestAppender,
@@ -41,7 +42,6 @@ class FlowJsonLink:
         self.datum_factory = DatumFactory(flow_datum._session)
 
         self.label = flow_datum.label
-        self.flow_data = flow_datum.flow_data
         self.is_root = is_root
         self.vis_ids = vis_args.keys()
 
@@ -57,12 +57,18 @@ class FlowJsonLink:
         self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
         self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
-            
-    def resolve(self):
+
+        if engine_flow is None:
+            from .flow import Flow
+            self.flow = Flow(flow_datum, self.is_root, self.context)
+        else:
+            self.flow = engine_flow
+
+    def execute(self):
         # Flowを生成する
+        from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
-        from .flow import Flow
-        flow = Flow(self.flow_data, self.is_root, self.context, self.datum_factory)
+        flow = self.flow
 
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない
@@ -115,6 +121,22 @@ class FlowJsonLink:
         # 実行するのに必要なpointを取得する
         is_vis = len(self.vis_ids) > 0
         flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
+
+
+        for step in flow.substeps:
+            if step.is_flow:
+                continue
+            if isinstance(step.runnable, SCommand):
+                # SCommand共通引数を作成する
+                args = {'flow'         : self.context.flow_datum,
+                        'flow_uuid'    : self.context.flow_uuid,
+                        'flow_label'   : self.context.flow_label,
+                        'result_folder': self.context.flow_datum.find_parent(),
+                        'start_time'   : self.context.start_time,
+                        'activity_uuid': self.context.activity_uuid}
+                # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
+                args.update(step.args)
+                step.args = args
 
         if not flow.is_root:
             # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない

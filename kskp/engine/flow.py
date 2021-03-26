@@ -6,9 +6,13 @@ from .appenders import FolderDataSourcePrepender
 
 class Flow(FlowData):
     """
-    TODO: 名称変更した方がいい？
+    TODO: FlowRunnableに変更する？
+    TODO: FlowDataからの継承をやめる
     """
-    def __init__(self, flow_data, is_root, link_context, datum_factory):
+    def __init__(self, flow_datum, is_root=True, link_context=None):
+
+        flow_data = flow_datum.flow_data
+
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_data.to_json())
 
@@ -27,8 +31,11 @@ class Flow(FlowData):
         self.relayed_o_ports = []
 
         self._link_context = link_context
-        self._datum_factory = datum_factory
-        self._folder_data_source_prepender = FolderDataSourcePrepender(datum_factory)
+
+        from kskp.store.factory import DatumFactory
+        self._datum_factory = DatumFactory(flow_datum._session)
+
+        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
 
@@ -85,30 +92,31 @@ class Flow(FlowData):
                 continue
 
             # CommandまたはFlowを取得する
-            cmd_or_flow = self._node2link(node).resolve()
+            runnable = self._node2link(node)
             
-            if isinstance(cmd_or_flow, SCommand):
-                # SCommand共通引数を作成する
-                args = {'flow'         : self._link_context.flow_datum,
-                        'flow_uuid'    : self._link_context.flow_uuid,
-                        'flow_label'   : self._link_context.flow_label,
-                        'result_folder': self._link_context.flow_datum.find_parent(),
-                        'start_time'   : self._link_context.start_time,
-                        'activity_uuid': self._link_context.activity_uuid}
-                # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
-                args.update(node['args'])
-            else:
-                # MCommandに不要な引数を設定するとエラーになる
-                args = node['args']
+            # if isinstance(runnable, SCommand):
+            #     # SCommand共通引数を作成する
+            #     args = {'flow'         : self._link_context.flow_datum,
+            #             'flow_uuid'    : self._link_context.flow_uuid,
+            #             'flow_label'   : self._link_context.flow_label,
+            #             'result_folder': self._link_context.flow_datum.find_parent(),
+            #             'start_time'   : self._link_context.start_time,
+            #             'activity_uuid': self._link_context.activity_uuid}
+            #     # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
+            #     args.update(node['args'])
+            # else:
+            
+            # MCommandに不要な引数を設定するとエラーになる
+            args = node['args']
 
             srcs = node['srcs']
             dsts = node['dsts']
 
-            i_ports = self._replace_multi_inputs(cmd_or_flow.i_ports, srcs)
-            o_ports = self._replace_multi_inputs(cmd_or_flow.o_ports, dsts)
+            i_ports = self._replace_multi_inputs(runnable.i_ports, srcs)
+            o_ports = self._replace_multi_inputs(runnable.o_ports, dsts)
 
             # runnableのインスタンス化を行う
-            step = Step(node['id'], cmd_or_flow, args, i_ports=i_ports, o_ports=o_ports)
+            step = Step(node['id'], runnable, args, i_ports=i_ports, o_ports=o_ports)
             # Stepを集める
             substeps.append(step)
 
@@ -160,7 +168,7 @@ class Flow(FlowData):
                     [dst_point.dst_tubes.add(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
 
                 from kskp.depo.std.commands import AssertCommand
-                if isinstance(cmd_or_flow, AssertCommand):
+                if isinstance(runnable, AssertCommand):
                     # 出力情報に、AssertCommandの出力ポイントのidを含めるため
                     args['asserted_point'] = dst_point.id
                     # AssertCommandで例外を検証対象とするため、例外の入力を許可する
@@ -222,13 +230,15 @@ class Flow(FlowData):
         from .links import FlowJsonLink
 
         if node['type'] == 'command':
-            ret = CommandLink(node['commandId'])
+            ret = CommandLink(node['commandId']).resolve()
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self._link_context)
             from kskp.store.auth import NotAuthorizedException
             try:
-                sub_flow = self._datum_factory.find_by_uuid(node['uuid'])
-                ret = FlowJsonLink(sub_flow, None, {}, self._link_context, is_root=False)
+                sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
+                sub_flow = Flow(sub_flow_datum, is_root=False, link_context=self._link_context)
+                preprocessor = FlowJsonLink(sub_flow_datum, None, {}, self._link_context, is_root=False, engine_flow=sub_flow)
+                ret = preprocessor.execute()
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
 
