@@ -14,12 +14,12 @@ class Job:
 
     def dtor(self):
         from kskp.core import Tmp
-        from .flow import Flow
+        from .flow_runnable import FlowRunnable
 
         # Tmpファイルを削除する
         Tmp.remove_files()
 
-        if isinstance(self.step.runnable, Flow):
+        if isinstance(self.step.runnable, FlowRunnable):
             # 今のFlowのdtorは、cacheやlastsを保存しているだけ
             self.step.dtor()
 

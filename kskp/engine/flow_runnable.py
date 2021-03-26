@@ -4,43 +4,43 @@ from .stepoints import Stepoints
 from .point import Point, Points
 from .appenders import FolderDataSourcePrepender
 
-class Flow(FlowData):
+class FlowRunnable(FlowData):
     """
     TODO: FlowRunnableに変更する？
     TODO: FlowDataからの継承をやめる
     """
-    def __init__(self, flow_datum, is_root=True, link_context=None):
-
-        flow_data = flow_datum.flow_data
-
+    def __init__(self, flow_datum, factory=None, vis_args={}, preprocessor=None, is_root=True):
         # to_json()によりflow_jsonはコピーされる
-        super().__init__(flow_data.to_json())
+        super().__init__(flow_datum.flow_data.to_json())
 
         # UUIDを採番する
         import uuid
         self._uuid = str(uuid.uuid4())
 
+        # メインフローであればTrue
+        self.is_root = is_root
+
         # Portを設定する
         self.i_ports = self._parse_ports(self.ports[0])
         self.o_ports = self._parse_ports(self.ports[1])
 
-        # メインフローであればTrue
-        self.is_root = is_root
-
         # FlowJsonLinkが中継した出力Portのリストを保持する
         self.relayed_o_ports = []
 
-        self._link_context = link_context
+        from .preprocessor import Preprocessor
+        if preprocessor is None:
+            self._preprocessor = Preprocessor(flow_datum, None, vis_args)
+        else:
+            self._preprocessor = preprocessor
 
         from kskp.store.factory import DatumFactory
         self._datum_factory = DatumFactory(flow_datum._session)
-
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
 
         # flowを設定する
-        if flow_data.has_nodes:
+        if self.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
             substeps, points = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
@@ -60,11 +60,15 @@ class Flow(FlowData):
         # self._is_datadst = len(self.i_ports) == 1 and len(self.lasts) == 1 and has_store
         self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
 
-
+        # 
         from kskp.store import ModuleStore
         self.module_store = ModuleStore()
 
+        #
         self.context = {}
+
+        # 
+        ret = self._preprocessor.execute(flow_runnable=self)
 
     def _parse_ports(self, port_dict_list):
         """
@@ -93,18 +97,6 @@ class Flow(FlowData):
 
             # CommandまたはFlowを取得する
             runnable = self._node2link(node)
-            
-            # if isinstance(runnable, SCommand):
-            #     # SCommand共通引数を作成する
-            #     args = {'flow'         : self._link_context.flow_datum,
-            #             'flow_uuid'    : self._link_context.flow_uuid,
-            #             'flow_label'   : self._link_context.flow_label,
-            #             'result_folder': self._link_context.flow_datum.find_parent(),
-            #             'start_time'   : self._link_context.start_time,
-            #             'activity_uuid': self._link_context.activity_uuid}
-            #     # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
-            #     args.update(node['args'])
-            # else:
             
             # MCommandに不要な引数を設定するとエラーになる
             args = node['args']
@@ -227,34 +219,19 @@ class Flow(FlowData):
 
     def _node2link(self, node):
         from kskp.depo.std.commands import CommandLink
-        from .links import FlowJsonLink
 
         if node['type'] == 'command':
-            ret = CommandLink(node['commandId']).resolve()
+            return CommandLink(node['commandId']).resolve()
         elif node['type'] == 'flow':
             # ret = FlowUuidLink(node['uuid'], {}, self._link_context)
             from kskp.store.auth import NotAuthorizedException
             try:
                 sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
-                sub_flow = Flow(sub_flow_datum, is_root=False, link_context=self._link_context)
-                preprocessor = FlowJsonLink(sub_flow_datum, None, {}, self._link_context, is_root=False, engine_flow=sub_flow)
-                ret = preprocessor.execute()
+                return FlowRunnable(sub_flow_datum, preprocessor=self._preprocessor, is_root=False)
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node.get("id")})の参照権限がありません')
-
-            # # かなりの力技・・・。
-            # # 実行を行う場合、サブフロー内で余分な処理が走らないように
-            # # 親フローが子フロー（使用するサブフロー）に、このoutputが必要だということを教える。
-
-            # # メインフローで/vizs時、どのdstsを通るかを求める
-            # dst_ids = self._pick_necessary_dst_ids(self.flow_data, self.vis_ids)
-            # # メインフローで使われるdstsの中に、対象のnode（サブフロー）が出力するものがあれば教えてあげる
-            # if len(dst_ids) > 0:
-            #     ret.last_ids = [port for port, datum_id in node['dsts'].items() for dst_id in dst_ids if datum_id == dst_id]
         else:
             raise Exception(f'ノード({node.get("id")})のtypeが不正な値({node["type"]})です')
-
-        return ret
 
     def _get_port_by_label(self, runnable_ports, port_label):
         """
@@ -352,6 +329,9 @@ class Flow(FlowData):
         """
         pointではなくstepを基軸にして書き直し
         """
+
+        # flow = self._preprocessor.execute(flow_runnable=self)
+
         return self._stepoints.run(args, inputs)
 
     def open_o_port(self, o_port, point):
@@ -385,7 +365,7 @@ class Flow(FlowData):
         # 配下のflowのdtorも動かす
         for substep in self.substeps:
             from kskp.core import Command
-            if isinstance(substep.runnable, Flow) or isinstance(substep.runnable, Command):
+            if isinstance(substep.runnable, FlowRunnable) or isinstance(substep.runnable, Command):
                 substep.dtor()
             else:
                 raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')

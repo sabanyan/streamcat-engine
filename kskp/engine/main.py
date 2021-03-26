@@ -23,6 +23,8 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
+    from .step import Step
+    from .job import Job
 
     # 進捗を取得する準備を行う
     prepare_observer(job_complete_handler)
@@ -30,11 +32,11 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
     # exs = []
 
     try:
-        # ここで実行するlinkは一番上の親であることを定義する
-        # link.is_root = True
+        # runnableからstepを作成する
+        step = Step('main_flow', runnable, args)
 
         # jobを作成する
-        job = make_job(runnable, args, inputs)
+        job = Job(step, inputs)
 
         # jobを開始する
         results = job.start()
@@ -52,24 +54,6 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
         raise
         # exs.append(exception_manager(e))
         # return exs
-
-def make_job(runnable, args, inputs):
-    from .step import Step
-    from .job import Job
-
-    # linkからrunnableを生成する
-    runnable = runnable.execute()
-
-    # runnableからstepを作成する
-    step = Step('main_flow', runnable, args)
-
-    # port情報から、pointを作成する
-    # points = domains(step, inputs)
-
-    # jobを作成する
-    job = Job(step, inputs)
-
-    return job
 
 # def domains(step, inputs):
 #     """

@@ -127,6 +127,9 @@ class Points:
                 return point
         return None
 
+    def __repr__(self):
+        return self._points.__repr__()
+
     def __iter__(self) -> Iterator[Point]:
         yield from self._points
 

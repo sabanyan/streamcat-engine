@@ -6,7 +6,7 @@ from pathlib import Path
 from kskp.core import Datum
 from kskp.store import FlowData, RemoteFolderConn
 from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowJsonLink
+from kskp.engine import execute, FlowRunnable
 from .test_main import convert_from_activity
 
 class RemoteFolderTest(TestCaseBase):
@@ -167,7 +167,7 @@ class RemoteFolderTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -212,7 +212,7 @@ class RemoteFolderTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 

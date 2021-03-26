@@ -4,7 +4,7 @@ from pathlib import Path
 from kskp.store import FlowData, List, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
-from kskp.engine import execute, FlowJsonLink
+from kskp.engine import execute, FlowRunnable
 
 class MainTest(TestCaseBase):
     """
@@ -490,7 +490,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -541,7 +541,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
@@ -603,7 +603,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -686,7 +686,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
@@ -759,7 +759,7 @@ class MainTest(TestCaseBase):
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -852,7 +852,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
@@ -870,7 +870,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d1': [['A', '1', '10', '21'],
@@ -899,7 +899,7 @@ class MainTest(TestCaseBase):
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
         
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
@@ -935,7 +935,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
@@ -966,7 +966,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
@@ -999,7 +999,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
@@ -1027,7 +1027,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
@@ -1084,7 +1084,7 @@ class MainTest(TestCaseBase):
                                   {'nodeId':'d4', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -1161,7 +1161,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']]}
@@ -1227,7 +1227,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -1247,7 +1247,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d1': [['0'],
@@ -1281,7 +1281,7 @@ class MainTest(TestCaseBase):
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2': [['20080203', '10'], ['20080203', '45']],
@@ -1359,7 +1359,7 @@ class MainTest(TestCaseBase):
         mainflow_json['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd3': [['65536']]}
 
@@ -1431,7 +1431,7 @@ class MainTest(TestCaseBase):
         mainflow_json['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd3': [['4294967296']]}
 
@@ -1519,7 +1519,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['256']]}
 
@@ -1587,7 +1587,7 @@ class MainTest(TestCaseBase):
                                       {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1673,7 +1673,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
@@ -1751,7 +1751,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1884,7 +1884,7 @@ class MainTest(TestCaseBase):
         self.create_flow('sub2', sub_uuid)
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -2026,7 +2026,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
@@ -2167,7 +2167,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory, vis_args), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory, vis_args), {}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -2249,7 +2249,7 @@ class MainTest(TestCaseBase):
         flow = self.save_flow('test', flow_json)
 
         # 単純な実行結果のテスト
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['A', '1']]}
@@ -2348,7 +2348,7 @@ class MainTest(TestCaseBase):
         flow = self.save_flow('test', flow_json)
 
         # 単純な実行結果のテスト
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['A', '1']]}
@@ -2497,7 +2497,7 @@ class MainTest(TestCaseBase):
         flow = self.save_flow('test', flow_json)
 
         # 単純なlastsのテスト
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
@@ -2587,7 +2587,7 @@ class MainTest(TestCaseBase):
                                       {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2664,7 +2664,7 @@ class MainTest(TestCaseBase):
                                       {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2705,7 +2705,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
 
         flow= self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -2794,7 +2794,7 @@ class MainTest(TestCaseBase):
         update_flow_node_uuid(flow_json, 'd2', frame.uuid)
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['A', '1']]}
@@ -2821,7 +2821,7 @@ class MainTest(TestCaseBase):
         self.create_flow('sub2', sub_uuid)
 
         flow = self.factory.data.find_by_uuid(sub_uuid)
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
 
         inputs = {
             'd1': List([["顧客", "数量", "金額"],
@@ -2861,7 +2861,7 @@ class MainTest(TestCaseBase):
         self.create_flow('sub3', sub_uuid)
 
         flow = self.factory.data.find_by_uuid(sub_uuid)
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
 
         inputs = {
             'd1': List([["顧客", "数量", "金額"],
@@ -2904,7 +2904,7 @@ class MainTest(TestCaseBase):
         """
         flow_data = FlowData(self.flow_json_inputs_mcat)
         flow = self.root.create_flow(self.flow_json_inputs_mcat['label'], flow_data)
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d1': List([['A', '1', '10'],
@@ -2959,7 +2959,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -3008,7 +3008,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -3048,7 +3048,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
         flow = self.save_flow('test', flow_json)
 
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         caches = convert_from_activity_cache(lasts)
         results = convert_from_activity(lasts)
@@ -3103,7 +3103,7 @@ class MainTest(TestCaseBase):
                                   {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
 
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
@@ -3155,7 +3155,7 @@ class MainTest(TestCaseBase):
         flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
@@ -3201,7 +3201,7 @@ class MainTest(TestCaseBase):
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
@@ -3296,7 +3296,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -3405,7 +3405,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -3525,7 +3525,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -3621,7 +3621,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -3715,7 +3715,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.save_flow(self.flow_json['label'], flow_json)
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -3824,7 +3824,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -3954,7 +3954,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4041,7 +4041,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4128,7 +4128,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4214,7 +4214,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4300,7 +4300,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4378,7 +4378,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4465,7 +4465,7 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4559,7 +4559,7 @@ class MainTest(TestCaseBase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         # フローを保存して再取得する
         flow =self.save_flow(self.flow_json['label'], flow_json)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -4657,7 +4657,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowJsonLink(flow, self.factory), {"new_param1":"B", "new_param2":"C"}, {})
+        lasts = execute(FlowRunnable(flow, self.factory), {"new_param1":"B", "new_param2":"C"}, {})
         lasts = convert_from_activity(lasts)
 
         # frameデータは1つ生成されているか
@@ -4767,7 +4767,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
@@ -4896,7 +4896,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
@@ -4974,7 +4974,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
@@ -5050,7 +5050,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するvisデータを取得する
@@ -5202,7 +5202,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -5344,7 +5344,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -5492,7 +5492,7 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -5603,7 +5603,7 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowJsonLink(sub_flow, self.factory, vis_args)
+        flow_link = FlowRunnable(sub_flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
 
         print(lasts)
@@ -5798,7 +5798,7 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -5984,7 +5984,7 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -6153,7 +6153,7 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 

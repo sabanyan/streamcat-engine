@@ -186,7 +186,7 @@ class RunsCommandAppender():
         self.runs_step = Step('runs', runs_cmd, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self.next_port_no = 0
-        # Flow.substepsにruns_stepをすでに追加した場合はTrue
+        # FlowRunnable.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
     def do_append(self, flow, point):
@@ -229,7 +229,7 @@ class ActivityDataDestAppender():
         self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self.next_port_no = 0
-        # Flow.substepsにruns_stepをすでに追加した場合はTrue
+        # FlowRunnable.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = set()
 
     def do_append(self, flow, point, original_out_point):

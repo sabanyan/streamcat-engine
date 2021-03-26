@@ -6,7 +6,7 @@ from pathlib import Path
 from kskp.core import Datum
 from kskp.store import FlowData
 from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowJsonLink
+from kskp.engine import execute, FlowRunnable
 from .test_main import convert_from_activity, convert_from_activity_vis
 
 class DataSourceTest(TestCaseBase):
@@ -198,7 +198,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -393,7 +393,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -623,7 +623,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -855,7 +855,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -957,7 +957,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1147,7 +1147,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1336,7 +1336,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1490,7 +1490,7 @@ class DataSourceTest(TestCaseBase):
             }
           }
         }
-        flow_link = FlowJsonLink(flow, self.factory, vis_args)
+        flow_link = FlowRunnable(flow, self.factory, vis_args)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1632,7 +1632,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -1752,7 +1752,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
         
@@ -1904,7 +1904,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # サブフローを実行する
-        flow_link = FlowJsonLink(sub_flow, self.factory)
+        flow_link = FlowRunnable(sub_flow, self.factory)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
         lasts = convert_from_activity(lasts)
 
@@ -1916,7 +1916,7 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(out_frame.file_exists)
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
         lasts = convert_from_activity(lasts)
 
@@ -2095,7 +2095,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
@@ -2200,7 +2200,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
 
         print(lasts)
@@ -2307,7 +2307,7 @@ class DataSourceTest(TestCaseBase):
         flow = root.create_flow('Main', FlowData(flow_json))
 
         # フローを実行する
-        flow_link = FlowJsonLink(flow, self.factory)
+        flow_link = FlowRunnable(flow, self.factory)
         lasts = execute(flow_link, {}, {})
 
         # 出力結果は0件であること

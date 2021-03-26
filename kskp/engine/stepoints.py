@@ -20,7 +20,6 @@ class Stepoints():
 
         # 実行準備が整ったstepのリストを取得する
         invokable_steps = self._search_invokable_steps()
-
         # print('invokable_steps1', invokable_steps, '\n')
 
         # 実行できるrunnableがある限りは動き続ける
@@ -28,12 +27,10 @@ class Stepoints():
 
             # stepのうち、実行準備が整ったものを実行する
             self._run_invokable_steps(invokable_steps, args)
-
-            # print('invokable_steps2', '\n')  
+            # print('invokable_steps2', '\n')
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self._search_invokable_steps()
-
             # print('invokable_steps3', invokable_steps, self.points, '\n')
 
         # 実行すべきrunnableがもう残っていないなら、終了

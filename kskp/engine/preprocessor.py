@@ -1,6 +1,6 @@
 from kskp.core import Port
 
-class FlowJsonLink:
+class Preprocessor:
     """
     フローへのリンク
     TODO: Preprocesserに改名
@@ -25,7 +25,7 @@ class FlowJsonLink:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, factory=None, vis_args={}, context=None, is_root=True, engine_flow=None):
+    def __init__(self, flow_datum, factory=None, vis_args={}):
         from .appenders import (
             FolderDataDestAppender,
             CacheDataDestAppender,
@@ -42,33 +42,23 @@ class FlowJsonLink:
         self.datum_factory = DatumFactory(flow_datum._session)
 
         self.label = flow_datum.label
-        self.is_root = is_root
         self.vis_ids = vis_args.keys()
 
-        if is_root:
-            self.runs_command_appender = RunsCommandAppender()
-            self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
+        self.runs_command_appender = RunsCommandAppender()
+        self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
 
-        if context is None:
-            self.context = FlowJsonLink.FlowLinkContext(flow_datum, self.activity_data_dest_appender.activity_uuid)
-        else:
-            self.context = context
+        self.context = Preprocessor.FlowLinkContext(flow_datum, self.activity_data_dest_appender.activity_uuid)
 
         self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
         self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
         self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
 
-        if engine_flow is None:
-            from .flow import Flow
-            self.flow = Flow(flow_datum, self.is_root, self.context)
-        else:
-            self.flow = engine_flow
 
-    def execute(self):
+    def execute(self, flow_runnable):
         # Flowを生成する
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
-        flow = self.flow
+        flow = flow_runnable
 
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない
@@ -108,21 +98,7 @@ class FlowJsonLink:
                 # 中継済みのポートとして記録する
                 flow.relayed_o_ports.append(port)
 
-        # 
-        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
-        # 
-        # self.vis_idsには
-        # メインフローの場合 ： /vizsするdatumのid群
-        # サブフローの場合　 ： 親の実行に必要なlastのid群
-        # が入っている。（はず）
-        # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
-        last_ids = self._pick_out_points(flow, flow.outs, flow.points)
-
-        # 実行するのに必要なpointを取得する
-        is_vis = len(self.vis_ids) > 0
-        flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
-
-
+        # コマンド共通引数を設定する
         for step in flow.substeps:
             if step.is_flow:
                 continue
@@ -138,10 +114,24 @@ class FlowJsonLink:
                 args.update(step.args)
                 step.args = args
 
+        # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
+        # また、キャッシュの出力処理もしない
         if not flow.is_root:
-            # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
-            # また、キャッシュの出力処理もしない
             return flow
+
+        # 
+        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
+        # 
+        # self.vis_idsには
+        # メインフローの場合 ： /vizsするdatumのid群
+        # サブフローの場合　 ： 親の実行に必要なlastのid群
+        # が入っている。（はず）
+        # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
+        last_ids = self._pick_out_points(flow, flow.outs, flow.points)
+        # 実行するのに必要なpointを取得する
+        is_vis = len(self.vis_ids) > 0
+        flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
+
 
         # lasts出力処理（メインフローの場合のみ）
         if is_vis:
@@ -284,12 +274,12 @@ class FlowJsonLink:
                 lasts_point.is_out = True
 
             # lasts_pointの上に繋がっているpointsを取得する
-            necessary_points.update(self._search_necessary_point(flow.points, lasts_point))
+            necessary_points.update(self._search_necessary_point(flow, lasts_point))
             necessary_points.add(lasts_point)
 
         return Points(necessary_points)
 
-    def _search_necessary_point(self, points, current_point):
+    def _search_necessary_point(self, flow, current_point):
         """
         /vizsするdatumを作成するために必要なPointを絞り込む
         既にdatumを持つpointに当たるか、src_tubes.runnableを持たないpointに当たるまで登る
@@ -300,7 +290,7 @@ class FlowJsonLink:
         """
         necessary_points = set()
         # current_pointの上につながっているPointを探す
-        for point in points:
+        for point in flow.points:
             for p_dst_tube in point.dst_tubes:
                 # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
 
@@ -312,8 +302,8 @@ class FlowJsonLink:
                 if current_point.src_tubes.have_step(p_dst_tube.step):
                     necessary_points.add(point)
                     # pointの出力Tubeが無い、またはサブフローとして実行される場合は、入力Pointの場合、is_first=True
-                    is_first = point.dst_tubes.is_null or (not self.is_root and point.is_in)
+                    is_first = point.dst_tubes.is_null or (not flow.is_root and point.is_in)
                     if point.datum is None and not is_first:
-                        necessary_points.update(self._search_necessary_point(points, point))
+                        necessary_points.update(self._search_necessary_point(flow, point))
 
         return necessary_points
