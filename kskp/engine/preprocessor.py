@@ -1,4 +1,5 @@
 from kskp.core import Port
+from .flow_command import FlowCommand
 
 class Preprocessor:
     """
@@ -24,7 +25,7 @@ class Preprocessor:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, factory=None, vis_args={}):
+    def __init__(self, flow_datum, vis_args={}, datum_factory=None):
         from .appenders import (
             FolderDataDestAppender,
             CacheDataDestAppender,
@@ -33,29 +34,25 @@ class Preprocessor:
             RunsCommandAppender
         )
 
-        # フローJSONの書式の検証をする
-        flow_datum.flow_data.valid_flow_json_or_raise()
+        self._vis_ids = vis_args.keys()
 
-        # self.factory = factory
-        from kskp.store.factory import DatumFactory
-        self.datum_factory = DatumFactory(flow_datum._session)
+        # Appenders
+        self._runs_command_appender = RunsCommandAppender()
+        self._activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
 
-        self.label = flow_datum.label
-        self.vis_ids = vis_args.keys()
+        # Context
+        self._context = Preprocessor.FlowLinkContext(flow_datum, self._activity_data_dest_appender.activity_uuid)
+        
+        # Appenders
+        self._folder_data_dest_appender = FolderDataDestAppender(flow_datum, datum_factory, self._context.start_time)
+        self._cache_data_dest_appender = CacheDataDestAppender(flow_datum, datum_factory, self._context.start_time)
+        self._vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
 
-        self.runs_command_appender = RunsCommandAppender()
-        self.activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
-
-        self.context = Preprocessor.FlowLinkContext(flow_datum, self.activity_data_dest_appender.activity_uuid)
-
-        self.folder_data_dest_appender = FolderDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
-        self.vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
-        self.cache_data_dest_appender = CacheDataDestAppender(flow_datum, self.datum_factory, self.context.start_time)
-
-    def execute(self, flow_command):
-        # Flowを生成する
+    def execute(self, flow_command:FlowCommand):
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
+
+        # Flowを生成する
         flow = flow_command
 
         # 
@@ -102,12 +99,12 @@ class Preprocessor:
                 continue
             if isinstance(step.runnable, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow'         : self.context.flow_datum,
-                        'flow_uuid'    : self.context.flow_uuid,
-                        'flow_label'   : self.context.flow_label,
-                        'result_folder': self.context.flow_datum.find_parent(),
-                        'start_time'   : self.context.start_time,
-                        'activity_uuid': self.context.activity_uuid}
+                args = {'flow'         : self._context.flow_datum,
+                        'flow_uuid'    : self._context.flow_uuid,
+                        'flow_label'   : self._context.flow_label,
+                        'result_folder': self._context.flow_datum.find_parent(),
+                        'start_time'   : self._context.start_time,
+                        'activity_uuid': self._context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(step.args)
                 step.args = args
@@ -127,21 +124,21 @@ class Preprocessor:
         # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
         last_ids = self._pick_out_points(flow, flow.outs, flow.points)
         # 実行するのに必要なpointを取得する
-        is_vis = len(self.vis_ids) > 0
+        is_vis = len(self._vis_ids) > 0
         flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
 
 
         # lasts出力処理（メインフローの場合のみ）
         if is_vis:
-            for original_out_point in [flow.points[pid] for pid in self.vis_ids]:
+            for original_out_point in [flow.points[pid] for pid in self._vis_ids]:
                 # Visualizerコマンドのための前処理コマンドを付加する
-                out_point = self.vis_data_dest_appender.do_append(flow, original_out_point)
+                out_point = self._vis_data_dest_appender.do_append(flow, original_out_point)
                 # Runsコマンドを付加する
-                out_point = self.runs_command_appender.do_append(flow, out_point)
+                out_point = self._runs_command_appender.do_append(flow, out_point)
                 # Visualizeコマンドを付加する
-                out_point = self.vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point)
+                out_point = self._vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point)
                 # Activity Stepを付加する
-                out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
+                out_point = self._activity_data_dest_appender.do_append(flow, out_point, original_out_point)
                 # 出力Point設定を元のPointからActivity_pointに変更する
                 original_out_point.is_out = False
                 out_point.is_out = True
@@ -158,11 +155,11 @@ class Preprocessor:
                     out_point = original_out_point
                 else:
                     # Saverコマンドを付加する
-                    out_point = self.folder_data_dest_appender.do_append(flow, original_out_point)
+                    out_point = self._folder_data_dest_appender.do_append(flow, original_out_point)
                 # Runsコマンドを付加する
-                out_point = self.runs_command_appender.do_append(flow, out_point)
+                out_point = self._runs_command_appender.do_append(flow, out_point)
                 # Activity Stepを付加する
-                out_point = self.activity_data_dest_appender.do_append(flow, out_point, original_out_point)
+                out_point = self._activity_data_dest_appender.do_append(flow, out_point, original_out_point)
                 # 出力Point設定を元のPointからActivity_pointに変更する
                 original_out_point.is_out = False
                 out_point.is_out = True
@@ -173,11 +170,11 @@ class Preprocessor:
         # データデストを付加した後にキャッシュデータデストを付加すること
         for cache_point in [p for p in flow.points if p.is_cache]:
             # Cache Stepを付加する
-            out_point = self.cache_data_dest_appender.do_append(flow, cache_point)
+            out_point = self._cache_data_dest_appender.do_append(flow, cache_point)
             # Runsコマンドを付加する
-            out_point = self.runs_command_appender.do_append(flow, out_point)
+            out_point = self._runs_command_appender.do_append(flow, out_point)
             # Activity Stepを付加する
-            out_point = self.activity_data_dest_appender.do_append(flow, out_point, cache_point)
+            out_point = self._activity_data_dest_appender.do_append(flow, out_point, cache_point)
             # Activity_pointを出力Pointに設定する
             out_point.is_out = True
 
@@ -208,8 +205,8 @@ class Preprocessor:
 
     def _pick_out_points(self, flow, outs, points):
         # /vizsなど、lastsが指定されている場合
-        if len(self.vis_ids) > 0:
-            return self.vis_ids 
+        if len(self._vis_ids) > 0:
+            return self._vis_ids 
 
         # データデストの場合はoutsはないのでlastsを返す
         if flow.is_datadst:
@@ -234,25 +231,6 @@ class Preprocessor:
                 if dst_tube.step is not None and len(dst_tube.step.runnable.o_ports) == 0: 
                     ret.append(point.id)
         return ret
-
-    # def _pick_necessary_dst_ids(self, nodes, datum_ids):
-    #     """
-    #     指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
-    #     """
-    #     ids = []
-    #     for datum_id in datum_ids:
-    #         for node in nodes['nodes']:
-    #             if self._is_outputting_datum_node(node, datum_id):
-    #                 # 対象のnode
-    #                 ids.extend(self._pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
-    #         ids.append(datum_id)
-    #     return list(set(ids))
-
-    # def _is_outputting_datum_node(self, node, datum_id):
-    #     """
-    #     指定したdatumを出力するnodeかを調べる
-    #     """
-    #     return self._is_runnable_node(node) and datum_id in list(node['dsts'].values())
 
     def _pick_necessary_points(self, flow, last_ids, is_vis):
         """
@@ -304,3 +282,22 @@ class Preprocessor:
                         necessary_points.update(self._search_necessary_point(flow, point))
 
         return necessary_points
+
+    # def _pick_necessary_dst_ids(self, nodes, datum_ids):
+    #     """
+    #     指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
+    #     """
+    #     ids = []
+    #     for datum_id in datum_ids:
+    #         for node in nodes['nodes']:
+    #             if self._is_outputting_datum_node(node, datum_id):
+    #                 # 対象のnode
+    #                 ids.extend(self._pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
+    #         ids.append(datum_id)
+    #     return list(set(ids))
+
+    # def _is_outputting_datum_node(self, node, datum_id):
+    #     """
+    #     指定したdatumを出力するnodeかを調べる
+    #     """
+    #     return self._is_runnable_node(node) and datum_id in list(node['dsts'].values())

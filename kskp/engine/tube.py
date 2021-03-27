@@ -4,7 +4,7 @@ from .step import Step
 
 class Tube:
     """
-    portとstepの入れ物
+    PortとStepの入れ物
     """
     def __init__(self, port:Port, step:Step):
         self.port = port
@@ -53,15 +53,7 @@ class Tubes:
 
     @property
     def is_null(self):
-        # return len([tube for tube in self._tubes if not tube.is_null]) == 0
         return len(self._tubes) == 0 or all(tube.is_null for tube in self._tubes)
-
-    @property
-    def is_in(self):
-        """
-        フローの開始Pointの場合にTrueを返す
-        """
-        return any(tube.is_flow_tube for tube in self._tubes)
 
     def find_command_tube(self) -> Tube:
         """

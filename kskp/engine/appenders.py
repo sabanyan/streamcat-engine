@@ -185,13 +185,13 @@ class RunsCommandAppender():
         # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
         self.runs_step = Step('runs', runs_cmd, ex_acceptable=True)
         # ポート名は0番から順に採番する
-        self.next_port_no = 0
+        self._next_port_no = 0
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
     def do_append(self, flow, point):
         # RunsCommandに繋げるPointを作成する
-        port_label = str(self.next_port_no)
+        port_label = str(self._next_port_no)
         point_id = point.id + '_runs'
         runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step))
 
@@ -207,7 +207,7 @@ class RunsCommandAppender():
             self._already_step_added = True
         flow.points.add(runs_point)
 
-        self.next_port_no += 1
+        self._next_port_no += 1
 
         return runs_point
 
@@ -229,13 +229,13 @@ class ActivityDataDestAppender():
         self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
         self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
-        self.next_port_no = 0
+        self._next_port_no = 0
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
-        self._already_step_added = set()
+        self._already_step_added = False
 
     def do_append(self, flow, point, original_out_point):
         # Activity Stepのargsにpointを追加する
-        port_label = str(self.next_port_no)
+        port_label = str(self._next_port_no)
         self.activity_step.args['points'][port_label] = original_out_point
 
         # PointにActivity Stepを繋げる
@@ -248,11 +248,11 @@ class ActivityDataDestAppender():
         # Stepのportsに追加する
         self.activity_step.i_ports.append(Port(port_label, 'datum'))
 
-        if flow not in self._already_step_added:
+        if not self._already_step_added:
             flow.substeps.append(self.activity_step)
             flow.points.add(activity_point)
-            self._already_step_added.add(flow)
+            self._already_step_added = True
 
-        self.next_port_no += 1
+        self._next_port_no += 1
 
         return activity_point

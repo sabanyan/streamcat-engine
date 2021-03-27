@@ -1,6 +1,6 @@
 from typing import List
 from kskp.core import Port
-from .point import Point, Points
+from .point import Points
 from .step import Step
 
 class Stepoints():
@@ -159,7 +159,7 @@ class Stepoints():
 
     def _get_output_point(self, o_port):
         """
-        指定された出力ポートに対応するデータを返す
+        指定された出力ポートに対応するPointを返す
         """
         points = []
         for point in self.points:

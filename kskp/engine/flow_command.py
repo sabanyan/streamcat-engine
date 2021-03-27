@@ -2,7 +2,6 @@ from kskp.core import Port
 from kskp.store import FlowData        
 from .stepoints import Stepoints
 from .point import Point, Points
-from .appenders import FolderDataSourcePrepender
 
 class FlowCommand(FlowData):
     """
@@ -57,48 +56,45 @@ class FlowCommand(FlowData):
             return self.get('value') is not None and self.get('uuid') is None
 
     def __init__(self, flow_datum, vis_args={}, is_root=True, preprocessor=None):
+        # 実行前にフローJSONの書式の検証をする
+        flow_datum.flow_data.valid_flow_json_or_raise()
+
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_datum.flow_data.to_json())
-
-        # UUIDを採番する
-        import uuid
-        self._uuid = str(uuid.uuid4())
 
         # メインフローであればTrue
         self.is_root = is_root
 
-        # Portを設定する
-        self.i_ports = self._parse_ports(self.ports[0])
-        self.o_ports = self._parse_ports(self.ports[1])
-
         # FlowJsonLinkが中継した出力Portのリストを保持する
         self.relayed_o_ports = []
 
-        # 
-        from .preprocessor import Preprocessor
-        self._preprocessor = preprocessor or Preprocessor(flow_datum, None, vis_args)
+        # Portを設定する
+        self.i_ports = self._parse_ports(self.ports[0])
+        self.o_ports = self._parse_ports(self.ports[1])
+        
+        # TODO: 用途不明
+        from kskp.store import ModuleStore
+        self.module_store = ModuleStore()
 
+        # 
+        self.context = {}
+
+        # データソースを追加する
         from kskp.store.factory import DatumFactory
+        from .appenders import FolderDataSourcePrepender
         self._datum_factory = DatumFactory(flow_datum._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
+
+        # Activity期間中は同じPreprocessorインスタンスを使う
+        from .preprocessor import Preprocessor
+        self._preprocessor = preprocessor or Preprocessor(flow_datum, vis_args, self._datum_factory)
 
         # 
         # データデストか否かの判定をする
         # 
-        # データデストのself.o_portsには、データデストの出力を親フローに繋げる為に、Portを追加するので
-        # Flowオブジェクトの生成時に判定する
-        # 
-        # TODO: いい条件が思い浮かばない,,,
-        # has_store = any (p for p in self.points if p.is_store)
-        # self._is_datadst = len(self.i_ports) == 1 and len(self.lasts) == 1 and has_store
+        # データデストのself.o_portsには、データデストの出力を親フローに繋げる為に
+        # フローの前処理でPortを追加するので、Flowオブジェクトの生成時に判定する
         self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
-
-        # 
-        from kskp.store import ModuleStore
-        self.module_store = ModuleStore()
-
-        #
-        self.context = {}
 
         # フローJSONからStepointを生成する
         if self.has_nodes:
@@ -126,6 +122,30 @@ class FlowCommand(FlowData):
         # TODO: 'nodeId'はサブフロー内でのノードIdなので、ポートの識別子には'label'を使うべきか？
         # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
         return [Port(p['nodeId'], p['type']) for p in port_dict_list]
+
+    def _replace_multi_inputs(self, i_ports, srcs):
+        """
+        *のportをport群に変換する
+        """
+        ret = []
+        for src_port in i_ports:
+            if src_port.label == '*':
+                ret.extend([Port(p, 'frame') for p in srcs.keys()])
+            else:
+                ret.append(src_port)
+        return ret
+
+    def _get_port_by_label(self, runnable_ports, port_label):
+        """
+        指定したport_labelをもつportを取得する。
+        runnableというクラスがあったらそこにあるべきなのだろうけど
+        今はないし、作るの面倒なのでとりあえずここに。
+        絶対必要になった時に作ろう。。。
+        """
+        for runnable_port in runnable_ports:
+            if runnable_port.label == port_label:
+                return runnable_port
+        return None
 
     def _update_flow_by_runnable(self, nodes_json):
         """
@@ -278,34 +298,10 @@ class FlowCommand(FlowData):
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
-    def _get_port_by_label(self, runnable_ports, port_label):
-        """
-        指定したport_labelをもつportを取得する。
-        runnableというクラスがあったらそこにあるべきなのだろうけど
-        今はないし、作るの面倒なのでとりあえずここに。
-        絶対必要になった時に作ろう。。。
-        """
-        for runnable_port in runnable_ports:
-            if runnable_port.label == port_label:
-                return runnable_port
-        return None
-
-    def _replace_multi_inputs(self, i_ports, srcs):
-        """
-        *のportをport群に変換する
-        """
-        ret = []
-        for src_port in i_ports:
-            if src_port.label == '*':
-                ret.extend([Port(p, 'frame') for p in srcs.keys()])
-            else:
-                ret.append(src_port)
-        return ret
-
     def _upsert_point(self, points, id, src_tube=None, dst_tube=None, is_in=False, is_out=False):
         """
         指定したpoint_idのpointを作成する
-        対象のpointがすでに存在していればそのpointを更新する
+        既に同じpoint_idが存在していればそのpointを更新する
         """
         point = points.get(id)
         if point is None:
@@ -318,16 +314,6 @@ class FlowCommand(FlowData):
             point.is_in = is_in
             point.is_out = is_out 
         return point
-
-    def __hash__(self):
-        return hash(self._uuid)
-
-    @property
-    def is_datadst(self):
-        """
-        データデストの場合はTrueを返す
-        """
-        return self._is_datadst
 
     @property
     def points(self):
@@ -348,6 +334,13 @@ class FlowCommand(FlowData):
     @property
     def outs(self):
         return {p.id: p.datum for p in self.points if p.is_out}
+
+    @property
+    def is_datadst(self):
+        """
+        データデストの場合はTrueを返す
+        """
+        return self._is_datadst
 
     def open_o_port(self, o_port, point):
         """
