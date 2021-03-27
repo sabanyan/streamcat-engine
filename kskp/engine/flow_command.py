@@ -62,6 +62,8 @@ class FlowCommand(FlowData):
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_datum.flow_data.to_json())
 
+        self._vis_args = vis_args
+
         # メインフローであればTrue
         self.is_root = is_root
 
@@ -87,7 +89,7 @@ class FlowCommand(FlowData):
 
         # Activity期間中は同じPreprocessorインスタンスを使う
         from .preprocessor import Preprocessor
-        self._preprocessor = preprocessor or Preprocessor(flow_datum, vis_args, self._datum_factory)
+        self._preprocessor = preprocessor or Preprocessor(flow_datum, self._datum_factory)
 
         # 
         # データデストか否かの判定をする
@@ -96,24 +98,32 @@ class FlowCommand(FlowData):
         # フローの前処理でPortを追加するので、Flowオブジェクトの生成時に判定する
         self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
 
-        # フローJSONからStepointを生成する
-        if self.has_nodes:
-            # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
-            # そのため、use_exec_auth=Trueを指定する
-            self._stepoints = self._update_flow_by_runnable(self.get_nodes(use_exec_auth=True))
-            # runnable以外のノードを走査する
-            self._update_flow_by_other_than_runnable(self.get_nodes(use_exec_auth=True))
-        else:
-            self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=is_root)
-
-        # フローを前処理する
-        self._preprocessor.execute(flow_command=self)
-
     def run(self, args, inputs):
         """
         フローを実行する
         """
+        # 実行前に全てのサブフローに対して縦型探索して、フローJSONの解釈とフローの前処理を全て終わらせておく
+        if self.is_root:
+            # フローJSONを解釈する
+            self._parse_nodes(self._vis_args)
+            # フローを前処理する
+            self._preprocessor.execute(flow_command=self, vis_args=self._vis_args)
+
+        # フローを実行する
+        # 実行において、再び縦型探索される
         return self._stepoints.run(args, inputs)
+
+    def _parse_nodes(self, vis_args):
+        # フローJSONからStepointを生成する
+        if self.has_nodes:
+            nodes_json = self.get_nodes(use_exec_auth=True)
+            # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
+            # そのため、use_exec_auth=Trueを指定する
+            self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args)
+            # runnable以外のノードを走査する
+            self._update_flow_by_other_than_runnable(nodes_json)
+        else:
+            self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=self.is_root)
 
     def _parse_ports(self, port_dict_list):
         """
@@ -147,7 +157,7 @@ class FlowCommand(FlowData):
                 return runnable_port
         return None
 
-    def _update_flow_by_runnable(self, nodes_json):
+    def _update_flow_by_runnable(self, nodes_json, vis_args):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -166,7 +176,7 @@ class FlowCommand(FlowData):
                 continue
 
             # CommandまたはFlowを取得する
-            cmd = self._create_command(node)
+            cmd = self._create_command(node, vis_args)
             
             # MCommandに不要な引数を設定するとエラーになる
             args = node['args']
@@ -282,19 +292,24 @@ class FlowCommand(FlowData):
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.cache = False
 
-    def _create_command(self, node):
+    def _create_command(self, node, vis_args):
+        from kskp.store.auth import NotAuthorizedException
         from kskp.depo.std.commands import CommandLink
 
         if node.type == 'command':
             return CommandLink(node['commandId']).resolve()
         elif node.type == 'flow':
-            # ret = FlowUuidLink(node['uuid'], {}, self._link_context)
-            from kskp.store.auth import NotAuthorizedException
             try:
+                # サブフローをDBから取得する
                 sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
-                return FlowCommand(sub_flow_datum, is_root=False, preprocessor=self._preprocessor)
             except NotAuthorizedException:
-                raise NotAuthorizedException(f'共有フロー({node.id})の参照権限がありません')
+                raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
+            # サブフローのFlowCommandを生成する
+            flow_cmd = FlowCommand(sub_flow_datum, is_root=False, preprocessor=self._preprocessor)
+            # サブフローのフローJSONからStepointを生成する
+            flow_cmd._parse_nodes(vis_args)
+            # フローを前処理する
+            return self._preprocessor.execute(flow_command=flow_cmd, vis_args=vis_args)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 

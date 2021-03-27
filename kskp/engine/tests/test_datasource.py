@@ -2202,9 +2202,6 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-
-        print(lasts)
-
         lasts = convert_from_activity(lasts)
 
         # ライブラリにデータソースが出力されていること

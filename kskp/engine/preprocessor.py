@@ -25,7 +25,7 @@ class Preprocessor:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, vis_args={}, datum_factory=None):
+    def __init__(self, flow_datum, datum_factory=None):
         from .appenders import (
             FolderDataDestAppender,
             CacheDataDestAppender,
@@ -33,8 +33,6 @@ class Preprocessor:
             ActivityDataDestAppender,
             RunsCommandAppender
         )
-
-        self._vis_ids = vis_args.keys()
 
         # Appenders
         self._runs_command_appender = RunsCommandAppender()
@@ -46,13 +44,12 @@ class Preprocessor:
         # Appenders
         self._folder_data_dest_appender = FolderDataDestAppender(flow_datum, datum_factory, self._context.start_time)
         self._cache_data_dest_appender = CacheDataDestAppender(flow_datum, datum_factory, self._context.start_time)
-        self._vis_data_dest_appender = VisDataDestAppender(flow_datum.uuid, vis_args)
+        self._vis_data_dest_appender = VisDataDestAppender()
 
-    def execute(self, flow_command:FlowCommand):
+    def execute(self, flow_command:FlowCommand, vis_args):
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
 
-        # Flowを生成する
         flow = flow_command
 
         # 
@@ -93,6 +90,7 @@ class Preprocessor:
                 # 中継済みのポートとして記録する
                 flow.relayed_o_ports.append(port)
 
+
         # コマンド共通引数を設定する
         for step in flow.substeps:
             if step.is_flow:
@@ -109,6 +107,7 @@ class Preprocessor:
                 args.update(step.args)
                 step.args = args
 
+
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
         # また、キャッシュの出力処理もしない
         if not flow.is_root:
@@ -121,28 +120,28 @@ class Preprocessor:
         # メインフローの場合 ： /vizsするdatumのid群
         # サブフローの場合　 ： 親の実行に必要なlastのid群
         # が入っている。（はず）
+        vis_ids = vis_args.keys()
+        is_vis = len(vis_ids) > 0
         # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
-        last_ids = self._pick_out_points(flow, flow.outs, flow.points)
+        last_ids = self._pick_out_points(flow, flow.outs, flow.points, vis_ids)
         # 実行するのに必要なpointを取得する
-        is_vis = len(self._vis_ids) > 0
         flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
 
 
         # lasts出力処理（メインフローの場合のみ）
         if is_vis:
-            for original_out_point in [flow.points[pid] for pid in self._vis_ids]:
+            for original_out_point in [flow.points[pid] for pid in vis_ids]:
                 # Visualizerコマンドのための前処理コマンドを付加する
-                out_point = self._vis_data_dest_appender.do_append(flow, original_out_point)
+                out_point = self._vis_data_dest_appender.do_append(flow, original_out_point, vis_args)
                 # Runsコマンドを付加する
                 out_point = self._runs_command_appender.do_append(flow, out_point)
                 # Visualizeコマンドを付加する
-                out_point = self._vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point)
+                out_point = self._vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point, vis_args)
                 # Activity Stepを付加する
                 out_point = self._activity_data_dest_appender.do_append(flow, out_point, original_out_point)
                 # 出力Point設定を元のPointからActivity_pointに変更する
                 original_out_point.is_out = False
                 out_point.is_out = True
-
         else:
             for original_out_point in [p for p in flow.points if p.is_out]:
                 # original_out_pointが、中継したフロー出力Pointの場合はTrue
@@ -164,6 +163,7 @@ class Preprocessor:
                 original_out_point.is_out = False
                 out_point.is_out = True
 
+
         # キャッシュ作成処理
         # サブフロー内ではキャッシュは作成しない
         # is_outかつis_cacheなPointにも対応できるよう
@@ -177,6 +177,7 @@ class Preprocessor:
             out_point = self._activity_data_dest_appender.do_append(flow, out_point, cache_point)
             # Activity_pointを出力Pointに設定する
             out_point.is_out = True
+
 
         return flow
 
@@ -203,10 +204,10 @@ class Preprocessor:
             o_port = Port(port_label, 'mcmd')
             flow.open_o_port(o_port, new_out_point)
 
-    def _pick_out_points(self, flow, outs, points):
+    def _pick_out_points(self, flow, outs, points, vis_ids):
         # /vizsなど、lastsが指定されている場合
-        if len(self._vis_ids) > 0:
-            return self._vis_ids 
+        if len(vis_ids) > 0:
+            return vis_ids 
 
         # データデストの場合はoutsはないのでlastsを返す
         if flow.is_datadst:

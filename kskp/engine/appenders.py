@@ -94,15 +94,15 @@ class CacheDataDestAppender(FolderDataDestAppender):
 
 
 class VisDataDestAppender():
-    def __init__(self, flow_uuid, vis_args={}):
-        self.vis_args = vis_args
+    def __init__(self):
+        pass
 
-    def do_append(self, flow, point):
+    def do_append(self, flow, point, vis_args):
         """
         RowRangeコマンドを付加する
         ToListコマンドを付加する
         """
-        if 'args' not in self.vis_args[point.id]:
+        if 'args' not in vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
 
         # UTF-8への変換コマンドを作成する
@@ -111,7 +111,7 @@ class VisDataDestAppender():
         convtoutf8_step = Step(convtoutf8.label, convtoutf8, {'target_encoding':'utf-8','target_newline':'\n'})
 
         # RowRange Stepへの引数を作成する
-        rowrange_args = self.vis_args[point.id]['args']
+        rowrange_args = vis_args[point.id]['args']
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
         rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
@@ -152,14 +152,14 @@ class VisDataDestAppender():
 
         return tolist_point
 
-    def do_append_after_runs(self, flow, point, original_out_point):
+    def do_append_after_runs(self, flow, point, original_out_point, vis_args):
         """
         Visualizerコマンドを付加する
         """
-        if 'args' not in self.vis_args[original_out_point.id]:
+        if 'args' not in vis_args[original_out_point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください.')
 
-        visualizer_args = self.vis_args[original_out_point.id]['args']
+        visualizer_args = vis_args[original_out_point.id]['args']
         if 'visualizer' not in visualizer_args:
             raise Exception('visualizer属性を指定してください')
         visualizer_cmd_name = visualizer_args['visualizer']
