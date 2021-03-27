@@ -148,6 +148,9 @@ class Stepoints():
                 for value in results.values():
                     self.module_store.append(value.content)
 
+            # jobの終了処理
+            job.dtor()
+
     def _make_outputs(self):
         """
         実行すべきstepがなくなった後呼び出される

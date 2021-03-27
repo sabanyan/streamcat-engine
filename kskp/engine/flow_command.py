@@ -98,7 +98,7 @@ class FlowCommand(FlowData):
         # フローの前処理でPortを追加するので、Flowオブジェクトの生成時に判定する
         self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
 
-    def run(self, args, inputs):
+    def run(self, args={}, inputs={}):
         """
         フローを実行する
         """
@@ -384,11 +384,6 @@ class FlowCommand(FlowData):
                 return True
         return False
 
-    def dtor(self, args):
-        # 配下のflowのdtorも動かす
-        for substep in self.substeps:
-            from kskp.core import Command
-            if isinstance(substep.runnable, FlowCommand) or isinstance(substep.runnable, Command):
-                substep.dtor()
-            else:
-                raise Exception('substep.runnableにFlowまたはCommand以外のオブジェクトが格納されています')
+    def dtor(self, args={}):
+        # self.substepsの各Stepは、Stepoints._run_invokable_steps()においてdtor()されている
+        pass

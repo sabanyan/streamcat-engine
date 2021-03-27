@@ -3,6 +3,12 @@ class Step:
     コマンド等の実行可能ノードのインスタンスを表現するクラス
     """
     def __init__(self, step_id, runnable, args={}, i_ports=None, o_ports=None, ex_acceptable=False):
+        from kskp.core import Command
+        from .flow_command import FlowCommand
+
+        if not isinstance(runnable, FlowCommand) and not isinstance(runnable, Command):
+            raise Exception('runnableにFlowCommandまたはCommand以外のオブジェクトが指定されました')
+
         self.id = step_id
         self.runnable = runnable
         self.args = args
