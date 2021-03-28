@@ -385,5 +385,13 @@ class FlowCommand(FlowData):
         return False
 
     def dtor(self, args={}):
-        # self.substepsの各Stepは、Stepoints._run_invokable_steps()においてdtor()されている
-        pass
+        """
+        終了処理
+        - self.substepsの各Stepは
+          Stepoints._run_invokable_steps()においてdtor()される
+        """
+        # TmpファイルはNYSOL-Pythonコマンドの入力に使用するので
+        # Nysol-Python(Runsコマンド)の実行が終了した後に削除する
+        if self.is_root:
+            from kskp.core import Tmp
+            Tmp.remove_files()

@@ -13,8 +13,5 @@ class Job:
             raise
 
     def dtor(self):
-        from kskp.core import Tmp
-        # Tmpファイルを削除する
-        Tmp.remove_files()
         # Stepの終了処理
         self.step.dtor()
