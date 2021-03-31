@@ -2,6 +2,8 @@ from kskp.core import Port
 from kskp.store import FlowData        
 from .stepoints import Stepoints
 from .point import Point, Points
+from .flow_port import FlowPort
+from .ports import Ports
 
 class FlowCommand(FlowData):
     """
@@ -41,6 +43,13 @@ class FlowCommand(FlowData):
             return self.type == 'store'
 
         @property
+        def is_frame(self):
+            """
+            指定されたnodeがFrameの場合はTrueを返す
+            """
+            return self.type == 'frame'
+
+        @property
         def is_runnable(self):
             """
             指定されたnodeがrunnableかどうかを判断する
@@ -62,24 +71,25 @@ class FlowCommand(FlowData):
         # to_json()によりflow_jsonはコピーされる
         super().__init__(flow_datum.flow_data.to_json())
 
+        # TODO: プレビュー指定の引数は、run()のargs引数に統合したい
         self._vis_args = vis_args
 
         # メインフローであればTrue
         self.is_root = is_root
 
         # FlowJsonLinkが中継した出力Portのリストを保持する
-        self.relayed_o_ports = []
+        # (Port.labelの重複をさせないためPortsを用いる)
+        self.relayed_o_ports = Ports()
 
-        # Portを設定する
-        self.i_ports = self._parse_ports(self.ports[0])
-        self.o_ports = self._parse_ports(self.ports[1])
-        
         # TODO: 用途不明
         from kskp.store import ModuleStore
         self.module_store = ModuleStore()
 
         # 
         self.context = {}
+
+        # Steps, Points, i_ports, o_portsを保持する
+        self._stepoints = None
 
         # データソースを追加する
         from kskp.store.factory import DatumFactory
@@ -96,7 +106,7 @@ class FlowCommand(FlowData):
         # 
         # データデストのself.o_portsには、データデストの出力を親フローに繋げる為に
         # フローの前処理でPortを追加するので、Flowオブジェクトの生成時に判定する
-        self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
+        # self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
 
     def run(self, args={}, inputs={}):
         """
@@ -116,26 +126,41 @@ class FlowCommand(FlowData):
     def _parse_nodes(self, vis_args):
         # フローJSONからStepointを生成する
         if self.has_nodes:
-            nodes_json = self.get_nodes(use_exec_auth=True)
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
+            nodes_json = self.get_nodes(use_exec_auth=True)
+            # フローJSONからStepとPointを生成する
             self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args)
+            # フローの入出力Portを作成する
+            # (Stepoints.run()でPortが必要になる)
+            self._stepoints.i_ports = self._parse_flow_ports(self.ports[0])
+            self._stepoints.o_ports = self._parse_flow_ports(self.ports[1])
             # runnable以外のノードを走査する
+            # (Portを作成した後に処理する)
             self._update_flow_by_other_than_runnable(nodes_json)
         else:
-            self._stepoints = Stepoints(steps=[], points=Points(), o_ports=self.o_ports, is_root=self.is_root)
+            self._stepoints = Stepoints(steps=[], points=Points(), i_ports=self.i_ports, o_ports=self.o_ports, is_root=self.is_root)
 
-    def _parse_ports(self, port_dict_list):
+    def _parse_flow_ports(self, ports_json):
         """
-        dictのリストからportインスタンスのリストを作る
+        フローJSONからのリストからFlowPortのリストを作る
         """
-        # TODO: 'nodeId'はサブフロー内でのノードIdなので、ポートの識別子には'label'を使うべきか？
-        # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
-        return [Port(p['nodeId'], p['type']) for p in port_dict_list]
+        rets = []
+        for port_json in ports_json:
+            point = self.points.get(port_json['nodeId'])
+            if point is None:
+                raise Exception(f'Port({port_json["label"]})に紐づくPoint({port_json["nodeId"]})がフロー({self})に存在しません')
+            # TODO: 'nodeId'はサブフロー内でのノードIdなので、ポートの識別子には'label'を使うべきか？
+            # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
+            new_port = FlowPort(port_json['nodeId'], port_json['type'], point)
+            if new_port in rets:
+                raise Exception(f'同じlabelのPort({new_port.label})が存在します')
+            rets.append(new_port)
+        return rets
 
-    def _replace_multi_inputs(self, i_ports, srcs):
+    def _replace_variadic_port(self, i_ports, srcs):
         """
-        *のportをport群に変換する
+        *のPortを複数のPortに変換する
         """
         ret = []
         for src_port in i_ports:
@@ -172,6 +197,12 @@ class FlowCommand(FlowData):
         # まず、runnableを集める
         for node_json in nodes_json:
             node = FlowCommand.Node(node_json)
+
+            if node.is_frame:
+                # Commandに繋がらない孤立したデータノードからもPointを生成する為
+                # ここで全てのデータノードからPointを生成する
+                self._upsert_point(points, id=node.id)
+
             if not node.is_runnable:
                 continue
 
@@ -183,17 +214,19 @@ class FlowCommand(FlowData):
             srcs = node['srcs']
             dsts = node['dsts']
 
-            i_ports = self._replace_multi_inputs(cmd.i_ports, srcs)
-            o_ports = self._replace_multi_inputs(cmd.o_ports, dsts)
+            # CommandoのPortのlabelに'*'が指定されていれば、可変長Port指定なので
+            # Commandノードの入出力ポート指定(srcsまたはdsts)からPortを生成する
+            i_ports = self._replace_variadic_port(cmd.i_ports, srcs)
+            o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
 
             # runnableのインスタンス化を行う
-            step = Step(node.id, cmd, args, i_ports=i_ports, o_ports=o_ports)
+            step = Step(node.id, cmd, args, o_ports=o_ports)
             # Stepを集める
             substeps.append(step)
 
             # srcとdstからpointを作る
             for s_port_label, s_node_id in srcs.items():
-                # 可変長引数で入力PointがNoneになる場合に備える
+                # 可変長Portで入力PointがNoneになる場合に備える
                 if s_node_id is None:
                     raise Exception(f'コマンド({node})の入力({s_port_label})が指定されていません')
 
@@ -202,12 +235,8 @@ class FlowCommand(FlowData):
                 if src_port is None:
                     raise Exception(f'指定しているport名({s_port_label})が"{node}"の定義しているポート群({i_ports})に存在しません')
 
-                # out/inポートフラグの取得
-                is_in = self.has_as_in_point(s_node_id)
-                is_out = self.has_as_out_point(s_node_id)
-
                 # pointを作成する（作成対象がすでにあれば更新する）
-                src_point = self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step), is_in=is_in, is_out=is_out)
+                src_point = self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step))
 
                 # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにoriginを置き換える
@@ -222,12 +251,8 @@ class FlowCommand(FlowData):
                 if dst_port is None:
                     raise Exception(f'指定しているport名({d_port_label})が"{node}"の定義しているポート群({step.runnable.o_ports})に存在しません')
 
-                # out/inポートフラグの取得
-                is_in = self.has_as_in_point(d_node_id) 
-                is_out = self.has_as_out_point(d_node_id)
-
                 # pointを作成する（作成対象がすでにあれば更新する）
-                dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step), is_in=is_in, is_out=is_out)
+                dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step))
 
                 # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
                 # 繋げるためにdst_tubesを置き換える
@@ -243,7 +268,7 @@ class FlowCommand(FlowData):
                     step.ex_acceptable = True
 
         # 作成したStep及びPointのリストを返す
-        return Stepoints(substeps, points, o_ports=self.o_ports, is_root=self.is_root)
+        return Stepoints(substeps, points, i_ports=[], o_ports=[], is_root=self.is_root)
 
     def _update_flow_by_other_than_runnable(self, nodes_json):
         """
@@ -263,7 +288,7 @@ class FlowCommand(FlowData):
             if target_point is None:
                 continue
 
-            target_point.cache = node.get('makeCache')
+            target_point.makeCache = node.get('makeCache')
             target_point.label = node.get('label')
 
             # Storeの場合、StoreオブジェクトをPointに格納する
@@ -277,7 +302,7 @@ class FlowCommand(FlowData):
 
             # 入力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
             # ただし、メインフローの場合は入力Pointか否かを条件にしない
-            if self.is_root or not target_point.is_in:
+            if self.is_root or not self.is_i_port(target_point):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
@@ -290,7 +315,7 @@ class FlowCommand(FlowData):
                     # self._put_loader(node.get('uuid'), target_point, self, Folder)
                     self._folder_data_source_prepender.do_prepend(self, target_point, node.get('uuid'))
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
-                    target_point.cache = False
+                    target_point.makeCache = False
 
     def _create_command(self, node, vis_args):
         from kskp.store.auth import NotAuthorizedException
@@ -301,7 +326,7 @@ class FlowCommand(FlowData):
         elif node.type == 'flow':
             try:
                 # サブフローをDBから取得する
-                sub_flow_datum = self._datum_factory.find_by_uuid(node['uuid'])
+                sub_flow_datum = self._datum_factory.find_by_uuid(node.get('uuid'))
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
             # サブフローのFlowCommandを生成する
@@ -313,21 +338,19 @@ class FlowCommand(FlowData):
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
-    def _upsert_point(self, points, id, src_tube=None, dst_tube=None, is_in=False, is_out=False):
+    def _upsert_point(self, points, id, src_tube=None, dst_tube=None):
         """
         指定したpoint_idのpointを作成する
         既に同じpoint_idが存在していればそのpointを更新する
         """
         point = points.get(id)
         if point is None:
-            point = Point(id, src_tube, None, dst_tube, is_in, is_out)
+            point = Point(id, src_tube, None, dst_tube)
             points.add(point)
         else:
             # 既存のpointを更新する
             src_tube is None or point.src_tubes.add(src_tube)
             dst_tube is None or point.dst_tubes.add(dst_tube)
-            point.is_in = is_in
-            point.is_out = is_out 
         return point
 
     @property
@@ -343,46 +366,76 @@ class FlowCommand(FlowData):
         return self._stepoints.substeps
 
     @property
+    def i_ports(self):
+        if self._stepoints is None:
+            return []
+        else:
+            return self._stepoints.i_ports
+
+    @property
+    def o_ports(self):
+        if self._stepoints is None:
+            return []
+        else:
+            return self._stepoints.o_ports
+
+    @property
     def lasts(self):
         return {p.id: p.datum for p in self.points if p.is_last}
 
     @property
     def outs(self):
-        return {p.id: p.datum for p in self.points if p.is_out}
+        return {p.point.id: p.point.datum for p in self.o_ports}
 
     @property
     def is_datadst(self):
         """
         データデストの場合はTrueを返す
         """
-        return self._is_datadst
+        return len(self.i_ports) == 1 and len(self.o_ports) == 0
 
-    def open_o_port(self, o_port, point):
+    def is_i_port(self, point:Point):
+        return any(p.point==point for p in self.i_ports)
+
+    def is_o_port(self, point:Point):
+        return any(p.point==point for p in self.o_ports)
+
+    def has_o_port(self, port_label):
+        return any(p.label==port_label for p in self.o_ports)
+
+    def open_o_port(self, new_o_port:FlowPort):
         """
         指定するPointを出力Pointに設定する
         """
-        if o_port in self.o_ports:
-            raise Exception(f'指定されたPort({o_port})と同じlabelのPortがFlow({self.label})にあります')
-        if point not in self.points:
-            raise Exception(f'指定されたPoint({point.id})がFlow({self.label})にありませんでした')
-
-        # is_outは単なるフラグなのでTrueに設定する
-        point.is_out = True
         from .tube import Tube
-        point.dst_tubes.add(Tube(o_port, None))
-        self.o_ports.append(o_port)
+        point = new_o_port.point
 
-    def has_as_in_point(self, node_id):
-        for port in self.i_ports:
-            if port.label == node_id:
-                return True
-        return False
+        if new_o_port in self.o_ports:
+            raise Exception(f'指定されたPort({new_o_port})と同じlabelのPortがFlow({self})にあります')
+        if point not in self.points:
+            raise Exception(f'指定されたPoint({point.id})がFlow({self})にありませんでした')
 
-    def has_as_out_point(self, node_id):
+        point.dst_tubes.add(Tube(new_o_port, None))
+        self.o_ports.append(new_o_port)
+
+    def close_o_port(self, port:FlowPort):
+        from .tube import Tube
+
+        if port not in self.o_ports:
+            raise Exception(f'指定されたPoint({port})がFlow({self})にありませんでした')
+
+        i = self.o_ports.index(port)
+        self.o_ports[i].point.dst_tubes.remove(Tube(port, None))
+
+    def close_o_port_by_point(self, point):
+        from .tube import Tube
+
         for port in self.o_ports:
-            if port.label == node_id:
-                return True
-        return False
+            if port.point == point:
+                point.dst_tubes.remove(Tube(port, None))
+                self.o_ports.remove(port)
+                return
+        return Exception(f'指定されたPoint({port})はFlow({self})の出力Pointではありません')
 
     def dtor(self, args={}):
         """

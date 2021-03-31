@@ -2,21 +2,23 @@ class Step:
     """
     コマンド等の実行可能ノードのインスタンスを表現するクラス
     """
-    def __init__(self, step_id, runnable, args={}, i_ports=None, o_ports=None, ex_acceptable=False):
+    def __init__(self, id:str, runnable, args:dict={}, o_ports=None, ex_acceptable:bool=False):
         from kskp.core import Command
         from .flow_command import FlowCommand
 
         if not isinstance(runnable, FlowCommand) and not isinstance(runnable, Command):
             raise Exception('runnableにFlowCommandまたはCommand以外のオブジェクトが指定されました')
 
-        self.id = step_id
+        self.id = id
         self.runnable = runnable
         self.args = args
+
         # 入力データが例外の場合、コマンドに渡すか否か
         self.ex_acceptable = ex_acceptable
-        # コマンドのPortが'*'の場合、実行時にPortが展開されるので、Stepにもその情報を持たせる
-        self.i_ports = i_ports or runnable.i_ports
-        self.o_ports = o_ports or runnable.o_ports
+        
+        # 可変長Port'*'の展開済みのo_ports
+        # make_exception_outputs()でのみ用いる
+        self._o_ports = o_ports or runnable.o_ports
 
     def __repr__(self):
         return self.id
@@ -25,18 +27,6 @@ class Step:
     def is_flow(self):
         from .flow_command import FlowCommand
         return isinstance(self.runnable, FlowCommand)
-
-    @property
-    def is_datadst(self):
-        """
-        データデストの場合はTrueを返す
-        """
-        if self.is_flow:
-            # フローの場合はフロー作成時のポート数で判定する
-            return self.runnable.is_datadst
-        else:
-            # コマンドのポートはエンジンで追加削除しないので、is_datadst呼び出し時のポート数で判定する
-            return len(self.i_ports) == 1 and len(self.o_ports) == 0
 
     def run(self, inputs):
         """
@@ -59,7 +49,7 @@ class Step:
                 # 入力データに1つでも例外があれば、全ての出力ポートに例外を格納する
                 for input in inputs.values():
                     if isinstance(input, CommandException):
-                        return make_exception_outputs(self.o_ports, cmd_ex=input)
+                        return make_exception_outputs(self._o_ports, cmd_ex=input)
             
             # コマンドを実行する
             return self.runnable.run(self.args, inputs)
@@ -73,8 +63,14 @@ class Step:
             import traceback
             traceback.print_exc()
 
-            # コマンドのrun()から例外が送出された場合、全ての出力ポートに例外を格納する
-            return make_exception_outputs(self.o_ports, cmd_ex=CommandException(e))
+            # 出力Portが無ければ、送出(raise)する以外に例外を渡す方法が無い
+            # 出力Portが有っても、メインフローは例外を渡す相手がいない
+            is_root_flow = self.is_flow and self.runnable.is_root 
+            if is_root_flow or len(self._o_ports) == 0:
+                raise
+
+            # コマンドのrun()から例外が送出された場合、全ての出力Portに例外を格納する
+            return make_exception_outputs(self._o_ports, cmd_ex=CommandException(e))
 
     def dtor(self):
         self.runnable.dtor(self.args)

@@ -1,14 +1,14 @@
-from kskp.core import Port
 from .flow_command import FlowCommand
+from .flow_port import FlowPort
 
 class Preprocessor:
     """
     実行可能フローの前処理
     """
 
-    class FlowLinkContext():
+    class Context():
         """
-        FlowJsonLinkを再帰的に下降して呼び出すときに参照する共通の格納場所
+        Preprocessorを再帰的に下降して呼び出すときに参照する共通の格納場所
         """
         def __init__(self, flow_datum, activity_uuid):
             self.flow_datum = flow_datum
@@ -39,7 +39,7 @@ class Preprocessor:
         self._activity_data_dest_appender = ActivityDataDestAppender(flow_datum.uuid)
 
         # Context
-        self._context = Preprocessor.FlowLinkContext(flow_datum, self._activity_data_dest_appender.activity_uuid)
+        self._context = Preprocessor.Context(flow_datum, self._activity_data_dest_appender.activity_uuid)
         
         # Appenders
         self._folder_data_dest_appender = FolderDataDestAppender(flow_datum, datum_factory, self._context.start_time)
@@ -61,7 +61,7 @@ class Preprocessor:
         # SaverCommandの出力PointをRootフローに中継する
         for point in flow.points:
             # 既にフロー出力Pointの場合は中継しない
-            if point.is_out:
+            if flow.is_o_port(point):
                 continue
 
             # コマンドの出力Pointでない場合も中継しない
@@ -71,10 +71,10 @@ class Preprocessor:
 
             # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
             if isinstance(src_tube.step.runnable, SaverCommand):
-                o_port = Port(point.id, 'mcmd')
-                flow.open_o_port(o_port, point)
+                o_port = FlowPort(point.id, 'mcmd', point)
+                flow.open_o_port(o_port)
                 # 中継済みのポートとして記録する
-                flow.relayed_o_ports.append(o_port)
+                flow.relayed_o_ports.add(o_port)
 
         # 中継ポートを中継する
         for step in flow.substeps:
@@ -86,9 +86,9 @@ class Preprocessor:
             # フローが中継ポートを持っている場合
             for port in step.runnable.relayed_o_ports:
                 # 中継する
-                self._relay_o_port(flow, step, port.label)
+                new_port = self._relay_o_port(flow, step, port)
                 # 中継済みのポートとして記録する
-                flow.relayed_o_ports.append(port)
+                flow.relayed_o_ports.add(new_port)
 
 
         # コマンド共通引数を設定する
@@ -140,10 +140,11 @@ class Preprocessor:
                 # Activity Stepを付加する
                 out_point = self._activity_data_dest_appender.do_append(flow, out_point, original_out_point)
                 # 出力Point設定を元のPointからActivity_pointに変更する
-                original_out_point.is_out = False
-                out_point.is_out = True
+                flow.close_o_port_by_point(original_out_point)
+                out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
         else:
-            for original_out_point in [p for p in flow.points if p.is_out]:
+
+            for original_out_point in [p.point for p in flow.o_ports]:
                 # original_out_pointが、中継したフロー出力Pointの場合はTrue
                 src_tube = original_out_point.src_tubes.find_command_tube()
                 in_port_label_exists = src_tube is not None and src_tube.port is not None
@@ -160,15 +161,14 @@ class Preprocessor:
                 # Activity Stepを付加する
                 out_point = self._activity_data_dest_appender.do_append(flow, out_point, original_out_point)
                 # 出力Point設定を元のPointからActivity_pointに変更する
-                original_out_point.is_out = False
-                out_point.is_out = True
-
+                flow.close_o_port_by_point(original_out_point)
+                out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
 
         # キャッシュ作成処理
         # サブフロー内ではキャッシュは作成しない
         # is_outかつis_cacheなPointにも対応できるよう
         # データデストを付加した後にキャッシュデータデストを付加すること
-        for cache_point in [p for p in flow.points if p.is_cache]:
+        for cache_point in [p for p in flow.points if p.makeCache]:
             # Cache Stepを付加する
             out_point = self._cache_data_dest_appender.do_append(flow, cache_point)
             # Runsコマンドを付加する
@@ -176,33 +176,35 @@ class Preprocessor:
             # Activity Stepを付加する
             out_point = self._activity_data_dest_appender.do_append(flow, out_point, cache_point)
             # Activity_pointを出力Pointに設定する
-            out_point.is_out = True
+            out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
 
 
         return flow
 
-    def _relay_o_port(self, flow, step, port_label):
+    def _relay_o_port(self, flow, step, port):
         """
         フローの出力ポートを親フローに中継する
         """
+        from kskp.core import Datum, Port
         from .point import Point
         from .tube import Tube
 
-        # 出力ポートの中継
-        src_tube = Tube(Port(port_label, 'mcmd'), step)
-
-        # NOTE: 同じフロー内であれば、port_labelは重複しないだろう
-        new_out_point = Point(f'{step.id}_{port_label}', src_tube, is_out=True)
+        # サブフローから中継された出力Portに紐づくPointを新規作成する
+        src_tube = Tube(Port(port.label, 'mcmd'), step)
+        new_out_point = Point(f'{step.id}_{port.label}', src_tube)
         flow.points.add(new_out_point)
 
-        if flow.is_root:
-            # 親フローでは、Runsコマンドの出力がその親フローの出力ポイントに設定され、これがフロー探索の開始ポイントになる
-            # そのため、ここでデータデストの出力を、出力ポイントに設定する必要はない
-            pass
-        else:
-            # データデストの出力を親フローに繋げる
-            o_port = Port(port_label, 'mcmd')
-            flow.open_o_port(o_port, new_out_point)
+        # 親フロー内で出力Portのlabelが重複する場合は、末尾に数字を付加する
+        port_label = port.label
+        while flow.has_o_port(port_label):
+            port_label = Datum._increment_file_name(port_label)
+
+        # サブフローの出力を親フローに繋げる
+        o_port = FlowPort(port_label, 'mcmd', new_out_point)
+        flow.open_o_port(o_port)
+
+        # 作成した親フローの出力Portを返す
+        return o_port
 
     def _pick_out_points(self, flow, outs, points, vis_ids):
         # /vizsなど、lastsが指定されている場合
@@ -233,7 +235,7 @@ class Preprocessor:
                     ret.append(point.id)
         return ret
 
-    def _pick_necessary_points(self, flow, last_ids, is_vis):
+    def _pick_necessary_points(self, flow:FlowCommand, last_ids, is_vis):
         """
         実行するのに必要なpointを取得する
         """
@@ -247,7 +249,9 @@ class Preprocessor:
             if flow.is_root and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
                 # lasts_point.dst_tubes = None
-                lasts_point.is_out = True
+                # lasts_point.is_out = True
+                if not flow.is_o_port(lasts_point):
+                    flow.open_o_port(FlowPort(id, 'frame', lasts_point))
 
             # lasts_pointの上に繋がっているpointsを取得する
             necessary_points.update(self._search_necessary_point(flow, lasts_point))
@@ -278,7 +282,7 @@ class Preprocessor:
                 if current_point.src_tubes.have_step(p_dst_tube.step):
                     necessary_points.add(point)
                     # pointの出力Tubeが無い、またはサブフローとして実行される場合は、入力Pointの場合、is_first=True
-                    is_first = point.dst_tubes.is_null or (not flow.is_root and point.is_in)
+                    is_first = point.dst_tubes.is_null or (not flow.is_root and flow.is_i_port(point))
                     if point.datum is None and not is_first:
                         necessary_points.update(self._search_necessary_point(flow, point))
 

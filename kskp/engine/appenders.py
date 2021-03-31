@@ -70,9 +70,7 @@ class FolderDataDestAppender():
 
         # saverコマンドのstepを作成する
         saver_step = Step(saver.label, saver, args)
-        # store_point = Point(point.id + '_store_point', None, store, Tube(Port('folder', 'store'), saver_step))
         saver_point = Point(f'{point.id}_{command_id}', Tube(Port('o', 'mcmd'), saver_step))
-        # saver_point2 = Point(str(uuid.uuid4()), Tube(Port('u', 'uuid'), saver_step), None, None)
 
         # pointにsaverコマンドを付加する
         # (pointが終端でない場合は、二股の出力Portになる)
@@ -81,7 +79,6 @@ class FolderDataDestAppender():
         flow.substeps.append(saver_step)
         flow.points.add(saver_point)
 
-        # return saver_step, saver_point, saver_point2
         return saver_point
 
 
@@ -181,9 +178,11 @@ class RunsCommandAppender():
     def __init__(self):
         # Runsコマンドを取得する
         runs_cmd = CommandLink('runs').resolve()
+        # Runsステップのo_portsへはdo_append()を呼び出す度に出力Portを1つ追加する
+        self.runs_o_ports = []
         # Runsステップを作成する
         # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
-        self.runs_step = Step('runs', runs_cmd, ex_acceptable=True)
+        self.runs_step = Step('runs', runs_cmd, o_ports=self.runs_o_ports, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self._next_port_no = 0
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
@@ -196,19 +195,18 @@ class RunsCommandAppender():
         runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step))
 
         # Stepのportsに追加する
-        self.runs_step.i_ports.append(Port(port_label, 'mcmd'))
-        self.runs_step.o_ports.append(Port(port_label, 'datum?'))
+        self.runs_o_ports.append(Port(port_label, 'datum?'))
 
         # ここでRunsCommandを繋げる
         point.dst_tubes = Tubes(Tube(Port(port_label, 'mcmd'), self.runs_step))
 
+        self._next_port_no += 1
+
         if not self._already_step_added:
             flow.substeps.append(self.runs_step)
             self._already_step_added = True
+
         flow.points.add(runs_point)
-
-        self._next_port_no += 1
-
         return runs_point
 
 
@@ -245,14 +243,13 @@ class ActivityDataDestAppender():
         point_id = point.id + '_activity_' + port_label
         activity_point = Point(point_id, Tube(Port('o', 'activity'), self.activity_step))
 
-        # Stepのportsに追加する
-        self.activity_step.i_ports.append(Port(port_label, 'datum'))
-
-        if not self._already_step_added:
-            flow.substeps.append(self.activity_step)
-            flow.points.add(activity_point)
-            self._already_step_added = True
-
         self._next_port_no += 1
 
+        if self._already_step_added:
+            # Pointを新規追加しない場合はNoneを返す
+            return None
+
+        flow.substeps.append(self.activity_step)
+        flow.points.add(activity_point)
+        self._already_step_added = True
         return activity_point

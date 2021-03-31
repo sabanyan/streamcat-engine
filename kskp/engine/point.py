@@ -5,7 +5,7 @@ class Point:
     """
     データノードのインスタンスを表現するクラス
     """
-    def __init__(self, point_id, src_tube=None, datum=None, dst_tube=None, is_in=False, is_out=False, cache=False):
+    def __init__(self, point_id, src_tube=None, datum=None, dst_tube=None, makeCache:bool=False):
         if point_id is None:
             raise Exception('point_idにNoneは指定できません')
 
@@ -22,13 +22,8 @@ class Point:
             self.dst_tubes = Tubes()
         else:
             self.dst_tubes = Tubes(dst_tube)
-
-        # フローの入力ポートか
-        self.is_in = is_in
-        # フローの出力ポートか
-        self.is_out = is_out
         
-        self.cache = cache
+        self.makeCache = makeCache
 
     def __repr__(self):
         dom_o = ''
@@ -77,7 +72,7 @@ class Point:
         """
         キャッシュを生成するかどうか
         """
-        return self.cache
+        return self.makeCache
 
     @property
     def is_last(self):

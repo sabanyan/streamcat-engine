@@ -16,6 +16,12 @@ class Tube:
         else:
             return f'({self.step}.{self.port.label})'
 
+    def __eq__(self, other):
+        return self.port == other.port and self.step == other.step
+
+    def __ne__(self, other):
+        return self.port != other.port or self.step != other.step
+
     @property
     def is_null(self):
         return self.port is None and self.step is None
@@ -50,6 +56,16 @@ class Tubes:
         Tubeを追加する
         """
         self._tubes.append(tube)
+
+    def remove(self, tube):
+        """
+        Tubeを削除する
+        """
+        for t in self._tubes:
+            if t.port == tube.port and t.step == tube.step:
+                self._tubes.remove(tube)
+                return
+        return
 
     @property
     def is_null(self):
@@ -92,6 +108,9 @@ class Tubes:
 
     def have_step(self, step):
         return len(self.filter_by_step(step)) > 0
+
+    def __repr__(self):
+        return self._tubes.__repr__()
 
     def __iter__(self) -> Iterator[Tube]:
         yield from self._tubes
