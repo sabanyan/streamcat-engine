@@ -236,11 +236,7 @@ class FlowCommand(FlowData):
                     raise Exception(f'指定しているport名({s_port_label})が"{node}"の定義しているポート群({i_ports})に存在しません')
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                src_point = self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step))
-
-                # 上記src_pointがサブフローのもので、かつ親フローと繋がっているpointならば
-                # 繋げるためにoriginを置き換える
-                [src_point.src_tubes.add(Tube(i_port, None)) for i_port in self.i_ports if i_port.label == src_point.id]
+                self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step))
 
             for d_port_label, d_node_id in dsts.items():
                 if d_node_id is None:
@@ -253,12 +249,6 @@ class FlowCommand(FlowData):
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step))
-
-                # 上記dst_pointがサブフローのもので、かつ親フローと繋がっているpointならば
-                # 繋げるためにdst_tubesを置き換える
-                # (メインフローの場合は繋げる必要がない、かつ次のStepへ繋げる為にdst_tubes変数が必要なので、何もしない)
-                if not self.is_root:
-                    [dst_point.dst_tubes.add(Tube(o_port, None)) for o_port in self.o_ports if o_port.label == dst_point.id]
 
                 from kskp.depo.std.commands import AssertCommand
                 if isinstance(cmd, AssertCommand):
@@ -407,7 +397,6 @@ class FlowCommand(FlowData):
         """
         指定するPointを出力Pointに設定する
         """
-        from .tube import Tube
         point = new_o_port.point
 
         if new_o_port in self.o_ports:
@@ -415,24 +404,11 @@ class FlowCommand(FlowData):
         if point not in self.points:
             raise Exception(f'指定されたPoint({point.id})がFlow({self})にありませんでした')
 
-        point.dst_tubes.add(Tube(new_o_port, None))
         self.o_ports.append(new_o_port)
 
-    def close_o_port(self, port:FlowPort):
-        from .tube import Tube
-
-        if port not in self.o_ports:
-            raise Exception(f'指定されたPoint({port})がFlow({self})にありませんでした')
-
-        i = self.o_ports.index(port)
-        self.o_ports[i].point.dst_tubes.remove(Tube(port, None))
-
     def close_o_port_by_point(self, point):
-        from .tube import Tube
-
         for port in self.o_ports:
             if port.point == point:
-                point.dst_tubes.remove(Tube(port, None))
                 self.o_ports.remove(port)
                 return
         return Exception(f'指定されたPoint({port})はFlow({self})の出力Pointではありません')
