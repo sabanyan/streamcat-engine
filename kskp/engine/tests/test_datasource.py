@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 
 from kskp.core import Datum
-from kskp.store import FlowData
+from kskp.store import FlowData, NysolModule
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_vis
@@ -2319,3 +2319,119 @@ class DataSourceTest(TestCaseBase):
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
+
+    def test_run_flow_cmd(self):
+        """
+        Flow Commandを直接runしても結果が得られること
+        """
+
+        flow_json = {
+            "label": "Yoshinoya", 
+            "ports": [
+                [], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "nodes": [
+                {
+                "id": "c1", 
+                "label": "c1", 
+                "type": "command", 
+                "commandId": "mnewstr",
+                "args": {
+                    "a": "static", 
+                    "l": "13", 
+                    "v": "𠮷野家"
+                }, 
+                "srcs": {}, 
+                "dsts": {
+                    "o": "d1"
+                }
+                },
+                {
+                "id": "d1", 
+                "label": "d1", 
+                "type": "frame", 
+                "makeCache": False, 
+                "dataSource": "csv", 
+                "cacheCreatedAt": None
+                }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_cmd = FlowCommand(flow)
+        lasts = flow_cmd.run()
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 1)
+        # 
+        self.assertIsNotNone(lasts['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
+        out_frame1 = lasts['d1']
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame1.file_exists)
+
+    def test_run_cmd(self):
+        """
+        Commandを直接runしても結果が得られること
+        """
+        # コマンドを作成する
+        import nysol.mcmd as nm 
+        from kskp.depo.std.commands import CommandLink
+        cmd = CommandLink('ts_axis_0in_generator').resolve()
+
+        # コマンド引数
+        args = {
+            'a'        : 'TIME',
+            'time_type': 'date',
+            'start'    : '19140801',
+            'num'      : '16',
+            'interval' : '30'
+        }
+
+        # コマンドを実行する
+        lasts = cmd.run(args=args, inputs={})
+
+        # 実行結果はNYSOLコマンドであること
+        self.assertEqual(len(lasts), 1)
+        self.assertIsNotNone(lasts['o'], 'Commandは結果(o)を出力しませんでした')
+        self.assertIsInstance(lasts['o'], NysolModule)
+
+        # NYSOLを実行する
+        nysol_cmd = lasts['o'].content
+        nysol_cmd <<= nm.writelist()
+        result = nysol_cmd.run()
+
+        # 期待する結果が得られること
+        expected = [
+            ['19140801'],
+            ['19140831'],
+            ['19140930'],
+            ['19141030'],
+            ['19141129'],
+            ['19141229'],
+            ['19150128'],
+            ['19150227'],
+            ['19150329'],
+            ['19150428'],
+            ['19150528'],
+            ['19150627'],
+            ['19150727'],
+            ['19150826'],
+            ['19150925'],
+            ['19151025']
+        ]
+        self.assertListEqual(result, expected)
+
