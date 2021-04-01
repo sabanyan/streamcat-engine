@@ -110,7 +110,7 @@ class Preprocessor:
 
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
         # また、キャッシュの出力処理もしない
-        if not flow.is_root:
+        if not flow.is_main:
             return flow
 
         # 
@@ -246,7 +246,7 @@ class Preprocessor:
         for id in last_ids:
             lasts_point = flow.points[id]
             # if len(flow.o_ports) == 0:
-            if flow.is_root and is_vis:
+            if flow.is_main and is_vis:
                 # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
                 # lasts_point.dst_tubes = None
                 # lasts_point.is_out = True
@@ -259,7 +259,7 @@ class Preprocessor:
 
         return Points(necessary_points)
 
-    def _search_necessary_point(self, flow, current_point):
+    def _search_necessary_point(self, flow:FlowCommand, current_point):
         """
         /vizsするdatumを作成するために必要なPointを絞り込む
         既にdatumを持つpointに当たるか、src_tubes.runnableを持たないpointに当たるまで登る
@@ -282,7 +282,7 @@ class Preprocessor:
                 if current_point.src_tubes.have_step(p_dst_tube.step):
                     necessary_points.add(point)
                     # pointの出力Tubeが無い、またはサブフローとして実行される場合は、入力Pointの場合、is_first=True
-                    is_first = point.dst_tubes.is_null or (not flow.is_root and flow.is_i_port(point))
+                    is_first = point.dst_tubes.is_null or (not flow.is_main and flow.is_i_port(point))
                     if point.datum is None and not is_first:
                         necessary_points.update(self._search_necessary_point(flow, point))
 

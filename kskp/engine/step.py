@@ -1,12 +1,11 @@
+from kskp.core import Command
+
 class Step:
     """
     コマンド等の実行可能ノードのインスタンスを表現するクラス
     """
-    def __init__(self, id:str, runnable, args:dict={}, o_ports=None, ex_acceptable:bool=False):
-        from kskp.core import Command
-        from .flow_command import FlowCommand
-
-        if not isinstance(runnable, FlowCommand) and not isinstance(runnable, Command):
+    def __init__(self, id:str, runnable:Command, args:dict={}, o_ports=None, ex_acceptable:bool=False):
+        if not isinstance(runnable, Command):
             raise Exception('runnableにFlowCommandまたはCommand以外のオブジェクトが指定されました')
 
         self.id = id
@@ -65,7 +64,7 @@ class Step:
 
             # 出力Portが無ければ、送出(raise)する以外に例外を渡す方法が無い
             # 出力Portが有っても、メインフローは例外を渡す相手がいない
-            is_root_flow = self.is_flow and self.runnable.is_root 
+            is_root_flow = self.is_flow and self.runnable.is_main
             if is_root_flow or len(self._o_ports) == 0:
                 raise
 

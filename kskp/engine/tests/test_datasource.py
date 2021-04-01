@@ -1178,7 +1178,7 @@ class DataSourceTest(TestCaseBase):
                     "id": "d", 
                     "type": "frame", 
                     "label": "testData", 
-                    "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+                    "uuid": "2c797dce-6573-43b6-ad37-b77768adaf76", 
                     "makeCache": False, 
                     "dataSource": "csv", 
                     "cacheCreatedAt": None
@@ -1316,6 +1316,21 @@ class DataSourceTest(TestCaseBase):
         # ルートデータストアを取得する
         root = self.factory.data.load_root()
 
+        # 入力データを作成する
+        data = [
+            ['顧客', '数量', '金額'],
+            ["A", 1, 10],
+            ["A", 2, 20],
+            ["B", 1, 30],
+            ["B", 3, 40],
+            ["B", 1, 50]
+        ]
+        import io
+        frame = root.create_frame('インプットデータ', io.BytesIO(str(data).encode('utf-8')))
+        frame.uuid = "2c797dce-6573-43b6-ad37-b77768adaf76"
+        frame.save()
+        frame = frame.reload()
+
         # サブフローを作成する
         sub_flow = root.create_flow('', FlowData(sub_flow_json))
         sub_flow.uuid = 'deb9a201-02aa-4afc-9502-4fafb5104ea4'
@@ -1353,6 +1368,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを削除する
         sub_flow.delete()
+        frame.delete()
 
     def test_subflow_with_datasource(self):
         """

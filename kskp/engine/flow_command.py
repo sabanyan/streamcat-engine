@@ -1,13 +1,13 @@
-from kskp.core import Port
-from kskp.store import FlowData        
+from kskp.core import Command, Port
+from kskp.store import Flow
 from .stepoints import Stepoints
 from .point import Point, Points
 from .flow_port import FlowPort
 from .ports import Ports
 
-class FlowCommand(FlowData):
+class FlowCommand(Command):
     """
-    実行可能フロー
+    フローコマンド
     """
 
     class Node():
@@ -64,18 +64,21 @@ class FlowCommand(FlowData):
             """
             return self.get('value') is not None and self.get('uuid') is None
 
-    def __init__(self, flow_datum, vis_args={}, is_root=True, preprocessor=None):
+    def __init__(self, flow_datum:Flow, vis_args={}, is_main:bool=True, preprocessor=None):
+        super().__init__()
+
         # 実行前にフローJSONの書式の検証をする
         flow_datum.flow_data.valid_flow_json_or_raise()
 
-        # to_json()によりflow_jsonはコピーされる
-        super().__init__(flow_datum.flow_data.to_json())
+        # フローJSONをコピーする
+        # (TODO: なぜコピーする必要があるのか忘れてしまった)
+        self._flow_data = flow_datum.flow_data.copy()
 
         # TODO: プレビュー指定の引数は、run()のargs引数に統合したい
         self._vis_args = vis_args
 
         # メインフローであればTrue
-        self.is_root = is_root
+        self.is_main = is_main
 
         # FlowJsonLinkが中継した出力Portのリストを保持する
         # (Port.labelの重複をさせないためPortsを用いる)
@@ -86,7 +89,7 @@ class FlowCommand(FlowData):
         self.module_store = ModuleStore()
 
         # 
-        self.context = {}
+        # self.context = {}
 
         # Steps, Points, i_ports, o_portsを保持する
         self._stepoints = None
@@ -113,7 +116,7 @@ class FlowCommand(FlowData):
         フローを実行する
         """
         # 実行前に全てのサブフローに対して縦型探索して、フローJSONの解釈とフローの前処理を全て終わらせておく
-        if self.is_root:
+        if self.is_main:
             # フローJSONを解釈する
             self._parse_nodes(self._vis_args)
             # フローを前処理する
@@ -125,21 +128,21 @@ class FlowCommand(FlowData):
 
     def _parse_nodes(self, vis_args):
         # フローJSONからStepointを生成する
-        if self.has_nodes:
+        if self._flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
-            nodes_json = self.get_nodes(use_exec_auth=True)
+            nodes_json = self._flow_data.get_nodes(use_exec_auth=True)
             # フローJSONからStepとPointを生成する
             self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args)
             # フローの入出力Portを作成する
             # (Stepoints.run()でPortが必要になる)
-            self._stepoints.i_ports = self._parse_flow_ports(self.ports[0])
-            self._stepoints.o_ports = self._parse_flow_ports(self.ports[1])
+            self._stepoints.i_ports = self._parse_flow_ports(self._flow_data.ports[0])
+            self._stepoints.o_ports = self._parse_flow_ports(self._flow_data.ports[1])
             # runnable以外のノードを走査する
             # (Portを作成した後に処理する)
             self._update_flow_by_other_than_runnable(nodes_json)
         else:
-            self._stepoints = Stepoints(steps=[], points=Points(), i_ports=self.i_ports, o_ports=self.o_ports, is_root=self.is_root)
+            self._stepoints = Stepoints(steps=[], points=Points(), i_ports=self.i_ports, o_ports=self.o_ports, is_main=self.is_main)
 
     def _parse_flow_ports(self, ports_json):
         """
@@ -258,7 +261,7 @@ class FlowCommand(FlowData):
                     step.ex_acceptable = True
 
         # 作成したStep及びPointのリストを返す
-        return Stepoints(substeps, points, i_ports=[], o_ports=[], is_root=self.is_root)
+        return Stepoints(substeps, points, i_ports=[], o_ports=[], is_main=self.is_main)
 
     def _update_flow_by_other_than_runnable(self, nodes_json):
         """
@@ -292,7 +295,7 @@ class FlowCommand(FlowData):
 
             # 入力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
             # ただし、メインフローの場合は入力Pointか否かを条件にしない
-            if self.is_root or not self.is_i_port(target_point):
+            if self.is_main or not self.is_i_port(target_point):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
@@ -320,7 +323,7 @@ class FlowCommand(FlowData):
             except NotAuthorizedException:
                 raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
             # サブフローのFlowCommandを生成する
-            flow_cmd = FlowCommand(sub_flow_datum, is_root=False, preprocessor=self._preprocessor)
+            flow_cmd = FlowCommand(sub_flow_datum, is_main=False, preprocessor=self._preprocessor)
             # サブフローのフローJSONからStepointを生成する
             flow_cmd._parse_nodes(vis_args)
             # フローを前処理する
@@ -362,6 +365,10 @@ class FlowCommand(FlowData):
         else:
             return self._stepoints.i_ports
 
+    @i_ports.setter
+    def i_ports(self, value):
+        pass
+
     @property
     def o_ports(self):
         if self._stepoints is None:
@@ -369,9 +376,17 @@ class FlowCommand(FlowData):
         else:
             return self._stepoints.o_ports
 
+    @o_ports.setter
+    def o_ports(self, value):
+        pass
+
     @property
     def lasts(self):
         return {p.id: p.datum for p in self.points if p.is_last}
+
+    @lasts.setter
+    def lasts(self, value):
+        pass
 
     @property
     def outs(self):
@@ -421,6 +436,6 @@ class FlowCommand(FlowData):
         """
         # TmpファイルはNYSOL-Pythonコマンドの入力に使用するので
         # Nysol-Python(Runsコマンド)の実行が終了した後に削除する
-        if self.is_root:
+        if self.is_main:
             from kskp.core import Tmp
             Tmp.remove_files()

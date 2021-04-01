@@ -5,14 +5,14 @@ from .step import Step
 
 class Stepoints():
 
-    def __init__(self, steps:List[Step], points:Points, i_ports:List[FlowPort], o_ports:List[FlowPort], is_root:bool):
+    def __init__(self, steps:List[Step], points:Points, i_ports:List[FlowPort], o_ports:List[FlowPort], is_main:bool):
         self.substeps = steps
         self.points = points
         self.i_ports = i_ports
         self.o_ports = o_ports
-        self.is_root = is_root
+        self.is_main = is_main
 
-    def run(self, args, inputs):
+    def run(self, args:dict, inputs:dict):
         """
         pointではなくstepを基軸にして書き直し
         """
@@ -37,14 +37,14 @@ class Stepoints():
         # 実行すべきrunnableがもう残っていないなら、終了
         return self._make_outputs()
 
-    def _prepare_inputs(self, inputs):
+    def _prepare_inputs(self, inputs:dict):
         """
         inputsで渡されたDatumを、フローの入力Portに紐づくPointに格納する
         """
         for i_port in self.i_ports:
             if i_port.label in inputs:
                 i_port.point.datum = inputs[i_port.label]
-            elif self.is_root:
+            elif self.is_main:
                 # メインフローの場合は、入力PortのPointは無視するのでDatumの格納はしない
                 pass
             else:
@@ -85,7 +85,7 @@ class Stepoints():
         prev_points = {p for p in self.points if p.dst_tubes.have_step(original_step)}
 
         # Stepの入力にフローの出力Pointが含まれていたら、そこで試合終了ですよ
-        if not self.is_root and any(p.point in prev_points for p in self.o_ports):
+        if not self.is_main and any(p.point in prev_points for p in self.o_ports):
             return set()
 
         # 全ての入力値が埋まっていれば、実行可能とみなして走査終了
