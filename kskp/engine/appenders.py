@@ -63,7 +63,7 @@ class FolderDataDestAppender():
         else:
             args = {'flow_uuid':self.flow_datum.uuid, 'flow':self.flow_datum, 'result_folder':store, 'datum_id':point.id}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        args['flow_label'] = flow.label if flow.label is not None else ''
+        args['flow_label'] = self.flow_datum.label if self.flow_datum.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
         args['point'] = point
         args['start_time'] = self._start_time
