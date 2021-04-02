@@ -428,6 +428,9 @@ class FlowCommand(Command):
                 return
         return Exception(f'指定されたPoint({port})はFlow({self})の出力Pointではありません')
 
+    def close_all_o_ports(self):
+        self.o_ports.clear()
+
     def dtor(self, args={}):
         """
         終了処理

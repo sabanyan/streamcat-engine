@@ -113,23 +113,19 @@ class Preprocessor:
         if not flow.is_main:
             return flow
 
-        # 
-        # flowがもつPointを、実行に必要なものだけを絞り込んで取得している。
-        # 
-        # self.vis_idsには
-        # メインフローの場合 ： /vizsするdatumのid群
-        # サブフローの場合　 ： 親の実行に必要なlastのid群
-        # が入っている。（はず）
+
+        # プレビューを取得するPoint
         vis_ids = vis_args.keys()
         is_vis = len(vis_ids) > 0
-        # /vizsしない場合はメインフローのlastのid群を使って絞り込みを行う。
-        last_ids = self._pick_out_points(flow, flow.outs, flow.points, vis_ids)
-        # 実行するのに必要なpointを取得する
-        flow.points = self._pick_necessary_points(flow, last_ids, is_vis)
 
 
         # lasts出力処理（メインフローの場合のみ）
         if is_vis:
+            # プレビューの結果を得るのに不要なコマンドをStepointsでrun()させない為
+            # メインフローの全ての出力Portを閉じる
+            # (_search_invokable_steps()では出力Portを起点に実行すべきコマンドを探す)
+            flow.close_all_o_ports()
+
             for original_out_point in [flow.points[pid] for pid in vis_ids]:
                 # Visualizerコマンドのための前処理コマンドを付加する
                 out_point = self._vis_data_dest_appender.do_append(flow, original_out_point, vis_args)
@@ -139,8 +135,7 @@ class Preprocessor:
                 out_point = self._vis_data_dest_appender.do_append_after_runs(flow, out_point, original_out_point, vis_args)
                 # Activity Stepを付加する
                 out_point = self._activity_data_dest_appender.do_append(flow, out_point, original_out_point)
-                # 出力Point設定を元のPointからActivity_pointに変更する
-                flow.close_o_port_by_point(original_out_point)
+                # Activity_pointを出力Pointに設定する
                 out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
         else:
 
@@ -205,88 +200,6 @@ class Preprocessor:
 
         # 作成した親フローの出力Portを返す
         return o_port
-
-    def _pick_out_points(self, flow, outs, points, vis_ids):
-        # /vizsなど、lastsが指定されている場合
-        if len(vis_ids) > 0:
-            return vis_ids 
-
-        # データデストの場合はoutsはないのでlastsを返す
-        if flow.is_datadst:
-            return flow.lasts
-
-        # 出力のないサブフローの入力ポイントを集める
-        # (入力ポイントを出力のないサブフローに渡すため)
-        ret = self._pick_points_of_no_output_subflow(points)
-        # outsを集める
-        ret.extend(outs.keys())
-        return ret
-
-    def _pick_points_of_no_output_subflow(self, points):
-        """
-        入力のみのRunnableの手前のpointをすべて取得する
-        """
-        ret = []
-        for point in points:
-            for dst_tube in point.dst_tubes:
-                if dst_tube.is_null:
-                    continue
-                if dst_tube.step is not None and len(dst_tube.step.runnable.o_ports) == 0: 
-                    ret.append(point.id)
-        return ret
-
-    def _pick_necessary_points(self, flow:FlowCommand, last_ids, is_vis):
-        """
-        実行するのに必要なpointを取得する
-        """
-        from .point import Points
-        
-        necessary_points = set()
-
-        for id in last_ids:
-            lasts_point = flow.points[id]
-            # if len(flow.o_ports) == 0:
-            if flow.is_main and is_vis:
-                # 今は/vizs対象のdatumで終わるように、/vizs対象pointのdst_tubesをTube(None,None)にしている。（正しいんかな？）
-                # lasts_point.dst_tubes = None
-                # lasts_point.is_out = True
-                if not flow.is_o_port(lasts_point):
-                    flow.open_o_port(FlowPort(id, 'frame', lasts_point))
-
-            # lasts_pointの上に繋がっているpointsを取得する
-            necessary_points.update(self._search_necessary_point(flow, lasts_point))
-            necessary_points.add(lasts_point)
-
-        return Points(necessary_points)
-
-    def _search_necessary_point(self, flow:FlowCommand, current_point):
-        """
-        /vizsするdatumを作成するために必要なPointを絞り込む
-        既にdatumを持つpointに当たるか、src_tubes.runnableを持たないpointに当たるまで登る
-
-        1. 指定されたstep_idをもつpointのidを始点にする（current_pointのこと）
-        2. 始点のsrc_tubes.runnableをdst_tubes.runnableにもつpointを保持する（上に上がっていく）
-        3. 保持対象のpointのidを新たな始点として再帰的に再びsearch_necessary_pointに潜る
-        """
-        necessary_points = set()
-        # current_pointの上につながっているPointを探す
-        for point in flow.points:
-            for p_dst_tube in point.dst_tubes:
-                # 同じステップかどうかの比較はオブジェクトidで比較している（同じ箇所には同じstepオブジェクトを使い回していたはずなので）
-
-                # if p_dst_tube.step is current_point.src_runnable:
-                #     necessary_points.add(point)
-                #     if not (point.datum is not None or point.is_first):
-                #         necessary_points.extend(self._search_necessary_point(points, point))
-
-                if current_point.src_tubes.have_step(p_dst_tube.step):
-                    necessary_points.add(point)
-                    # pointの出力Tubeが無い、またはサブフローとして実行される場合は、入力Pointの場合、is_first=True
-                    is_first = point.dst_tubes.is_null or (not flow.is_main and flow.is_i_port(point))
-                    if point.datum is None and not is_first:
-                        necessary_points.update(self._search_necessary_point(flow, point))
-
-        return necessary_points
 
     # def _pick_necessary_dst_ids(self, nodes, datum_ids):
     #     """

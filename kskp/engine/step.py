@@ -66,7 +66,7 @@ class Step:
             # 出力Portが有っても、メインフローは例外を渡す相手がいない
             is_root_flow = self.is_flow and self.runnable.is_main
             if is_root_flow or len(self._o_ports) == 0:
-                raise
+                raise e
 
             # コマンドのrun()から例外が送出された場合、全ての出力Portに例外を格納する
             return make_exception_outputs(self._o_ports, cmd_ex=CommandException(e))

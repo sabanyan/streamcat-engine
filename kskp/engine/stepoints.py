@@ -96,14 +96,14 @@ class Stepoints():
         return union(self._search_first_steps_to_run(src_tube.step)
                      for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
 
-    def _run_invokable_steps(self, steps:List[Step], flow_args):
+    def _run_invokable_steps(self, invokable_steps:List[Step], flow_args):
         """
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
         """
         from .job import Job
 
-        for step in steps:
+        for step in invokable_steps:
 
             # flow変数を使ってargsを書き換える
             if len(flow_args) > 0:
