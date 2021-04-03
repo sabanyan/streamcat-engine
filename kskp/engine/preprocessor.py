@@ -164,14 +164,19 @@ class Preprocessor:
         # is_outかつis_cacheなPointにも対応できるよう
         # データデストを付加した後にキャッシュデータデストを付加すること
         for cache_point in [p for p in flow.points if p.makeCache]:
-            # Cache Stepを付加する
-            out_point = self._cache_data_dest_appender.do_append(flow, cache_point)
-            # Runsコマンドを付加する
-            out_point = self._runs_command_appender.do_append(flow, out_point)
-            # Activity Stepを付加する
-            out_point = self._activity_data_dest_appender.do_append(flow, out_point, cache_point)
-            # Activity_pointを出力Pointに設定する
-            out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+            # Cache Stepを挿入する
+            out_point, frame_point = self._cache_data_dest_appender.do_append(flow, cache_point)
+
+            # 
+            # TODO: エラー発生時にdtor()でCacheフレームを削除する為、CacheSaverのPort(u)をActivityコマンドに繋げたが
+            # そうすると、プレビュー実行に関係のないコマンドのrun()が実行されてしまう
+            # 解決方法は、やはりNysolModule.contextにCacheフレームを格納してActivityコマンドにまで渡すことだろう
+            # 全てのコマンドでNysolModuleインスタンスを使い回すための修正が必要になる
+            # 
+            # # Activity Stepを付加する
+            # out_point = self._activity_data_dest_appender.do_append(flow, frame_point, cache_point)
+            # # Activity_pointを出力Pointに設定する
+            # out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
 
 
         return flow

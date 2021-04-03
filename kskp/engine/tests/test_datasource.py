@@ -2550,3 +2550,106 @@ class DataSourceTest(TestCaseBase):
                           ['11'], ['12'], ['13'], ['14'], ['15'], ['16'], ['17'], ['18'], ['19'], ['20']]}
         self.assertDictEqual(lasts, correct)
 
+    def test_vis_optimization_with_make_cache(self):
+        """
+        キャッシュ作成=ONのPointが存在しても
+        プレビューの結果データの作成に関係しないコマンドは実行しないこと
+        """
+
+        flow_json ={
+            "label": "raiseとmnewnumber",
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d",
+                        "nodeId": "d"
+                    }
+                ]
+            ],
+            "params": [],
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "type": "command",
+                    "commandId": "raise",
+                    "args": {
+                        "message": "d1のプレビューでこのRaiseコマンドは実行しません"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": True,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": "c1",
+                    "label": "c1",
+                    "type": "command",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "I": "1",
+                        "S": "1",
+                        "a": "b",
+                        "l": "20"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d1"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "uuid": None,
+                    "makeCache": True,
+                    "dataSource": "csv",
+                    "cacheCreatedAt": None
+                }
+            ]
+        }
+    
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # フローを作成する
+        flow = root.create_flow('vis test', FlowData(flow_json))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+
+        # フローを実行する
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowCommand(flow, vis_args)
+        lasts = execute(flow_link, {}, {})
+
+        print(lasts)
+
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(lasts))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['7'], ['8'], ['9'], ['10'],
+                          ['11'], ['12'], ['13'], ['14'], ['15'], ['16'], ['17'], ['18'], ['19'], ['20']]}
+        self.assertDictEqual(lasts, correct)
+

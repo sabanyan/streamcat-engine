@@ -3062,6 +3062,7 @@ class MainTest(TestCaseBase):
         self.assertEqual(result, correct['d1'])
 
         # キャッシュが生成されているか
+        self.assertEqual(len(caches), 1, msg='Cache CommandのPort(u)をActivity Commandに繋げてないためcacheを取得できない')
         self.assertIsNotNone(self.factory.data.find_by_uuid(caches['d1'].uuid))
         result = self.get_frame_by_uuid(caches['d1'].uuid)
         self.assertEqual(result, correct['d1'])
@@ -4682,20 +4683,6 @@ class MainTest(TestCaseBase):
           "label": "エラーフロー", 
           "nodes": [
             {
-              "id": "d", 
-              "type": "frame", 
-              "uuid": None, 
-              "label": "d", 
-              "invalid": {}, 
-              "position": {
-                "x": 99, 
-                "y": 201
-              }, 
-              "makeCache": True, 
-              "dataSource": "csv", 
-              "cacheCreatedAt": None
-            }, 
-            {
               "id": "c", 
               "args": {
                 "I": "1", 
@@ -4715,7 +4702,32 @@ class MainTest(TestCaseBase):
               }, 
               "commandId": "mnewnumber", 
               "srcsOrder": []
-            }, 
+            },
+            {
+              "id": "d", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d", 
+              "makeCache": True, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
+            },
+            {
+              "id": "c1", 
+              "args": {}, 
+              "srcs": {
+                "i": "d"
+              }, 
+              "dsts": {
+                "o": "d1"
+              }, 
+              "type": "command", 
+              "label": "c1", 
+              "commandId": "mcut", 
+              "srcsOrder": [
+                "i"
+              ]
+            },
             {
               "id": "d1", 
               "type": "frame", 
@@ -4724,22 +4736,6 @@ class MainTest(TestCaseBase):
               "makeCache": True, 
               "dataSource": "csv", 
               "cacheCreatedAt": None
-            }, 
-            {
-              "id": "c1", 
-              "args": {}, 
-              "dsts": {
-                "o": "d1"
-              }, 
-              "srcs": {
-                "i": "d"
-              }, 
-              "type": "command", 
-              "label": "c1", 
-              "commandId": "mcut", 
-              "srcsOrder": [
-                "i"
-              ]
             }
           ], 
           "ports": [
@@ -4793,12 +4789,14 @@ class MainTest(TestCaseBase):
         self.assertIn('d', results)
         self.assertIn('d1', results)
         # 2つの出力ポイントから例外が出力されること
-        self.assertEqual(len(results['d']), 2)
-        self.assertEqual(len(results['d1']), 2)
+        self.assertEqual(len(results['d']), 3)
+        self.assertEqual(len(results['d1']), 3)
         self.assertIsInstance(results['d'][0], MCMDError)
         self.assertIsInstance(results['d'][1], MCMDError)
+        self.assertIsInstance(results['d'][2], MCMDError)
         self.assertIsInstance(results['d1'][0], MCMDError)
         self.assertIsInstance(results['d1'][1], MCMDError)
+        self.assertIsInstance(results['d1'][2], MCMDError)
 
     def test_mcmd_error_with_two_outputs2(self):
         """
@@ -4809,20 +4807,6 @@ class MainTest(TestCaseBase):
         flow_json = {
           "label": "エラーフロー", 
           "nodes": [
-            {
-              "id": "d", 
-              "type": "frame", 
-              "uuid": None, 
-              "label": "d", 
-              "invalid": {}, 
-              "position": {
-                "x": 99, 
-                "y": 201
-              }, 
-              "makeCache": True, 
-              "dataSource": "csv", 
-              "cacheCreatedAt": None
-            }, 
             {
               "id": "c", 
               "args": {
@@ -4844,16 +4828,16 @@ class MainTest(TestCaseBase):
               }, 
               "commandId": "mnewnumber", 
               "srcsOrder": []
-            }, 
+            },
             {
-              "id": "d1", 
+              "id": "d", 
               "type": "frame", 
               "uuid": None, 
-              "label": "d1", 
+              "label": "d", 
               "makeCache": True, 
               "dataSource": "csv", 
               "cacheCreatedAt": None
-            }, 
+            },
             {
               "id": "c1", 
               "args": {}, 
@@ -4869,6 +4853,15 @@ class MainTest(TestCaseBase):
               "srcsOrder": [
                 "i"
               ]
+            },
+            {
+              "id": "d1", 
+              "type": "frame", 
+              "uuid": None, 
+              "label": "d1", 
+              "makeCache": True, 
+              "dataSource": "csv", 
+              "cacheCreatedAt": None
             }
           ], 
           "ports": [

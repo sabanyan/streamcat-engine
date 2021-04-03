@@ -13,9 +13,9 @@ class FolderDataSourcePrepender():
     def do_prepend(self, flow, point, frame_uuid):
         frame = self._datum_factory.find_by_uuid(frame_uuid)
         folder_store = frame.find_parent()
-        self._put_loader(frame_uuid, point, flow, folder_store)
+        self._put_loader(flow, point, folder_store, frame_uuid)
 
-    def _put_loader(self, frame_uuid, target_point, flow, store):
+    def _put_loader(self, flow, target_point, store, frame_uuid):
         """
         target_point(uuidが既にあるdatumのpoint)の前に
         LoaderStepとStorePointをくっつける
@@ -43,13 +43,13 @@ class FolderDataDestAppender():
         folder_store = self.flow_datum.find_parent()
         saver = CommandLink('saver').resolve()
         # saver_step, saver_point, saver_point2 = self._put_saver(point, flow, folder_store, saver, start_time)
-        saver_point = self._put_saver(point, flow, folder_store, saver, 'saver')
+        saver_point = self._put_saver(flow, point, folder_store, saver, 'saver')
         # # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
         # flow.points.add(saver_point2)
         # return saver_point, saver_point2
         return saver_point
 
-    def _put_saver(self, point, flow, store, saver, command_id):
+    def _put_saver(self, flow, point, store, saver, command_id):
         """
         指定したpointを保存する。保存先はstoreオブジェクトが指定する場所に。
         lastsなら最後に設置し、そうでないなら間に挟むように設置する
@@ -84,10 +84,28 @@ class FolderDataDestAppender():
 
 class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, flow, point):
+        # TODO: 適当なコードだがまた後で修正することになるからとりあえずこれで
+
         folder_store = self._datum_factory.load_cache_folder()
         saver = CommandLink('cachesaver').resolve()
-        saver_point = self._put_saver(point, flow, folder_store, saver, 'cachesaver')
-        return saver_point
+
+        # pointの次に繋がっていたstepは、saver_pointの後に繋げる
+        tmp_tubes = point.dst_tubes
+        point.dst_tubes = Tubes()
+
+        # saver_pointを作成し、pointの後に繋げる
+        saver_point = self._put_saver(flow, point, folder_store, saver, 'cachesaver')
+
+        # saver_pointの後に繋げる
+        saver_point.dst_tubes = tmp_tubes
+
+        # saver_pointからsaver stepを取り出して
+        saver_step = saver_point.src_tubes[0].step
+        # saver stepの"u"Portからframe_pointを繋げる
+        frame_point = Point(f'{point.id}_cacheframe', Tube(Port('u', 'frame'), saver_step))
+        flow.points.add(frame_point)
+
+        return saver_point, frame_point
 
 
 class VisDataDestAppender():
