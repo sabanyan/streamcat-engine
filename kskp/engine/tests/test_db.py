@@ -3,9 +3,10 @@ import unittest
 import pprint
 
 from kskp.store import FlowData, DatabaseConn
+from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
-from .test_main import convert_from_activity
+from .test_main import convert_from_activity, convert_from_activity_exs
 from .make_flow_json import create_flow_by_flow_id
 
 class DbTest(TestCaseBase):
@@ -224,4 +225,93 @@ class DbTest(TestCaseBase):
         postgre_dst.delete()
         datasource_f1.delete()
         datasource_f2.delete()
+        db.delete()
+
+    def test_error(self):
+        """
+        DBデータソースに存在しないテーブル名を指定すると例外が送出されること
+        """
+        main_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2019-10-28 15:06:35",
+            "projectId": None,
+            "description": "",
+            "ports": [
+              [],
+              []
+            ],
+            "params": [],
+            "nodes": [
+              {
+                "id": "f",
+                "args": {},
+                "dsts": {
+                  "d1": "d"
+                },
+                "srcs": {},
+                "type": "flow",
+                "uuid": "42af44db-872a-408b-b5d6-ff082f5bb3e2",
+                "label": "PostgreSQLデータソース",
+              },
+              {
+                "id": "d",
+                "type": "frame",
+                "uuid": None,
+                "label": "d",
+                "makeCache": False,
+                "dataSource": "csv",
+                "cacheCreatedAt": None
+              }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # DBストアの作成
+        db = root.create_database('postgresql', self.database_conn)
+        db.uuid = 'c410cd16-2529-498d-8e7f-490ffa58dc95'
+        db.save()
+
+        # サブフロー(PostgreSQLデータソース)の作成
+        postgre_err_src_uuid = '42af44db-872a-408b-b5d6-ff082f5bb3e2'
+        postgre_err_src = create_flow_by_flow_id(root,'postgre_err_src', postgre_err_src_uuid)
+
+        # フローを作成する
+        flow = root.create_flow(self.flow_json['label'], FlowData(main_json))
+
+        # プレビューする
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+        flow_link = FlowCommand(flow, vis_args)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 1つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('d', results)
+        # frameデータは作成されていないこと
+        self.assertIsNone(results['d'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 1つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('d', results)
+        # 1つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d']), 2)
+        self.assertIsInstance(results['d'][0], MCMDError)
+        self.assertIsInstance(results['d'][1], MCMDError)
+
+        # 後片付け
+        postgre_err_src.delete()
         db.delete()

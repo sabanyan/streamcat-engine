@@ -6841,7 +6841,7 @@ postgre_src = {
         ]
       }
     ]
-  }
+}
 
 # PostgreSQLのデータデスト
 postgre_dst = {
@@ -6921,6 +6921,74 @@ postgre_dst = {
 	]
 }
 
+postgre_err_src = {
+    "label": "PostgreSQLデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2019-10-02 16:55:56",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "c410cd16-2529-498d-8e7f-490ffa58dc95",
+        "error": {},
+        "label": "データベース?",
+        "invalid": {},
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "error": {},
+        "label": "d1",
+        "invalid": {},
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "schema_name" : SCHEMA_NAME,
+          "table_name": "anonymous"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "error": {},
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "db_loader",
+        "srcsOrder": [
+          "i"
+        ]
+      }
+    ]
+}
+
 # SMBのデータソース
 windows_src = {
     "label": "Windowsデータソース",
@@ -6979,7 +7047,7 @@ windows_src = {
         "commandId": "remotefolder_loader"
       }
     ]
-  }
+}
 
 # SMBのデータデスト
 windows_dst = {
@@ -7044,6 +7112,65 @@ windows_dst = {
 			"cacheCreatedAt": None
 		}
 	]
+}
+
+windows_err_src = {
+    "label": "Windowsデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2021-02-11 09:55:00",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "8557c193-9bf9-4ce8-8dbb-d1d09864e4a8",
+        "label": "リモートフォルダ",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "label": "d1",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "file_path": "anonymous.txt"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "remotefolder_loader"
+      }
+    ]
 }
 
 # Folderデータソース
@@ -7251,6 +7378,8 @@ test_json = {
     'shindo_sub6': shindo_sub6,
     'postgre_src': postgre_src,
     'postgre_dst': postgre_dst,
+    'postgre_err_src' : postgre_err_src,
     'windows_src': windows_src,
-    'windows_dst': windows_dst
+    'windows_dst': windows_dst,
+    'windows_err_src' : windows_err_src
 }

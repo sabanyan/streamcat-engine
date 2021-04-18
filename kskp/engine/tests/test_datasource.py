@@ -7,7 +7,7 @@ from kskp.core import Datum
 from kskp.store import DatabaseConn, FlowData, NysolModule
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
-from .test_main import convert_from_activity, convert_from_activity_vis
+from .test_main import convert_from_activity, convert_from_activity_vis, convert_from_activity_exs
 from .make_flow_json import create_flow_by_flow_id
 
 class DataSourceTest(TestCaseBase):
@@ -3529,7 +3529,86 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
+    @unittest.skip('テストケースの実行ログが溢れるのでテストしない')
     def test_vis_circular_subflow_call(self):
         """
         循環参照する場合は実行・プレビュー時に例外を送出すること
         """
+        main_flow = {
+            "label": "circle", 
+            "nodes": [
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "a": "b", 
+                        "c": "0", 
+                        "precision": 10
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcs": {
+                        "i": "d2"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mcal"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c2", 
+                    "args": {
+                        "a": "a", 
+                        "c": "1", 
+                        "precision": 10
+                    }, 
+                    "dsts": {
+                        "o": "d2"
+                    }, 
+                    "srcs": {
+                        "i": "d1"
+                    }, 
+                    "type": "command", 
+                    "label": "c2", 
+                    "commandId": "mcal"
+                }
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-18 16:15:39", 
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # フローを作成する
+        flow = root.create_flow('loop', FlowData(main_flow))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+
+        # フローを実行しようとすると例外を送出すること
+        flow_link = FlowCommand(flow, vis_args)
+        with self.assertRaises(RecursionError):
+            execute(flow_link, {}, {})
+

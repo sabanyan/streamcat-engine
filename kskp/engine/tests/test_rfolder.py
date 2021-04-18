@@ -5,9 +5,10 @@ from pathlib import Path
 
 from kskp.core import Datum
 from kskp.store import FlowData, RemoteFolderConn
+from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
-from .test_main import convert_from_activity
+from .test_main import convert_from_activity, convert_from_activity_exs
 from .make_flow_json import create_flow_by_flow_id
 
 class RemoteFolderTest(TestCaseBase):
@@ -231,4 +232,93 @@ class RemoteFolderTest(TestCaseBase):
         windows_dst.delete()
         datasource_f1.delete()
         datasource_f2.delete()
+        rfolder.delete()
+
+    def test_error(self):
+        """
+        リモートフォルダデータソースに存在しないファイル名を指定すると例外が送出されること
+        """
+        main_json = {
+            "label": "test用",
+            "creator": "開発用",
+            "createdAt": "2019-10-28 15:06:35",
+            "projectId": None,
+            "description": "",
+            "ports": [
+              [],
+              []
+            ],
+            "params": [],
+            "nodes": [
+              {
+                "id": "f",
+                "args": {},
+                "dsts": {
+                  "d1": "d"
+                },
+                "srcs": {},
+                "type": "flow",
+                "uuid": "f2bb010f-791e-4bf4-bd3c-666d0a0922c4",
+                "label": "リモートフォルダデータソース",
+              },
+              {
+                "id": "d",
+                "type": "frame",
+                "uuid": None,
+                "label": "d",
+                "makeCache": False,
+                "dataSource": "csv",
+                "cacheCreatedAt": None
+              }
+            ]
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # リモートフォルダストアの作成
+        rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
+        rfolder.uuid = '8557c193-9bf9-4ce8-8dbb-d1d09864e4a8'
+        rfolder.save()
+        rfolder = rfolder.reload()
+
+        # サブフロー(リモートフォルダデータソース)の作成
+        windows_err_src_uuid = 'f2bb010f-791e-4bf4-bd3c-666d0a0922c4'
+        windows_err_src = create_flow_by_flow_id(root,'windows_err_src', windows_err_src_uuid)
+
+        # フローを作成する
+        flow = root.create_flow(self.flow_json['label'], FlowData(main_json))
+
+        # プレビューする
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+        flow_link = FlowCommand(flow, vis_args)
+        lasts = execute(flow_link, {}, {})
+
+        # 出力ポイントとこれに対応するframeデータを取得する
+        results = convert_from_activity(lasts)
+        # 1つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('d', results)
+        # frameデータは作成されていないこと
+        self.assertIsNone(results['d'])
+
+        # 出力ポイントとこれに対応する例外を取得する
+        results = convert_from_activity_exs(lasts)
+        # 1つの出力ポイントが返されること
+        self.assertEqual(len(results), 1)
+        self.assertIn('d', results)
+        # 1つの出力ポイントから例外が出力されること
+        self.assertEqual(len(results['d']), 1)
+        self.assertIsInstance(results['d'][0], MCMDError)
+
+        # 後片付け
+        windows_err_src.delete()
         rfolder.delete()
