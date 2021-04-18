@@ -3,6 +3,18 @@
 # （別のテストの邪魔をしてそっちのテストが通らなかったり）
 # 小さいフローはテストコードに直接記述してある。
 
+def create_flow_by_flow_id(parent, flow_id, uuid):
+    """
+    指定されたidのフローを作成し、そのフローを返す
+    """
+    from kskp.store import FlowData
+    flow_json = test_json[flow_id]
+    flow = parent.create_flow('test', FlowData(flow_json))
+    flow.uuid = uuid
+    flow.save()
+    # save()によりreadable=Noneになるため再取得する
+    return flow.reload()
+
 sub1 = {
     "description": "サブフロー",
     "label": "サブフロー",

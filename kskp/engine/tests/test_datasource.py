@@ -4,15 +4,26 @@ import shutil
 from pathlib import Path
 
 from kskp.core import Datum
-from kskp.store import FlowData, NysolModule
+from kskp.store import DatabaseConn, FlowData, NysolModule
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_vis
+from .make_flow_json import create_flow_by_flow_id
 
 class DataSourceTest(TestCaseBase):
     """
     フローの入出力指定の検証
     """
+
+    conn_json = {
+      'dbms'     : "postgresql",
+      'hostname' : "db", 
+      'port'     : 5432, 
+      'database' : "kskp", 
+      'user_id'  : "kskp", 
+      'password' : 'ZQZtVgL6G32Vy6p6WJtG3C3K84yuJ4zz'
+    }
+    database_conn = DatabaseConn(conn_json)
 
     def test_subflow_with_input_on_way(self):
         """
@@ -2653,3 +2664,872 @@ class DataSourceTest(TestCaseBase):
                           ['11'], ['12'], ['13'], ['14'], ['15'], ['16'], ['17'], ['18'], ['19'], ['20']]}
         self.assertDictEqual(lasts, correct)
 
+    def test_vis_deep_subflow_call(self):
+        """
+        十分に深い呼出関係のサブフローをプレビューできること
+        """
+
+        sub_flow4 = {
+            "label": "subflow4", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "c": "[10000,]", 
+                        "f": "amount", 
+                        "bufcount": 10
+                    }, 
+                    "dsts": {
+                        "o": "d1", 
+                        "u": "d2"
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mselnum"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }, 
+                    {
+                        "type": "frame", 
+                        "label": "d2", 
+                        "nodeId": "d2"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-13 09:13:10", 
+            "description": ""
+        }
+
+        sub_flow3 = {
+            "label": "subflow3", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {}, 
+                    "dsts": {
+                        "d1": "d1", 
+                        "d2": "d2"
+                    }, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "7da92d9d-256a-4172-8587-c593ba72ebd9", 
+                    "label": "f1"
+                }, 
+                {
+                    "id": "d3", 
+                    "type": "frame", 
+                    "label": "d3", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {}, 
+                    "dsts": {
+                        "o": "d3"
+                    }, 
+                    "srcs": {
+                        "*0": "d1", 
+                        "*1": "d2"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mcat"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d3", 
+                        "nodeId": "d3"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-13 09:25:31", 
+            "description": ""
+        }
+
+        sub_flow2 = {
+            "label": "subflow2", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {}, 
+                    "dsts": {
+                        "d3": "d2"
+                    }, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "99f81446-d805-481c-9329-b555a4b1a240", 
+                    "label": "f1"
+                }, 
+                {
+                    "id": "d3", 
+                    "type": "frame", 
+                    "label": "d3", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f2", 
+                    "args": {}, 
+                    "dsts": {
+                        "d3": "d3"
+                    }, 
+                    "srcs": {
+                        "d": "d1"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "99f81446-d805-481c-9329-b555a4b1a240", 
+                    "label": "f2"
+                }, 
+                {
+                    "id": "d4", 
+                    "type": "frame", 
+                    "label": "d4", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "k": "0,1", 
+                        "x": True
+                    }, 
+                    "dsts": {
+                        "o": "d4"
+                    }, 
+                    "srcs": {
+                        "i": "d2"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "muniq"
+                }, 
+                {
+                    "id": "d5", 
+                    "type": "frame", 
+                    "label": "d5", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c2", 
+                    "args": {
+                        "k": "customer,date"
+                    }, 
+                    "dsts": {
+                        "o": "d5"
+                    }, 
+                    "srcs": {
+                        "i": "d3"
+                    }, 
+                    "type": "command", 
+                    "label": "c2", 
+                    "commandId": "muniq"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d1"
+                    }, 
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d4", 
+                        "nodeId": "d4"
+                    }, 
+                    {
+                        "type": "frame", 
+                        "label": "d5", 
+                        "nodeId": "d5"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-13 09:46:20",
+            "description": ""
+        }
+
+        sub_flow1 = {
+            "label": "subflow1", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d3", 
+                    "type": "frame", 
+                    "label": "d3", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {}, 
+                    "dsts": {
+                        "d4": "d2", 
+                        "d5": "d3"
+                    }, 
+                    "srcs": {
+                        "d": "d", 
+                        "d1": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "0ea4d275-9526-498e-98c6-35b92aebc12d", 
+                    "label": "f1"
+                }, 
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "verbose": True
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcs": {
+                        "i": "d3", 
+                        "m": "d2"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "assert"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d2", 
+                        "nodeId": "d2"
+                    }, 
+                    {
+                        "type": "frame", 
+                        "label": "d3", 
+                        "nodeId": "d3"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-13 09:52:04", 
+            "description": ""
+        }
+
+        main_flow = {
+            "label": "main", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "value":[["customer", "date", "amount"],
+                             ["A", "20180101", "5200"],
+                             ["B", "20180101", "800"],
+                             ["B", "20180112", "3500"],
+                             ["A", "20180105", "2000"],
+                             ["B", "20180107", "4000"]],
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {}, 
+                    "dsts": {
+                        "d2": "d1", 
+                        "d3": "d2"
+                    }, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "9d406060-7920-4c0e-b4d9-e5db432103dd", 
+                    "label": "f1"
+                }
+            ], 
+            "ports": [
+                [], 
+                []
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-13 11:06:14", 
+            "description": ""
+        } 
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフロー4を作成する
+        sub_flow4 = root.create_flow('Sub', FlowData(sub_flow4))
+        sub_flow4.uuid = '7da92d9d-256a-4172-8587-c593ba72ebd9'
+        sub_flow4.save()
+        sub_flow4 = sub_flow4.reload()
+
+        # サブフロー3を作成する
+        sub_flow3 = root.create_flow('Sub', FlowData(sub_flow3))
+        sub_flow3.uuid = '99f81446-d805-481c-9329-b555a4b1a240'
+        sub_flow3.save()
+        sub_flow3 = sub_flow3.reload()
+
+        # サブフロー2を作成する
+        sub_flow2 = root.create_flow('Sub', FlowData(sub_flow2))
+        sub_flow2.uuid = '0ea4d275-9526-498e-98c6-35b92aebc12d'
+        sub_flow2.save()
+        sub_flow2 = sub_flow2.reload()
+
+        # サブフロー1を作成する
+        sub_flow1 = root.create_flow('Sub', FlowData(sub_flow1))
+        sub_flow1.uuid = '9d406060-7920-4c0e-b4d9-e5db432103dd'
+        sub_flow1.save()
+        sub_flow1 = sub_flow1.reload()
+
+        # フローを作成する
+        flow = root.create_flow('deep subflow test', FlowData(main_flow))
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          },
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+
+        # フローを実行する
+        flow_link = FlowCommand(flow, vis_args)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(len(lasts), 2)
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['A','20180101','5200'],['A','20180105','2000'],['B','20180101','800'],['B','20180107','4000'],['B','20180112','3500']],
+                   'd2': [['A','20180101','5200'],['A','20180105','2000'],['B','20180101','800'],['B','20180107','4000'],['B','20180112','3500']]}
+        self.assertDictEqual(lasts, correct)
+
+        # ほかす
+        sub_flow1.throw_away()
+        sub_flow2.throw_away()
+        sub_flow3.throw_away()
+        sub_flow4.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_deep_datadest_call(self):
+        """
+        十分に深い呼出関係のデータデストを実行できること
+        """
+        datadest4 = {
+            "label": "datadest4", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f", 
+                    "args": {}, 
+                    "dsts": {
+                        "d1": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "flow", 
+                    "uuid": "f3f0000c-6525-4b7d-9843-fe89e692bc17", 
+                    "label": "f"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {
+                        "Table": "@[table]", 
+                        "Schema": "@[schema]"
+                    }, 
+                    "dsts": {}, 
+                    "srcs": {
+                        "d1": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "4b1fb10d-8417-4c7f-b15d-7eb2775d2c76", 
+                    "label": "f1"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ], 
+                []
+            ], 
+            "params": [
+                {
+                    "name": "schema", 
+                    "type": "string", 
+                    "label": "schema"
+                }, 
+                {
+                    "name": "table", 
+                    "type": "string", 
+                    "label": "table"
+                }
+            ], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-18 07:18:07", 
+            "description": ""
+        }
+
+        datadest3 = {
+            "label": "datadest3", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f", 
+                    "args": {}, 
+                    "dsts": {
+                        "d1": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "flow", 
+                    "uuid": "f3f0000c-6525-4b7d-9843-fe89e692bc17", 
+                    "label": "f"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {
+                        "table": "@[table]", 
+                        "schema": "@[schema]"
+                    }, 
+                    "dsts": {}, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "f57eed6b-f24d-4dc0-ad45-29d45f756b4e", 
+                    "label": "f1"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ], 
+                []
+            ], 
+            "params": [
+                {
+                    "name": "schema", 
+                    "type": "string", 
+                    "label": "schema"
+                }, 
+                {
+                    "name": "table", 
+                    "type": "string",  
+                    "label": "table"
+                }
+            ], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-18 07:23:59", 
+            "description": ""
+        }
+
+        datadest2 = {
+            "label": "datadest2", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f", 
+                    "args": {}, 
+                    "dsts": {
+                        "d1": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "flow", 
+                    "uuid": "f3f0000c-6525-4b7d-9843-fe89e692bc17", 
+                    "label": "f"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {
+                        "table": "@[table]", 
+                        "schema": "@[schema]"
+                    }, 
+                    "dsts": {}, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "f33e5138-e508-4b2a-8596-6811dcc3eccf", 
+                    "label": "f1"
+                }, 
+                {
+                    "id": "f2", 
+                    "args": {
+                        "table": "@[table]", 
+                        "schema": "@[schema]"
+                    }, 
+                    "dsts": {}, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "f33e5138-e508-4b2a-8596-6811dcc3eccf", 
+                    "label": "f2"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ], 
+                []
+            ], 
+            "params": [
+                {
+                    "name": "schema", 
+                    "type": "string", 
+                    "label": "schema"
+                }, 
+                {
+                    "name": "table", 
+                    "type": "string", 
+                    "label": "table"
+                }
+            ], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-18 07:29:54", 
+            "description": ""
+        }
+
+        datadest1 = {
+            "label": "datadest1", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f", 
+                    "args": {}, 
+                    "dsts": {
+                        "d1": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "flow", 
+                    "uuid": "f3f0000c-6525-4b7d-9843-fe89e692bc17", 
+                    "label": "f"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {
+                        "table": "@[table]", 
+                        "schema": "@[schema]"
+                    }, 
+                    "dsts": {}, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "31883bdd-fb0c-4057-b73e-c6dba6e28c27", 
+                    "label": "f1"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ], 
+                []
+            ], 
+            "params": [
+                {
+                    "name": "schema", 
+                    "type": "string", 
+                    "label": "schema"
+                }, 
+                {
+                    "name": "table", 
+                    "type": "string", 
+                    "label": "table"
+                }
+            ], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-18 07:31:17", 
+            "description": ""
+        }
+
+        main_flow = {
+            "label": "main", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "value":[["customer", "date", "amount"],
+                             ["A", "20180101", "5200"],
+                             ["B", "20180101", "800"],
+                             ["B", "20180112", "3500"],
+                             ["A", "20180105", "2000"],
+                             ["B", "20180107", "4000"]],
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {
+                        "table": "test_tbl", 
+                        "schema": "schema_005e59"
+                    }, 
+                    "dsts": {}, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "20ce7318-66a1-48e0-8f56-3741d35629db", 
+                    "label": "f1"
+                }
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-18 07:33:03", 
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # DBストアの作成
+        db = root.create_database('postgresql', self.database_conn)
+        db.uuid = 'c410cd16-2529-498d-8e7f-490ffa58dc95'
+        db.save()
+
+        # サブフロー(PostgreSQLデータソース)の作成
+        postgre_src_uuid = 'f3f0000c-6525-4b7d-9843-fe89e692bc17'
+        postgre_src = create_flow_by_flow_id(root,'postgre_src', postgre_src_uuid)
+
+        # サブフロー(PostgreSQLデータデスト)の作成
+        postgre_dst_uuid = '4b1fb10d-8417-4c7f-b15d-7eb2775d2c76'
+        postgre_dst = create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
+
+        # サブフロー4を作成する
+        sub_flow4 = root.create_flow('Sub', FlowData(datadest4))
+        sub_flow4.uuid = 'f57eed6b-f24d-4dc0-ad45-29d45f756b4e'
+        sub_flow4.save()
+        sub_flow4 = sub_flow4.reload()
+
+        # サブフロー3を作成する
+        sub_flow3 = root.create_flow('Sub', FlowData(datadest3))
+        sub_flow3.uuid = 'f33e5138-e508-4b2a-8596-6811dcc3eccf'
+        sub_flow3.save()
+        sub_flow3 = sub_flow3.reload()
+
+        # サブフロー2を作成する
+        sub_flow2 = root.create_flow('Sub', FlowData(datadest2))
+        sub_flow2.uuid = '31883bdd-fb0c-4057-b73e-c6dba6e28c27'
+        sub_flow2.save()
+        sub_flow2 = sub_flow2.reload()
+
+        # サブフロー1を作成する
+        sub_flow1 = root.create_flow('Sub', FlowData(datadest1))
+        sub_flow1.uuid = '20ce7318-66a1-48e0-8f56-3741d35629db'
+        sub_flow1.save()
+        sub_flow1 = sub_flow1.reload()
+
+        # フローを作成する
+        flow = root.create_flow('deep datadest test', FlowData(main_flow))
+
+        # フローを実行する
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {}, {})
+        lasts = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(lasts), 2)
+        self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(f1_d2)を出力しませんでした')
+        self.assertIsNotNone(lasts['f1_d2_1'], 'SaverCommandは結果(f1_d2_1)を出力しませんでした')
+        out_frame1 = lasts['f1_d2']
+        out_frame2 = lasts['f1_d2_1']
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FLOW_TYPE))
+
+        # ほかす
+        sub_flow1.throw_away()
+        sub_flow2.throw_away()
+        sub_flow3.throw_away()
+        sub_flow4.throw_away()
+        postgre_src.throw_away()
+        postgre_dst.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_vis_circular_subflow_call(self):
+        """
+        循環参照する場合は実行・プレビュー時に例外を送出すること
+        """

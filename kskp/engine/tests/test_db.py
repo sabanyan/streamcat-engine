@@ -6,6 +6,7 @@ from kskp.store import FlowData, DatabaseConn
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
 from .test_main import convert_from_activity
+from .make_flow_json import create_flow_by_flow_id
 
 class DbTest(TestCaseBase):
 
@@ -160,11 +161,11 @@ class DbTest(TestCaseBase):
 
         # サブフロー(PostgreSQLデータソース)の作成
         postgre_src_uuid = '8cfbce33-f2f9-4f52-a97d-ce170f70f6e3'
-        postgre_src = self.create_flow_by_flow_id(root,'postgre_src', postgre_src_uuid)
+        postgre_src = create_flow_by_flow_id(root,'postgre_src', postgre_src_uuid)
 
         # サブフロー(PostgreSQLデータデスト)の作成
         postgre_dst_uuid = 'b3e980d4-8338-4e83-a238-dd4537148c43'
-        postgre_dst = self.create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
+        postgre_dst = create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
@@ -187,7 +188,7 @@ class DbTest(TestCaseBase):
     def test_two_datadest(self):
         """
         1つのDBデータソースの出力を2つのDBデータデストに繋げて実行する
-        2つのDBデータソースの出力先テーブルは同じテーブル名なので、排他制御が必要になる
+        TODO: 2つのDBデータソースの出力先テーブルは同じテーブル名なので、排他制御が必要になる
         """
         # ルートデータストアを取得する
         root = self.factory.data.load_root()
@@ -199,11 +200,11 @@ class DbTest(TestCaseBase):
 
         # サブフロー(PostgreSQLデータソース)の作成
         postgre_src_uuid = '8cfbce33-f2f9-4f52-a97d-ce170f70f6e3'
-        postgre_src = self.create_flow_by_flow_id(root,'postgre_src', postgre_src_uuid)
+        postgre_src = create_flow_by_flow_id(root, 'postgre_src', postgre_src_uuid)
 
         # サブフロー(PostgreSQLデータデスト)の作成
         postgre_dst_uuid = 'b3e980d4-8338-4e83-a238-dd4537148c43'
-        postgre_dst = self.create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
+        postgre_dst = create_flow_by_flow_id(root, 'postgre_dst', postgre_dst_uuid)
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
@@ -224,15 +225,3 @@ class DbTest(TestCaseBase):
         datasource_f1.delete()
         datasource_f2.delete()
         db.delete()
-
-    def create_flow_by_flow_id(self, parent, flow_id, uuid):
-        """
-        指定されたidのフローを作成し、そのフローを返す
-        """
-        from .make_flow_json import test_json
-        flow_json = test_json[flow_id]
-        flow = parent.create_flow('test', FlowData(flow_json))
-        flow.uuid = uuid
-        flow.save()
-        # save()によりreadable=Noneになるため再取得する
-        return flow.reload()

@@ -8,6 +8,7 @@ from kskp.store import FlowData, RemoteFolderConn
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
 from .test_main import convert_from_activity
+from .make_flow_json import create_flow_by_flow_id
 
 class RemoteFolderTest(TestCaseBase):
 
@@ -159,11 +160,11 @@ class RemoteFolderTest(TestCaseBase):
 
         # サブフロー(リモートフォルダデータソース)の作成
         windows_src_uuid = '78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e'
-        windows_src = self.create_flow_by_flow_id(root,'windows_src', windows_src_uuid)
+        windows_src = create_flow_by_flow_id(root,'windows_src', windows_src_uuid)
 
         # サブフロー(リモートフォルダデータデスト)の作成
         windows_dst_uuid = '8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5'
-        windows_dst = self.create_flow_by_flow_id(root, 'windows_dst', windows_dst_uuid)
+        windows_dst = create_flow_by_flow_id(root, 'windows_dst', windows_dst_uuid)
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
@@ -204,11 +205,11 @@ class RemoteFolderTest(TestCaseBase):
 
         # サブフロー(リモートフォルダデータソース)の作成
         windows_src_uuid = '78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e'
-        windows_src = self.create_flow_by_flow_id(root,'windows_src', windows_src_uuid)
+        windows_src = create_flow_by_flow_id(root,'windows_src', windows_src_uuid)
 
         # サブフロー(リモートフォルダデータデスト)の作成
         windows_dst_uuid = '8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5'
-        windows_dst = self.create_flow_by_flow_id(root, 'windows_dst', windows_dst_uuid)
+        windows_dst = create_flow_by_flow_id(root, 'windows_dst', windows_dst_uuid)
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
@@ -231,15 +232,3 @@ class RemoteFolderTest(TestCaseBase):
         datasource_f1.delete()
         datasource_f2.delete()
         rfolder.delete()
-
-    def create_flow_by_flow_id(self, parent, flow_id, uuid):
-        """
-        指定されたidのフローを作成し、そのフローを返す
-        """
-        from .make_flow_json import test_json
-        flow_json = test_json[flow_id]
-        flow = parent.create_flow('test', FlowData(flow_json))
-        flow.uuid = uuid
-        flow.save()
-        # save()によりreadable=Noneになるため再取得する
-        return flow.reload()
