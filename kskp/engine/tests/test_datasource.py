@@ -1518,7 +1518,8 @@ class DataSourceTest(TestCaseBase):
           }
         }
         flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        args = {'params': {'frame_uuid':in_frame.uuid}}
+        lasts = execute(flow_link, args, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1932,7 +1933,8 @@ class DataSourceTest(TestCaseBase):
 
         # サブフローを実行する
         flow_link = FlowCommand(sub_flow)
-        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        args = {'params': {'frame_uuid':in_frame.uuid}}
+        lasts = execute(flow_link, args, {})
         lasts = convert_from_activity(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -1944,7 +1946,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'frame_uuid':in_frame.uuid}, {})
+        lasts = execute(flow_link, args, {})
         lasts = convert_from_activity(lasts)
 
         # ライブラリにデータソースが出力されていること

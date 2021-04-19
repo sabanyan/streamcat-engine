@@ -12,7 +12,7 @@ class Stepoints():
         self.o_ports = o_ports
         self.is_main = is_main
 
-    def run(self, args:dict, inputs:dict):
+    def run(self, flow_params:dict, inputs:dict):
         """
         pointではなくstepを基軸にして書き直し
         """
@@ -27,7 +27,7 @@ class Stepoints():
         while len(invokable_steps) > 0:
 
             # stepのうち、実行準備が整ったものを実行する
-            self._run_invokable_steps(invokable_steps, args)
+            self._run_invokable_steps(invokable_steps, flow_params)
             # print('invokable_steps2', '\n')
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
@@ -96,7 +96,7 @@ class Stepoints():
         return union(self._search_first_steps_to_run(src_tube.step)
                      for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
 
-    def _run_invokable_steps(self, invokable_steps:List[Step], flow_args):
+    def _run_invokable_steps(self, invokable_steps:List[Step], flow_params:dict):
         """
         stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
@@ -106,8 +106,8 @@ class Stepoints():
         for step in invokable_steps:
 
             # flow変数を使ってargsを書き換える
-            if len(flow_args) > 0:
-                step.replace_args(flow_args)
+            if len(flow_params) > 0:
+                step.replace_args(flow_params)
 
             # jobを作るためにinputsを集める
             inputs = {}

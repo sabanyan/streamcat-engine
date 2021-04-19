@@ -2873,8 +2873,10 @@ class MainTest(TestCaseBase):
         }
 
         args = {
+          'params': {
             "sensor": "0,1",
             "customer": "顧客"
+          }
         }
 
         lasts = execute(flow_link, args, inputs)
@@ -4658,7 +4660,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowCommand(flow), {"new_param1":"B", "new_param2":"C"}, {})
+        args = {'params': {"new_param1":"B", "new_param2":"C"}}
+        lasts = execute(FlowCommand(flow), args, {})
         lasts = convert_from_activity(lasts)
 
         # frameデータは1つ生成されているか

@@ -122,9 +122,12 @@ class FlowCommand(Command):
             # フローを前処理する
             self._preprocessor.execute(flow_command=self, vis_args=self._vis_args)
 
+        # フロー変数を取得する
+        params = args.get('params') or {}
+
         # フローを実行する
         # 実行において、再び縦型探索される
-        return self._stepoints.run(args, inputs)
+        return self._stepoints.run(params, inputs)
 
     def _parse_nodes(self, vis_args):
         # フローJSONからStepointを生成する
@@ -216,6 +219,11 @@ class FlowCommand(Command):
             args = node['args']
             srcs = node['srcs']
             dsts = node['dsts']
+
+            # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
+            # 'params'の下にフロー変数を格納する
+            if node.type == 'flow':
+                args = {'params':args}
 
             # CommandoのPortのlabelに'*'が指定されていれば、可変長Port指定なので
             # Commandノードの入出力ポート指定(srcsまたはdsts)からPortを生成する
