@@ -209,8 +209,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -404,8 +404,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは3つ生成されているか
@@ -634,8 +634,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -866,8 +866,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -968,8 +968,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは3つ生成されているか
@@ -1158,8 +1158,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1362,8 +1362,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1517,8 +1517,8 @@ class DataSourceTest(TestCaseBase):
             }
           }
         }
-        flow_link = FlowCommand(flow, vis_args)
-        args = {'params': {'frame_uuid':in_frame.uuid}}
+        flow_link = FlowCommand(flow)
+        args = {'vis':vis_args, 'params': {'frame_uuid':in_frame.uuid}}
         lasts = execute(flow_link, args, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -2551,8 +2551,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -2651,8 +2651,8 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
 
         print(lasts)
 
@@ -3136,8 +3136,8 @@ class DataSourceTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -3610,7 +3610,7 @@ class DataSourceTest(TestCaseBase):
         }
 
         # フローを実行しようとすると例外を送出すること
-        flow_link = FlowCommand(flow, vis_args)
+        flow_link = FlowCommand(flow)
         with self.assertRaises(RecursionError):
-            execute(flow_link, {}, {})
+            execute(flow_link, {'vis':vis_args}, {})
 

@@ -603,8 +603,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -686,8 +686,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -852,8 +852,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -999,8 +999,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
@@ -1027,8 +1027,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -1161,8 +1161,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']]}
 
@@ -1227,8 +1227,8 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1519,7 +1519,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow, vis_args), {}, {})
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['256']]}
 
@@ -1673,7 +1673,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow, vis_args), {}, {})
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
@@ -1751,7 +1751,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow, vis_args), {}, {})
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2026,7 +2026,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowCommand(flow, vis_args), {}, {})
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
@@ -2167,7 +2167,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowCommand(flow, vis_args), {}, {})
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -3957,8 +3957,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは2つ生成されているか
@@ -4044,8 +4044,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4131,8 +4131,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4217,8 +4217,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4303,8 +4303,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4381,8 +4381,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4468,8 +4468,8 @@ class MainTest(TestCaseBase):
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4562,8 +4562,8 @@ class MainTest(TestCaseBase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         # フローを保存して再取得する
         flow =self.save_flow(self.flow_json['label'], flow_json)
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5046,8 +5046,8 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
 
         # 出力ポイントとこれに対応するvisデータを取得する
         # (対応するvisデータはNoneなので、convert_from_activity_visは使わない)
@@ -5198,8 +5198,8 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5340,8 +5340,8 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5488,8 +5488,8 @@ class MainTest(TestCaseBase):
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5599,8 +5599,8 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowCommand(sub_flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(sub_flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
 
         print(lasts)
 
@@ -5794,8 +5794,8 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5980,8 +5980,8 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -6149,8 +6149,8 @@ class MainTest(TestCaseBase):
         }
 
         # フローを実行する
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
         # visデータは1つ生成されているか

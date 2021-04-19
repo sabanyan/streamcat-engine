@@ -64,7 +64,7 @@ class FlowCommand(Command):
             """
             return self.get('value') is not None and self.get('uuid') is None
 
-    def __init__(self, flow_datum:Flow, vis_args={}, is_main:bool=True, preprocessor=None):
+    def __init__(self, flow_datum:Flow, is_main:bool=True, preprocessor=None):
         super().__init__()
 
         # 実行前にフローJSONの書式の検証をする
@@ -73,9 +73,6 @@ class FlowCommand(Command):
         # フローJSONをコピーする
         # (TODO: なぜコピーする必要があるのか忘れてしまった)
         self._flow_data = flow_datum.flow_data.copy()
-
-        # TODO: プレビュー指定の引数は、run()のargs引数に統合したい
-        self._vis_args = vis_args
 
         # メインフローであればTrue
         self.is_main = is_main
@@ -117,10 +114,12 @@ class FlowCommand(Command):
         """
         # 実行前に全てのサブフローに対して縦型探索して、フローJSONの解釈とフローの前処理を全て終わらせておく
         if self.is_main:
+            # プレビュー引数を取得する
+            vis_args = args.get('vis') or {}
             # フローJSONを解釈する
-            self._parse_nodes(self._vis_args)
+            self._parse_nodes(vis_args)
             # フローを前処理する
-            self._preprocessor.execute(flow_command=self, vis_args=self._vis_args)
+            self._preprocessor.execute(flow_command=self, vis_args=vis_args)
 
         # フロー変数を取得する
         params = args.get('params') or {}

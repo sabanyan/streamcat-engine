@@ -299,8 +299,8 @@ class RemoteFolderTest(TestCaseBase):
             }
           }
         }
-        flow_link = FlowCommand(flow, vis_args)
-        lasts = execute(flow_link, {}, {})
+        flow_link = FlowCommand(flow)
+        lasts = execute(flow_link, {'vis':vis_args}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
         results = convert_from_activity(lasts)
