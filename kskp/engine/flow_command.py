@@ -64,7 +64,14 @@ class FlowCommand(Command):
             """
             return self.get('value') is not None and self.get('uuid') is None
 
-    def __init__(self, flow_datum:Flow, is_main:bool=True, preprocessor=None):
+        @property
+        def has_cache(self):
+            """
+            CacheをもつFrameの場合はTrueを返す
+            """
+            return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
+
+    def __init__(self, flow_datum:Flow, lock_uuid:str=None, is_main:bool=True, preprocessor=None):
         super().__init__()
 
         # 実行前にフローJSONの書式の検証をする
@@ -99,7 +106,7 @@ class FlowCommand(Command):
 
         # Activity期間中は同じPreprocessorインスタンスを使う
         from .preprocessor import Preprocessor
-        self._preprocessor = preprocessor or Preprocessor(flow_datum, self._datum_factory)
+        self._preprocessor = preprocessor or Preprocessor(flow_datum, self._datum_factory, lock_uuid)
 
         # 
         # データデストか否かの判定をする
@@ -116,10 +123,12 @@ class FlowCommand(Command):
         if self.is_main:
             # プレビュー引数を取得する
             vis_args = args.get('vis') or {}
+            # キャッシュ参照・保存引数を取得する
+            use_cache = args.get('use_cache') or True
             # フローJSONを解釈する
-            self._parse_nodes(vis_args)
+            self._parse_nodes(vis_args, use_cache)
             # フローを前処理する
-            self._preprocessor.execute(flow_command=self, vis_args=vis_args)
+            self._preprocessor.execute(flow_command=self, vis_args=vis_args, use_cache=use_cache)
 
         # フロー変数を取得する
         params = args.get('params') or {}
@@ -128,21 +137,21 @@ class FlowCommand(Command):
         # 実行において、再び縦型探索される
         return self._stepoints.run(params, inputs)
 
-    def _parse_nodes(self, vis_args):
+    def _parse_nodes(self, vis_args, use_cache:bool):
         # フローJSONからStepointを生成する
         if self._flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
             nodes_json = self._flow_data.get_nodes(use_exec_auth=True)
             # フローJSONからStepとPointを生成する
-            self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args)
+            self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args, use_cache)
             # フローの入出力Portを作成する
             # (Stepoints.run()でPortが必要になる)
             self._stepoints.i_ports = self._parse_flow_ports(self._flow_data.ports[0])
             self._stepoints.o_ports = self._parse_flow_ports(self._flow_data.ports[1])
             # runnable以外のノードを走査する
             # (Portを作成した後に処理する)
-            self._update_flow_by_other_than_runnable(nodes_json)
+            self._update_flow_by_other_than_runnable(nodes_json, use_cache)
         else:
             self._stepoints = Stepoints(steps=[], points=Points(), i_ports=self.i_ports, o_ports=self.o_ports, is_main=self.is_main)
 
@@ -187,7 +196,7 @@ class FlowCommand(Command):
                 return runnable_port
         return None
 
-    def _update_flow_by_runnable(self, nodes_json, vis_args):
+    def _update_flow_by_runnable(self, nodes_json, vis_args, use_cache):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -212,7 +221,7 @@ class FlowCommand(Command):
                 continue
 
             # CommandまたはFlowを取得する
-            cmd = self._create_command(node, vis_args)
+            cmd = self._create_command(node, vis_args, use_cache)
             
             # MCommandに不要な引数を設定するとエラーになる
             args = node['args']
@@ -222,7 +231,7 @@ class FlowCommand(Command):
             # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
             # 'params'の下にフロー変数を格納する
             if node.type == 'flow':
-                args = {'params':args}
+                args = {'params':args, 'use_cache':use_cache}
 
             # CommandoのPortのlabelに'*'が指定されていれば、可変長Port指定なので
             # Commandノードの入出力ポート指定(srcsまたはdsts)からPortを生成する
@@ -270,7 +279,7 @@ class FlowCommand(Command):
         # 作成したStep及びPointのリストを返す
         return Stepoints(substeps, points, i_ports=[], o_ports=[], is_main=self.is_main)
 
-    def _update_flow_by_other_than_runnable(self, nodes_json):
+    def _update_flow_by_other_than_runnable(self, nodes_json, use_cache:bool):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -311,13 +320,16 @@ class FlowCommand(Command):
                     else:
                         target_point.datum = node['value']
                 elif node.get('uuid') is not None:
-                    # uuidが既に振られている場合は、loaderから取ってくるようにする
+                    # キャッシュを参照しない場合、キャッシュをLoaderで取得しない
+                    if not use_cache and node.has_cache:
+                        continue
+                    # uuidが既に振られている場合は、Loaderから取ってくるようにする
                     # self._put_loader(node.get('uuid'), target_point, self, Folder)
                     self._folder_data_source_prepender.do_prepend(self, target_point, node.get('uuid'))
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.makeCache = False
 
-    def _create_command(self, node, vis_args):
+    def _create_command(self, node, vis_args, use_cache):
         from kskp.store.auth import NotAuthorizedException
         from kskp.depo.std.commands import CommandLink
 
@@ -332,7 +344,7 @@ class FlowCommand(Command):
             # サブフローのFlowCommandを生成する
             flow_cmd = FlowCommand(sub_flow_datum, is_main=False, preprocessor=self._preprocessor)
             # サブフローのフローJSONからStepointを生成する
-            flow_cmd._parse_nodes(vis_args)
+            flow_cmd._parse_nodes(vis_args, use_cache)
             # フローを前処理する
             return self._preprocessor.execute(flow_command=flow_cmd, vis_args=vis_args)
         else:

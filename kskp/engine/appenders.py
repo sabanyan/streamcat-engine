@@ -31,11 +31,13 @@ class FolderDataSourcePrepender():
 
 
 class FolderDataDestAppender():
-    def __init__(self, flow_datum, datum_factory, start_time):
+    def __init__(self, flow_datum, datum_factory, lock_uuid, start_time):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow_datum = flow_datum
         self._datum_factory = datum_factory
+        # フローのlock_uuid
+        self._lock_uuid = lock_uuid
         self._start_time = start_time
 
     def do_append(self, flow, point):
@@ -61,7 +63,11 @@ class FolderDataDestAppender():
         if self.flow_datum.uuid is None:
             args = {}
         else:
-            args = {'flow_uuid':self.flow_datum.uuid, 'flow':self.flow_datum, 'result_folder':store, 'datum_id':point.id}
+            args = {'flow_uuid':self.flow_datum.uuid,
+                    'flow':self.flow_datum,
+                    'result_folder':store,
+                    'point_id':point.id,
+                    'lock_uuid':self._lock_uuid}
         # saverが作るframe及びcacheのlabelはここで設定できる
         args['flow_label'] = self.flow_datum.label if self.flow_datum.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id

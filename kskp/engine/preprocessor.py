@@ -25,7 +25,7 @@ class Preprocessor:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow_datum, datum_factory=None):
+    def __init__(self, flow_datum, datum_factory=None, lock_uuid=None):
         from .appenders import (
             FolderDataDestAppender,
             CacheDataDestAppender,
@@ -42,11 +42,14 @@ class Preprocessor:
         self._context = Preprocessor.Context(flow_datum, self._activity_data_dest_appender.activity_uuid)
         
         # Appenders
-        self._folder_data_dest_appender = FolderDataDestAppender(flow_datum, datum_factory, self._context.start_time)
-        self._cache_data_dest_appender = CacheDataDestAppender(flow_datum, datum_factory, self._context.start_time)
+        self._folder_data_dest_appender = FolderDataDestAppender(flow_datum, datum_factory, lock_uuid, self._context.start_time)
+        self._cache_data_dest_appender = CacheDataDestAppender(flow_datum, datum_factory, lock_uuid, self._context.start_time)
         self._vis_data_dest_appender = VisDataDestAppender()
 
-    def execute(self, flow_command:FlowCommand, vis_args):
+        # flow_datumのLockのUUID
+        self._lock_uuid = lock_uuid
+
+    def execute(self, flow_command:FlowCommand, vis_args:dict, use_cache:bool=False):
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
 
@@ -158,6 +161,12 @@ class Preprocessor:
                 # 出力Point設定を元のPointからActivity_pointに変更する
                 flow.close_o_port_by_point(original_out_point)
                 out_point and flow.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+
+
+        # キャッシュを利用しない指定がされていれば、キャッシュデータデストを付加しない
+        if not use_cache:
+            return flow
+
 
         # キャッシュ作成処理
         # サブフロー内ではキャッシュは作成しない
