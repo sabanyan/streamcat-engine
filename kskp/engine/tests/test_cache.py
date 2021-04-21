@@ -15,10 +15,176 @@ class CacheTest(TestCaseBase):
     """
     フローのキャッシュ指定の検証
     """
-    def test_vis_mainflow_with_use_cache(self):
+    
+    def test_cannot_save_cache_to_locked_flow(self):
         """
         use_cache=Trueを指定して実行した場合
-        他ユーザにより排他ロック中のメインフローにおいては、キャッシュの作成はしない・参照はする
+        他ユーザにより排他ロック中のメインフローにおいては、キャッシュの作成はしないこと
+        """
+        flow_json = {
+            "label": "メインフロー", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "value": [["顧客","数量","金額"],
+                              ["x", 1, 10],
+                              ["x", 2, 20],
+                              ["y", 1, 30],
+                              ["y", 3, 40],
+                              ["z", 1, 50]],
+                    "label": "testData", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "a": "rand", 
+                        "l": "4"
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcs": {}, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mnewrand"
+                },
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c2", 
+                    "args": {
+                        "bufcount": "10"
+                    }, 
+                    "dsts": {
+                        "o": "d2"
+                    }, 
+                    "srcs": {
+                        "i": "d", 
+                        "m": "d1"
+                    }, 
+                    "type": "command", 
+                    "label": "c2", 
+                    "commandId": "mproduct"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c3", 
+                    "args": {
+                        "c": "[,0.5)", 
+                        "f": "rand", 
+                        "bufcount": 10
+                    }, 
+                    "dsts": {
+                        "o": "d3", 
+                        "u": "d4"
+                    }, 
+                    "srcs": {
+                        "i": "d2"
+                    }, 
+                    "type": "command", 
+                    "label": "c3", 
+                    "commandId": "mselnum"
+                }, 
+                {
+                    "id": "d3", 
+                    "type": "frame", 
+                    "label": "d3", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d4", 
+                    "type": "frame", 
+                    "label": "d4", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-21 10:33:12", 
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory0.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('TEST')
+        project.save()
+        project = project.reload()
+
+        # 乱数をデータソースとするフローを作成する
+        flow = project.create_flow('cache test 0', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        # フロー実行前のキャッシュファイル数を数えておく
+        cache_folder = self.factory0.data.load_cache_folder()
+        len_caches1 = len(cache_folder.find_children())
+
+        # 他ユーザによるフローの排他ロック
+        lock1 = lock_manager.lock(flow.uuid, self.USER1)
+
+        # 排他ロックされたフローをプレビューしてもキャッシュは作成されないこと
+        vis_args = {
+          "d3": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 32
+            }
+          },
+          "d4": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 32
+            }
+          }
+        }
+        lasts = execute(FlowCommand(flow), {'vis':vis_args})
+        results1 = convert_from_activity_vis(lasts)
+
+        # 正しいVisが得られるか
+        self.assertEqual(len(results1), 2)
+        self.assertIn('d3', results1)
+        self.assertIn('d4', results1)
+
+        # キャッシュフォルダにキャッシュが作成されていないこと
+        cache_folder = self.factory.data.load_cache_folder()
+        len_caches2 = len(cache_folder.find_children())
+        self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
+
+        # フローの排他ロックを解除する
+        lock_manager.unlock(lock1.uuid)
+
+        # フローを削除する
+        flow.delete()
+
+        # プロジェクトを削除する
+        project.delete()
+
+
+    def test_load_cache_to_locked_flow(self):
+        """
+        use_cache=Trueを指定して実行した場合
+        他ユーザにより排他ロック中のメインフローにおいては、キャッシュの参照はできること
         """
         flow_json = {
             "label": "cache", 
@@ -129,7 +295,7 @@ class CacheTest(TestCaseBase):
         caches1 = convert_from_activity_cache(lasts)
 
         # フローの排他ロックを解除する
-        lock_manager.unlock_target(flow.uuid)
+        lock_manager.unlock(lock1.uuid)
 
         # visデータは1つ生成されているか
         self.assertEqual(len(results1), 1)
@@ -144,7 +310,7 @@ class CacheTest(TestCaseBase):
 
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)
-        lasts = execute(FlowCommand(flow, lock2.uuid), {'vis':vis_args})
+        lasts = execute(FlowCommand(flow), {'vis':vis_args})
         results2 = convert_from_activity_vis(lasts)
 
         # キャッシュが参照されていれば値が一致する
@@ -153,183 +319,214 @@ class CacheTest(TestCaseBase):
         self.assertDictEqual(results2, results1, msg='キャッシュが参照できていません')
 
         # フローの排他ロックを解除する
-        lock_manager.unlock_target(flow.uuid)
+        lock_manager.unlock(lock2.uuid)
 
         # フローを削除する
         flow.delete()
 
-    def test_exec_subflow_with_use_cache(self):
+        # プロジェクトを削除する
+        project.delete()
+
+
+    def test_cannot_save_cache_to_subflow(self):
         """
         use_cache=Trueを指定して実行した場合
-        サブフローにおいては、キャッシュの作成はしない・参照はする
+        サブフローにおいては、キャッシュの作成はしないこと
         """
-
         sub_flow_json = {
-            "label": "test", 
+            "label": "sub", 
             "nodes": [
+                {
+                    "id": "c", 
+                    "args": {
+                        "a": "rand", 
+                        "l": "10"
+                    }, 
+                    "dsts": {
+                        "o": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "command", 
+                    "label": "c", 
+                    "commandId": "mnewrand"
+                }, 
                 {
                     "id": "d", 
                     "type": "frame", 
-                    "uuid": None,
-                    "value": [["顧客", "数量", "金額"],
-                                ["x", 1, 10],
-                                ["x", 2, 20],
-                                ["y", 1, 30],
-                                ["y", 3, 40],
-                                ["z", 1, 50]],
-                    "label": "d",
-                    "makeCache": False, 
-                    "dataSource": "csv", 
-                    "cacheCreatedAt": None
+                    "label": "d", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
                 }, 
                 {
                     "id": "c1", 
-                    "label": "c1", 
-                    "type": "command", 
-                    # このコマンドが実行されれば無条件に例外を送出する
-                    "commandId": "raise", 
-                    "args": {},
+                    "args": {
+                        "f": "*", 
+                        "nfno": True, 
+                        "bufcount": "10"
+                    }, 
+                    "dsts": {
+                        "o": "d1", 
+                        "u": "d2"
+                    }, 
                     "srcs": {
                         "i": "d"
                     }, 
-                    "dsts": {
-                        "o": "d1"
-                    }, 
-                    "srcsOrder": [
-                        "i"
-                    ]
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mdelnull"
                 }, 
                 {
                     "id": "d1", 
                     "type": "frame", 
-                    "uuid": None, 
                     "label": "d1", 
-                    "position": {
-                        "x": 99, 
-                        "y": 283
-                    }, 
-                    "makeCache": False, 
-                    "dataSource": "csv", 
-                    "cacheCreatedAt": None
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
                 }, 
                 {
                     "id": "c2", 
-                    "label": "c2", 
-                    "type": "command", 
-                    "commandId": "mcut", 
                     "args": {
-                        "f": "*"
+                        "I": "1", 
+                        "S": "1", 
+                        "a": "seq", 
+                        "e": "seq", 
+                        "q": True
+                    }, 
+                    "dsts": {
+                        "o": "d3"
                     }, 
                     "srcs": {
                         "i": "d1"
                     }, 
-                    "dsts": {
-                        "o": "d2"
-                    }, 
-                    "srcsOrder": [
-                        "i"
-                    ]
+                    "type": "command", 
+                    "label": "c2", 
+                    "commandId": "mnumber"
                 },
                 {
-                    "id": "d2", 
+                    "id": "d3", 
                     "type": "frame", 
-                    "uuid": None, 
-                    "label": "d2", 
-                    "makeCache": False, 
-                    "dataSource": "csv", 
-                    "cacheCreatedAt": None
+                    "label": "d3", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
                 }
             ], 
             "ports": [
                 [
-                {
-                    "type": "frame", 
-                    "label": "d1", 
-                    "nodeId": "d1"
-                }
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
                 ], 
                 [
-                {
-                    "type": "frame", 
-                    "label": "d2", 
-                    "nodeId": "d2"
-                }
+                    {
+                        "type": "frame", 
+                        "label": "d3", 
+                        "nodeId": "d3"
+                    }, 
+                    {
+                        "type": "frame", 
+                        "label": "d2", 
+                        "nodeId": "d2"
+                    }
                 ]
             ], 
             "params": [], 
             "creator": "ユーザー管理者", 
-            "createdAt": "2021-03-17 11:35:39", 
-            "projectId": None, 
+            "createdAt": "2021-04-21 17:20:25", 
             "description": ""
         }
 
         flow_json = {
-            "label": "main",
+            "label": "main", 
             "nodes": [
                 {
-                    "id": "d",
-                    "type": "frame",
-                    "uuid": None,
-                    "value": [["顧客", "数量", "金額"],
-                              ["A", 1, 10],
-                              ["A", 2, 20],
-                              ["B", 1, 30],
-                              ["B", 3, 40],
-                              ["B", 1, 50]],
-                    "label": "percent",
-                    "makeCache": False,
-                    "dataSource": "csv",
-                    "cacheCreatedAt": None
-                },
-                {
-                    "id": "f1",
-                    "args": {},
-                    "srcs": {
-                        "d1": "d"
-                    },
+                    "id": "c", 
+                    "args": {
+                        "a": "rand", 
+                        "l": "10"
+                    }, 
                     "dsts": {
-                        "d2": "d1"
-                    },
-                    "type": "flow",
-                    "uuid": "4be05e2e-cc74-4570-bb6f-e2afe5503462",
-                    "label": "f1",
-                    "srcsOrder": [
-                        "d3"
-                    ]
+                        "o": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "command", 
+                    "label": "c", 
+                    "commandId": "mnewrand"
+                }, 
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {}, 
+                    "dsts": {
+                        "d2": "d2", 
+                        "d3": "d1"
+                    }, 
+                    "srcs": {
+                        "d": "d"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "a469bdd3-5236-4be3-a9f6-25ec9780f735", 
+                    "label": "f1"
                 },
                 {
-                    "id": "d1",
-                    "type": "frame",
-                    "uuid": None,
-                    "label": "d1",
-                    "makeCache": False,
-                    "dataSource": "csv",
-                    "cacheCreatedAt": None
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
                 }
-            ],
-            "ports": [
-                [],
-                [
-                    {
-                        "type": "frame",
-                        "label": "d1",
-                        "nodeId": "d1"
-                    }
-                ]
-            ]
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-21 17:28:13", 
+            "description": ""
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.factory0.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('TEST')
+        project.save()
+        project = project.reload()
+
+        # 乱数をデータソースとするフローを作成する
+        flow = project.create_flow('cache test 2', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
 
         # サブフローを作成する
-        sub_flow = root.create_flow('', FlowData(sub_flow_json))
-        sub_flow.uuid = '4be05e2e-cc74-4570-bb6f-e2afe5503462'
+        sub_flow = project.create_flow('i am sub flow', FlowData(sub_flow_json))
+        sub_flow.uuid = 'a469bdd3-5236-4be3-a9f6-25ec9780f735'
         sub_flow.save()
+        sub_flow = sub_flow.reload()
 
-        # フローを作成する
-        flow = root.create_flow('', FlowData(flow_json))
+        # フロー実行前のキャッシュファイル数を数えておく
+        cache_folder = self.factory0.data.load_cache_folder()
+        len_caches1 = len(cache_folder.find_children())
 
+        # フローを排他ロックしないとキャッシュが作成されない
+        lock1 = lock_manager.lock(flow.uuid, self.USER1)
+
+        # プレビューしてもサブフロー内でキャッシュは作成されないこと
         vis_args = {
           "d1": {
             "args": {
@@ -337,24 +534,228 @@ class CacheTest(TestCaseBase):
               "offset": 0,
               "limit": 108
             }
+          },
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 1192
+            }
           }
         }
-
-        # フローを実行する
-        # (RaiseCommandが実行されないこと)
-        flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
-
-        # visデータは1つ生成されているか
-        self.assertEqual(1, len(lasts))
+        lasts = execute(FlowCommand(flow, lock1.uuid), {'vis':vis_args})
+        results = convert_from_activity_vis(lasts)
 
         # 正しいVisが得られるか
-        correct = {'d1': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
-        self.assertDictEqual(lasts, correct)
+        self.assertEqual(len(results), 2)
+        self.assertIn('d1', results)
+        self.assertIn('d2', results)
+
+        # キャッシュフォルダにキャッシュが作成されていないこと
+        cache_folder = self.factory.data.load_cache_folder()
+        len_caches2 = len(cache_folder.find_children())
+        self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
+
+        # フローの排他ロックを解除する
+        lock_manager.unlock(lock1.uuid)
 
         # フローを削除する
+        flow.delete()
         sub_flow.delete()
+
+        # プロジェクトを削除する
+        project.delete()
+
+    def test_load_cache_to_subflow(self):
+        """
+        use_cache=Trueを指定して実行した場合
+        サブフローにおいては、キャッシュの参照はできること
+        """
+        sub_flow_json = {
+            "label": "sub1", 
+            "nodes": [
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "s": "date", 
+                        "type": "exp", 
+                        "fatlist": [
+                        {
+                            "a": "avg", 
+                            "f": "amount", 
+                            "t": "2"
+                        }
+                        ], 
+                        "precision": 10
+                    }, 
+                    "dsts": {
+                        "o": "d2"
+                    }, 
+                    "srcs": {
+                        "i": "d1"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "multi_mvavg"
+                }, 
+                {
+                    "id": "d3", 
+                    "type": "frame", 
+                    "label": "d3", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c2", 
+                    "args": {}, 
+                    "dsts": {
+                        "o": "d3"
+                    }, 
+                    "srcs": {
+                        "*0": "d2", 
+                        "*1": "d4"
+                    }, 
+                    "type": "command", 
+                    "label": "c2", 
+                    "commandId": "mcat"
+                }, 
+                {
+                    "id": "d4", 
+                    "type": "frame", 
+                    "label": "d4", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c3", 
+                    "args": {
+                        "a": "avg", 
+                        "c": "${amount}", 
+                        "precision": 10
+                    }, 
+                    "dsts": {
+                        "o": "d4"
+                    }, 
+                    "srcs": {
+                        "i": "d1"
+                    }, 
+                    "type": "command", 
+                    "label": "c3", 
+                    "commandId": "mcal"
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "testData", 
+                        "nodeId": "d1"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d3", 
+                        "nodeId": "d3"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-21 17:20:25", 
+            "description": ""
+        }
+
+        flow_json =  {
+            "label": "main1", 
+            "nodes": [
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "args": {}, 
+                    "dsts": {
+                        "d3": "d1"
+                    }, 
+                    "srcs": {
+                        "d1": "d3"
+                    }, 
+                    "type": "flow", 
+                    "uuid": "171d415d-eae5-4249-9601-fc8f19e5fec6", 
+                    "label": "f1"
+                }, 
+                {
+                    "id": "d2", 
+                    "type": "frame", 
+                    "label": "d2", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "a": "amount", 
+                        "l": "10", 
+                        "int": True, 
+                        "max": "1000", 
+                        "min": "10"
+                    }, 
+                    "dsts": {
+                        "o": "d2"
+                    }, 
+                    "srcs": {}, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mnewrand"
+                }, 
+                {
+                    "id": "d3", 
+                    "type": "frame", 
+                    "label": "d3", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c2", 
+                    "args": {
+                        "a": "date", 
+                        "c": "today() + randi(31, 0)", 
+                        "precision": 10
+                    }, 
+                    "dsts": {
+                        "o": "d3"
+                    }, 
+                    "srcs": {
+                        "i": "d2"
+                    }, 
+                    "type": "command", 
+                    "label": "c2", 
+                    "commandId": "mcal"
+                }
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-21 17:56:50", 
+            "description": ""
+        }
 
 
     def test_exec_subflow_with_no_cache(self):
