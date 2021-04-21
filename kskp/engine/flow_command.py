@@ -124,7 +124,10 @@ class FlowCommand(Command):
             # プレビュー引数を取得する
             vis_args = args.get('vis') or {}
             # キャッシュ参照・保存引数を取得する
-            use_cache = args.get('use_cache') or True
+            use_cache = args.get('use_cache')
+            # TODO: 指定がない場合は暫定的にuse_cache=Trueにする
+            if use_cache is None:
+                use_cache = True
             # フローJSONを解釈する
             self._parse_nodes(vis_args, use_cache)
             # フローを前処理する
