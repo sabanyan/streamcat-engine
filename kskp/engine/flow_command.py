@@ -327,8 +327,16 @@ class FlowCommand(Command):
                     if not use_cache and node.has_cache:
                         continue
                     # uuidが既に振られている場合は、Loaderから取ってくるようにする
-                    # self._put_loader(node.get('uuid'), target_point, self, Folder)
-                    self._folder_data_source_prepender.do_prepend(self, target_point, node.get('uuid'))
+                    try:
+                        self._folder_data_source_prepender.do_prepend(self, target_point, node.get('uuid'))
+                    except Exception as e:
+                        if node.has_cache:
+                            # キャッシュの参照ができなくてもフローの実行は中断しない
+                            import warnings
+                            warnings.warn(str(e) + '、キャッシュを参照できませんでした')
+                        else:
+                            raise e
+
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.makeCache = False
 

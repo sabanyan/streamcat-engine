@@ -1,5 +1,6 @@
-from kskp.store import FlowData
+from kskp.store import ProjectFolder, FlowData
 from kskp.store.lock import lock_manager
+from kskp.store.auth import NotAuthorizedException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
 from .test_main import convert_from_activity_vis, convert_from_activity_cache
@@ -8,6 +9,125 @@ class CacheTest(TestCaseBase):
     """
     フローのキャッシュ指定の検証
     """
+
+    def test_cannot_save_cache_to_unauth_flow(self):
+        """
+        更新権限の無いメインフローを、
+        use_cache=Trueでプレビューしてもキャッシュの作成はしないこと
+        """
+        flow_json = {
+            "label": "rand", 
+            "nodes": [
+                {
+                    "id": "c", 
+                    "args": {
+                        "a": "rand", 
+                        "l": "10"
+                    }, 
+                    "dsts": {
+                        "o": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "command", 
+                    "label": "c", 
+                    "commandId": "mnewrand"
+                }, 
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "f": "rand", 
+                        "q": True, 
+                        "t": 1
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mslide"
+                },
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                },
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-22 11:35:53", 
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory2.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('沈黙が横たわる真昼に')
+        project.save()
+        project = project.reload()
+
+        # メンバを設定する
+        member1 = ProjectFolder.Member(self.USER2, ProjectFolder.OWNER_MEMBER_TYPE)
+        member2 = ProjectFolder.Member(self.USER3, ProjectFolder.READER_MEMBER_TYPE)
+        project.init_members([member1, member2], last_modified_at=project.modified_at)
+        
+        # 乱数をデータソースとするフローを作成する
+        flow = project.create_flow('主張する二つの鼓動', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        # フロー実行前のキャッシュファイル数を数えておく
+        cache_folder = self.factory2.data.load_cache_folder()
+        len_caches1 = len(cache_folder.find_children())
+
+        # USER3は、更新権限の無いフローをプレビューしてもキャッシュは作成されないこと
+        readonly_flow = self.factory3.data.find_by_uuid(flow.uuid)
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 32
+            }
+          }
+        }
+        lasts = execute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
+        results1 = convert_from_activity_vis(lasts)
+
+        # 正しいVisが得られるか
+        self.assertEqual(len(results1), 1)
+        self.assertIn('d1', results1)
+
+        # キャッシュフォルダにキャッシュが作成されていないこと
+        cache_folder = self.factory3.data.load_cache_folder()
+        len_caches2 = len(cache_folder.find_children())
+        self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
+
+        # USER3は、同じフローを再度プレビューする
+        lasts = execute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
+        results2 = convert_from_activity_vis(lasts)
+
+        # キャッシュが作成されていないので、再度プレビューすると異なる値が得られること
+        self.assertNotEqual(results2['d1'][0][1], results1['d1'][0][1])
+
+        # フローを削除する
+        flow.delete()
+
+        # プロジェクトを削除する
+        project.delete()
+
     def test_cannot_save_cache_to_locked_flow(self):
         """
         他ユーザにより排他ロック中のメインフローを、
@@ -117,12 +237,12 @@ class CacheTest(TestCaseBase):
         root = self.factory0.data.load_root()
 
         # プロジェクトを作成する
-        project = root.create_project_folder('TEST')
+        project = root.create_project_folder('いつだって私の方が駆け足で')
         project.save()
         project = project.reload()
 
         # 乱数をデータソースとするフローを作成する
-        flow = project.create_flow('cache test 0', FlowData(flow_json))
+        flow = project.create_flow('散らかった思考が火につけて', FlowData(flow_json))
         flow.save()
         flow = flow.reload()
 
@@ -259,12 +379,12 @@ class CacheTest(TestCaseBase):
         root = self.factory0.data.load_root()
 
         # プロジェクトを作成する
-        project = root.create_project_folder('TEST')
+        project = root.create_project_folder('煌めいた')
         project.save()
         project = project.reload()
 
         # 乱数をデータソースとするフローを作成する
-        flow = project.create_flow('cache test 1', FlowData(flow_json))
+        flow = project.create_flow('気づいていますか？', FlowData(flow_json))
         flow.save()
         flow = flow.reload()
 
@@ -494,17 +614,17 @@ class CacheTest(TestCaseBase):
         root = self.factory0.data.load_root()
 
         # プロジェクトを作成する
-        project = root.create_project_folder('TEST')
+        project = root.create_project_folder('近くて遠い　二人名前はまだいらない')
         project.save()
         project = project.reload()
 
         # 乱数をデータソースとするフローを作成する
-        flow = project.create_flow('cache test 2', FlowData(flow_json))
+        flow = project.create_flow('響きよくある明日の前に', FlowData(flow_json))
         flow.save()
         flow = flow.reload()
 
         # サブフローを作成する
-        sub_flow = project.create_flow('i am sub flow', FlowData(sub_flow_json))
+        sub_flow = project.create_flow('見つけあった今日が　愛おしいとか', FlowData(sub_flow_json))
         sub_flow.uuid = 'a469bdd3-5236-4be3-a9f6-25ec9780f735'
         sub_flow.save()
         sub_flow = sub_flow.reload()
@@ -751,7 +871,7 @@ class CacheTest(TestCaseBase):
         root = self.factory0.data.load_root()
 
         # プロジェクトを作成する
-        project = root.create_project_folder('ねこねこパン')
+        project = root.create_project_folder('どうして　笑えない？')
         project.save()
         project = project.reload()
 
@@ -761,7 +881,7 @@ class CacheTest(TestCaseBase):
         flow = flow.reload()
 
         # サブフローを作成する
-        sub_flow = project.create_flow('i am sub flow', FlowData(sub_flow_json))
+        sub_flow = project.create_flow('あと何十回、何千時間一緒にいれば', FlowData(sub_flow_json))
         sub_flow.uuid = '171d415d-eae5-4249-9601-fc8f19e5fec6'
         sub_flow.save()
         sub_flow = sub_flow.reload()
@@ -1090,12 +1210,12 @@ class CacheTest(TestCaseBase):
         root = self.factory0.data.load_root()
 
         # プロジェクトを作成する
-        project = root.create_project_folder('aaa')
+        project = root.create_project_folder('“いつも通り”と呼べるようになれるかな')
         project.save()
         project = project.reload()
 
         # サブフローを作成する
-        sub_flow = project.create_flow('i am sub flow', FlowData(sub_flow_json))
+        sub_flow = project.create_flow('恐慌不振な感情は時に自分さえ裏切って', FlowData(sub_flow_json))
         sub_flow.uuid = 'cc928f40-721b-4bb3-b4b0-e376e3ab9299'
         sub_flow.save()
         sub_flow = sub_flow.reload()
@@ -1192,6 +1312,216 @@ class CacheTest(TestCaseBase):
         # フローを削除する
         flow.delete()
         sub_flow.delete()
+
+        # プロジェクトを削除する
+        project.delete()
+
+    def test_skip_unauth_cache(self):
+        """
+        キャッシュの参照権限が無い場合でも、キャッシュを無視してプレビューができること
+        """
+        flow_json = {
+            "label": "rand", 
+            "nodes": [
+                {
+                    "id": "c", 
+                    "args": {
+                        "a": "rand", 
+                        "l": "10"
+                    }, 
+                    "dsts": {
+                        "o": "d"
+                    }, 
+                    "srcs": {}, 
+                    "type": "command", 
+                    "label": "c", 
+                    "commandId": "mnewrand"
+                }, 
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "label": "d", 
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "f": "rand", 
+                        "q": True, 
+                        "t": 1
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "mslide"
+                },
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                },
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-22 11:35:53", 
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('振りかざす純情じゃ　泣いてるみたいだ')
+        project.save()
+        project = project.reload()
+        
+        # 乱数をデータソースとするフローを作成する
+        flow = project.create_flow('いつも通りの復習させて', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        # フロー実行前のキャッシュファイル数を数えておく
+        cache_folder = self.factory.data.load_cache_folder()
+        len_caches1 = len(cache_folder.find_children())
+
+        # プレビューしてd1にキャッシュを作成する
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 32
+            }
+          }
+        }
+        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        results1 = convert_from_activity_vis(lasts)
+
+        # 正しいVisが得られるか
+        self.assertEqual(len(results1), 1)
+        self.assertIn('d1', results1)
+
+        # キャッシュフォルダにキャッシュが作成されていること
+        cache_folder = self.factory.data.load_cache_folder()
+        len_caches2 = len(cache_folder.find_children())
+        self.assertGreater(len_caches2, len_caches1, msg='キャッシュファイルが作成できませんでした')
+
+        # キャッシュフォルダの権限を削除して参照不可にする
+        cache_folder = self.factory.data.load_cache_folder()
+        everyone_role = self.factory.role.load_everyone_role()
+        everyone_role.clear_authz(cache_folder.id)
+
+        # 再びプレビューする
+        flow = self.factory.data.find_by_uuid(flow.uuid)
+        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        results2 = convert_from_activity_vis(lasts)
+
+        # キャッシュが参照できないので、再度プレビューすると異なる値が得られること
+        self.assertNotEqual(results2['d1'][0][1], results1['d1'][0][1])
+
+        # フローを削除する
+        flow.delete()
+
+        # プロジェクトを削除する
+        project.delete()
+
+    def test_cannot_unauth_datasource(self):
+        """
+        データソースの参照権限が無い場合は、プレビューすると例外が送出されること
+        """
+        flow_json = {
+            "label": "rand", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "type": "frame", 
+                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "label": "testData", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "c1", 
+                    "args": {
+                        "f": "amount,date", 
+                        "pways": 32, 
+                        "blocks": 10, 
+                        "maxlines": 500000, 
+                        "threadCnt": 8
+                    }, 
+                    "dsts": {
+                        "o": "d1"
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "type": "command", 
+                    "label": "c1", 
+                    "commandId": "msortf"
+                },
+                {
+                    "id": "d1", 
+                    "type": "frame", 
+                    "label": "d1", 
+                    "dataSource": "csv"
+                }
+            ], 
+            "ports": [[],[]],
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-22 11:35:53", 
+            "description": ""
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('お母にゃん')
+        project.save()
+        project = project.reload()
+        
+        # フローを作成する
+        flow = project.create_flow('あににゃん', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        # プロジェクトの下にフレームを作成する
+        import io
+        frame = project.create_frame('たびにゃん', io.BytesIO(b'date,amount\n20100101,2300'))
+        frame.uuid = '30576973-0dc9-42e1-8fd6-aba699517043'
+        frame.save()
+
+        # データソースファイルの権限を削除して参照不可にする
+        everyone_role = self.factory.role.load_everyone_role()
+        everyone_role.clear_authz(frame.id)
+
+        # プレビューすると例外が送出されること
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 32
+            }
+          }
+        }
+        with self.assertRaises(NotAuthorizedException):
+            lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+
+        # フローを削除する
+        flow.delete()
+
+        # フレームを削除する
+        everyone_role.init_authz(frame.id, read=False, write=True)
+        frame.delete()
 
         # プロジェクトを削除する
         project.delete()
