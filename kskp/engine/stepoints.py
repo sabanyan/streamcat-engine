@@ -20,15 +20,20 @@ class Stepoints():
         self._prepare_inputs(inputs)
 
         # 実行準備が整ったstepのリストを取得する
+        prev_invokable_steps = set()
         invokable_steps = self._search_invokable_steps()
-        # print('invokable_steps1', invokable_steps, '\n')
+        # print('invokable_steps1', invokable_steps)
 
-        # 実行できるrunnableがある限りは動き続ける
-        while len(invokable_steps) > 0:
+        # 実行前後のrunnableのSetに変化が無ければ終了する(無限Loop対策)
+        # while len(invokable_steps) > 0:
+        while invokable_steps != prev_invokable_steps:
+
+            # 実行前のrunnableのSet
+            prev_invokable_steps = invokable_steps
 
             # stepのうち、実行準備が整ったものを実行する
             self._run_invokable_steps(invokable_steps, flow_params)
-            # print('invokable_steps2', '\n')
+            # print('invokable_steps2')
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self._search_invokable_steps()
@@ -55,7 +60,6 @@ class Stepoints():
         """
         stepのうち、実行準備が整ったものを探して返す
         """
-
         # まず、グラフ構造を解析する必要がある
 
         # 最初に「最後の矢印」を集める

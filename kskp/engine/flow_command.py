@@ -312,9 +312,9 @@ class FlowCommand(Command):
                 target_point.datum = store
                 continue
 
-            # 入力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
-            # ただし、メインフローの場合は入力Pointか否かを条件にしない
-            if self.is_main or not self.is_i_port(target_point):
+            # 入出力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
+            # ただし、メインフローの場合は入出力Pointか否かを条件にしない
+            if self.is_main or not (self.is_i_port(target_point) or self.is_o_port(target_point)):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):

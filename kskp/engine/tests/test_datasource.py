@@ -25,7 +25,7 @@ class DataSourceTest(TestCaseBase):
     }
     database_conn = DatabaseConn(conn_json)
 
-    def test_subflow_with_input_on_way(self):
+    def test_subflow_has_input_on_way(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -223,7 +223,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_mainflow_with_input_on_way(self):
+    def test_mainflow_has_input_on_way(self):
         """
         フローの途中に入力ポイントを配置するフローをメインフローとして実行した場合、
         入力ポイントは無視されること
@@ -417,7 +417,7 @@ class DataSourceTest(TestCaseBase):
                    'd3': [['x','1','10'], ['x','2','20'],['y','1','30'], ['y','3','40'], ['z','1','50']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_subflow_with_inout_on_way(self):
+    def test_subflow_has_inout_on_way(self):
         """
         フローの途中に入力と出力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -650,7 +650,7 @@ class DataSourceTest(TestCaseBase):
 
     # 入力ポイントより前のコマンドの実行を許可するか否か、仕様が未定
     # そのため、エラーになる
-    def test_subflow_with_outin_on_way(self):
+    def test_subflow_has_outin_on_way(self):
         """
         フローの途中に出力と入力ポイントの順に配置するサブフローを呼び出した場合、
         出力ポイントより後ろのコマンドは実行されないこと
@@ -880,7 +880,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_mainflow_with_in_and_datasource(self):
+    def test_mainflow_has_in_and_datasource(self):
         """
         入力ポイントかつデータソースのポイントは、
         メインフローとして実行する場合は、データソースとして扱われること
@@ -1176,7 +1176,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_subflow_with_in_and_out_point(self):
+    def test_subflow_has_in_and_out_point(self):
         """
         フローの途中に入力かつ出力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -1381,7 +1381,7 @@ class DataSourceTest(TestCaseBase):
         sub_flow.delete()
         frame.delete()
 
-    def test_subflow_with_datasource(self):
+    def test_subflow_has_datasource(self):
         """
         データソースを持つサブフローを実行・プレビューすると、その入力も実行されること
         (プレビューであってもデータデストを実行して出力を実行する)
@@ -1559,7 +1559,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_with_datadest(self):
+    def test_subflow_has_datadest(self):
         """
         データデストを持つサブフローを実行・プレビューすると、その出力も実行されること
         (プレビューであってもデータデストを実行して出力を実行する)
@@ -1679,7 +1679,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_with_datadest2(self):
+    def test_subflow_has_datadest2(self):
         """
         2つのSaverコマンドを持つデータデストを持つサブフローを
         実行・プレビューすると、その出力も実行されること
@@ -1805,7 +1805,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_with_datasource_and_dest(self):
+    def test_subflow_has_datasource_and_dest(self):
         """
         データソースとデストを持つサブフローを実行・プレビューすると、その入出力も実行されること
         (プレビューであってもデータデストを実行して出力を実行する)
@@ -1966,7 +1966,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_with_datedst_and_out_point(self):
+    def test_subflow_has_datedst_and_out_point(self):
         """
         サブフローがデータデストとフロー出力Pointをもつ場合、
         実行・プレビューすると、その入出力も実行されること
@@ -2149,7 +2149,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_without_in_and_out_point(self):
+    def test_subflow_hasnot_in_and_out_point(self):
         """
         入出力Portの無いサブフローであっても、SaverCommandは実行されること
         """
@@ -2248,7 +2248,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_without_in_and_out_point2(self):
+    def test_subflow_hasnot_in_and_out_point2(self):
         """
         入出力Portが無いサブフローで、かつSaverCommandも含まれていない場合、
         そのサブフローは実行されないこと
@@ -3613,4 +3613,109 @@ class DataSourceTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         with self.assertRaises(RecursionError):
             execute(flow_link, {'vis':vis_args}, {})
+
+    def test_subflow_has_no_data_out_point(self):
+        """
+        データを返さない出力Pointを持つサブフローを呼び出すとエラーになること
+        """
+        # フロー出力Pointが一つだけ
+        sub_flow_json = {
+            "label": "err2", 
+            "nodes": [
+                {
+                    "id": "d", 
+                    "label": "d", 
+                    "type": "frame", 
+                    "dataSource": "csv"
+                }
+            ], 
+            "ports": [
+                [], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-23 07:57:44", 
+            "description": ""
+        }
+
+        flow_json = {
+            "label": "main", 
+            "nodes": [
+                {
+                    "id": "f", 
+                    "label": "f",
+                    "type": "flow", 
+                    "uuid": "490a22fe-0cd1-4801-b052-c899e80c2547", 
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {
+                        "d": "d"
+                    } 
+                },
+                {
+                    "id": "d", 
+                    "label": "d", 
+                    "type": "frame", 
+                    "dataSource": "csv"
+                }
+            ], 
+            "ports": [
+                [], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ]
+            ], 
+            "params": [], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-23 07:59:16",
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # サブフローを作成する
+        sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '490a22fe-0cd1-4801-b052-c899e80c2547'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # プレビューしても結果は得られない
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        results = convert_from_activity_vis(lasts)
+        self.assertIsNone(results)
+
+        # 実行しても結果は得られない
+        lasts = execute(FlowCommand(flow), {}, {})
+        results = convert_from_activity(lasts)
+        self.assertIsNone(results)
+
+        # ほかす
+        sub_flow.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
 
