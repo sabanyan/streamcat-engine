@@ -2,6 +2,7 @@ import copy
 import unittest
 import shutil
 from pathlib import Path
+from unittest import result
 
 from kskp.core import Datum
 from kskp.store import DatabaseConn, FlowData, NysolModule
@@ -3140,7 +3141,7 @@ class DataSourceTest(TestCaseBase):
         lasts = execute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_activity_vis(lasts)
 
-        # visデータは1つ生成されているか
+        # visデータは2つ生成されているか
         self.assertEqual(len(lasts), 2)
 
         # 正しいVisが得られるか
@@ -3719,3 +3720,307 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
+    def test_inner_subflow(self):
+        """
+        Flowリテラルが実行できること
+        """
+        flow_json =  {
+            "label": "Flowのリテラル表記のテスト",
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "params": [],  
+            "nodes": [
+                {
+                    "id": "d", 
+                    "label": "testData", 
+                    "type": "frame", 
+                    "value":[["customer", "date", "amount"],
+                             ["A", "20180101", "5200"],
+                             ["B", "20180101", "800"],
+                             ["B", "20180112", "3500"],
+                             ["A", "20180105", "2000"],
+                             ["B", "20180107", "4000"]],
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "label": "f1", 
+                    "type": "flow",
+                    "flow": {
+                        "label": "リテラル表記のフロー", 
+                        "description": "",
+                        "projectId": None, 
+                        "ports": [
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "testData", 
+                                    "nodeId": "d"
+                                }
+                            ], 
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "d1", 
+                                    "nodeId": "d1"
+                                }
+                            ]
+                        ], 
+                        "params": [], 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "testData", 
+                                "type": "frame", 
+                                "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1", 
+                                "type": "command", 
+                                "commandId": "mcombi",
+                                "args": {
+                                    "a": "date_combi", 
+                                    "f": "date", 
+                                    "n": "1", 
+                                    "s": "date"
+                                }, 
+                                "srcs": {
+                                    "i": "d"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }
+                            },
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "creator": "ユーザー管理者", 
+                        "createdAt": "2021-04-23 14:14:22", 
+                    },
+                    "args": {}, 
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {
+                        "d1": "d1"
+                    }
+                },
+                {
+                    "id": "d1", 
+                    "label": "d1", 
+                    "type": "frame", 
+                    "dataSource": "csv"
+                }
+            ], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-23 14:16:55"
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # フローを作成する
+        flow = root.create_flow('inner subflow test', FlowData(flow_json))
+
+        # フローをプレビューする
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        results = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(len(results), 1)
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['B', '20180112', '3500', '20180101'],
+                        ['B', '20180112', '3500', '20180101'],
+                        ['B', '20180112', '3500', '20180105'],
+                        ['B', '20180112', '3500', '20180107'],
+                        ['B', '20180112', '3500', '20180112']]}
+        self.assertDictEqual(results, correct)
+
+        # フローを実行する
+        lasts = execute(FlowCommand(flow), {}, {})
+        results = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(results), 1)
+        self.assertIsNotNone(results['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
+        out_frame2 = results['d1']
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame2.file_exists)
+
+    def test_inner_subflow_has_makecache(self):
+        """
+        キャッシュ出力指定のPointを持つFlowリテラルが実行できること
+        (Flowリテラルはサブフローなので、キャッシュは出力されない仕様である)
+        """
+
+        flow_json =  {
+            "label": "キャッシュ出力指定を持つFlowのリテラル",
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d1", 
+                        "nodeId": "d1"
+                    }
+                ]
+            ],
+            "params": [],  
+            "nodes": [
+                {
+                    "id": "d", 
+                    "label": "testData", 
+                    "type": "frame", 
+                    "value":[["customer", "date", "amount"],
+                             ["A", "20180101", "5200"],
+                             ["B", "20180101", "800"],
+                             ["B", "20180112", "3500"],
+                             ["A", "20180105", "2000"],
+                             ["B", "20180107", "4000"]],
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "label": "f1", 
+                    "type": "flow",
+                    "flow": {
+                        "label": "リテラル表記のフロー", 
+                        "description": "",
+                        "projectId": None, 
+                        "ports": [
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "testData", 
+                                    "nodeId": "d"
+                                }
+                            ], 
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "d1", 
+                                    "nodeId": "d1"
+                                }
+                            ]
+                        ], 
+                        "params": [], 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "testData", 
+                                "type": "frame", 
+                                "makeCache": True,
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1", 
+                                "type": "command", 
+                                "commandId": "mcombi",
+                                "args": {
+                                    "a": "date_combi", 
+                                    "f": "date", 
+                                    "n": "1", 
+                                    "s": "date"
+                                }, 
+                                "srcs": {
+                                    "i": "d"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }
+                            },
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "makeCache": True,
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "creator": "ユーザー管理者", 
+                        "createdAt": "2021-04-23 14:14:22", 
+                    },
+                    "args": {}, 
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {
+                        "d1": "d1"
+                    }
+                },
+                {
+                    "id": "d1", 
+                    "label": "d1", 
+                    "type": "frame", 
+                    "dataSource": "csv"
+                }
+            ], 
+            "creator": "ユーザー管理者", 
+            "createdAt": "2021-04-23 14:16:55"
+        }
+
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        # フローを作成する
+        flow = root.create_flow('inner make cache subflow test', FlowData(flow_json))
+
+        # フローをプレビューする
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 20
+            }
+          }
+        }
+        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        results = convert_from_activity_vis(lasts)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(len(results), 1)
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['B', '20180112', '3500', '20180101'],
+                        ['B', '20180112', '3500', '20180101'],
+                        ['B', '20180112', '3500', '20180105'],
+                        ['B', '20180112', '3500', '20180107'],
+                        ['B', '20180112', '3500', '20180112']]}
+        self.assertDictEqual(results, correct)
+
+        # フローを実行する
+        lasts = execute(FlowCommand(flow), {}, {})
+        results = convert_from_activity(lasts)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(results), 1)
+        self.assertIsNotNone(results['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
+        out_frame2 = results['d1']
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame2.file_exists)

@@ -1,5 +1,5 @@
 from kskp.core import Command, Port
-from kskp.store import Flow
+from kskp.store import Flow, FlowData
 from .stepoints import Stepoints
 from .point import Point, Points
 from .flow_port import FlowPort
@@ -347,11 +347,19 @@ class FlowCommand(Command):
         if node.type == 'command':
             return CommandLink(node['commandId']).resolve()
         elif node.type == 'flow':
-            try:
-                # サブフローをDBから取得する
-                sub_flow_datum = self._datum_factory.find_by_uuid(node.get('uuid'))
-            except NotAuthorizedException:
-                raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
+            flow_json = node.get('flow')
+            flow_uuid = node.get('uuid')
+            if flow_json is not None:
+                # リテラル定義されたフローを取得する
+                sub_flow_datum = Flow(self._datum_factory._session, None, node.get('label'), FlowData(flow_json))
+            elif flow_uuid is not None:
+                try:
+                    # サブフローをDBから取得する
+                    sub_flow_datum = self._datum_factory.find_by_uuid(flow_uuid)
+                except NotAuthorizedException:
+                    raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
+            else:
+                raise Exception(f'共有フロー({node})のUUIDまたはリテラルが指定されていません')
             # サブフローのFlowCommandを生成する
             flow_cmd = FlowCommand(sub_flow_datum, is_main=False, preprocessor=self._preprocessor)
             # サブフローのフローJSONからStepointを生成する
