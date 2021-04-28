@@ -175,27 +175,28 @@ class VisDataDestAppender():
 
     def do_append_after_runs(self, flow, point, original_out_point, vis_args):
         """
-        Visualizerコマンドを付加する
+        vcmdを付加する
         """
         if 'args' not in vis_args[original_out_point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください.')
 
-        visualizer_args = vis_args[original_out_point.id]['args']
-        if 'visualizer' not in visualizer_args:
-            raise Exception('visualizer属性を指定してください')
-        visualizer_cmd_name = visualizer_args['visualizer']
-        visualizer_cmd = CommandLink(visualizer_cmd_name).resolve()
-        visualizer_step = Step(visualizer_cmd.label, visualizer_cmd, visualizer_args)
-        visualizer_point = Point(point.id + '_v', Tube(Port('o', 'datum'), visualizer_step))
+        vcmd_args = vis_args[original_out_point.id]['args']
+        vcmd_id = vis_args[original_out_point.id].get('command_id') or vcmd_args.get('visualizer')
+        
+        if vcmd_id is None:
+            raise Exception('command_id属性でvcmdのidを指定してください')
+
+        vcmd = CommandLink(vcmd_id).resolve()
+        vcmd_step = Step(vcmd.label, vcmd, vcmd_args)
+        vcmd_point = Point(point.id + '_v', Tube(Port('o', 'datum'), vcmd_step))
 
         # VisPointにVisualizerフローを繋げる
-        # point.id = str(uuid.uuid4())
-        point.dst_tubes = Tubes(Tube(Port('i', 'frame'), visualizer_step))
+        point.dst_tubes = Tubes(Tube(Port('i', 'frame'), vcmd_step))
 
-        flow.substeps.append(visualizer_step)
-        flow.points.add(visualizer_point)
+        flow.substeps.append(vcmd_step)
+        flow.points.add(vcmd_point)
 
-        return visualizer_point
+        return vcmd_point
 
 
 class RunsCommandAppender():

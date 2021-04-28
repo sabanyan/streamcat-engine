@@ -150,8 +150,8 @@ class FlowCommand(Command):
             self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args, use_cache)
             # フローの入出力Portを作成する
             # (Stepoints.run()でPortが必要になる)
-            self._stepoints.i_ports = self._parse_flow_ports(self._flow_data.ports[0])
-            self._stepoints.o_ports = self._parse_flow_ports(self._flow_data.ports[1])
+            self._stepoints.i_ports = self._parse_flow_ports(self._flow_data.i_ports)
+            self._stepoints.o_ports = self._parse_flow_ports(self._flow_data.o_ports)
             # runnable以外のノードを走査する
             # (Portを作成した後に処理する)
             self._update_flow_by_other_than_runnable(nodes_json, use_cache)
@@ -227,9 +227,9 @@ class FlowCommand(Command):
             cmd = self._create_command(node, vis_args, use_cache)
             
             # MCommandに不要な引数を設定するとエラーになる
-            args = node['args']
-            srcs = node['srcs']
-            dsts = node['dsts']
+            args = node.get('args') or {}
+            srcs = node.get('srcs') or {}
+            dsts = node.get('dsts') or {}
 
             # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
             # 'params'の下にフロー変数を格納する
