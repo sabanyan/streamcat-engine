@@ -31,10 +31,10 @@ class FolderDataSourcePrepender():
 
 
 class FolderDataDestAppender():
-    def __init__(self, flow_datum, datum_factory, lock_uuid, start_time):
+    def __init__(self, flow, datum_factory, lock_uuid, start_time):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        self.flow_datum = flow_datum
+        self.flow = flow
         self._datum_factory = datum_factory
         # フローのlock_uuid
         self._lock_uuid = lock_uuid
@@ -42,7 +42,7 @@ class FolderDataDestAppender():
 
     def do_append(self, flow, point):
         # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
-        folder_store = self.flow_datum.find_parent()
+        folder_store = self.flow.find_parent()
         saver = CommandLink('saver').resolve()
         # saver_step, saver_point, saver_point2 = self._put_saver(point, flow, folder_store, saver, start_time)
         saver_point = self._put_saver(flow, point, folder_store, saver, 'saver')
@@ -60,16 +60,16 @@ class FolderDataDestAppender():
 
         # saverのargs設定
         # FlowUuidLinkならキャッシュ生成後にjsonを書き換える必要があるのでその情報を渡す。
-        if self.flow_datum.uuid is None:
+        if self.flow.uuid is None:
             args = {}
         else:
-            args = {'flow_uuid':self.flow_datum.uuid,
-                    'flow':self.flow_datum,
+            args = {'flow_uuid':self.flow.uuid,
+                    'flow':self.flow,
                     'result_folder':store,
                     'point_id':point.id,
                     'lock_uuid':self._lock_uuid}
         # saverが作るframe及びcacheのlabelはここで設定できる
-        args['flow_label'] = self.flow_datum.label if self.flow_datum.label is not None else ''
+        args['flow_label'] = self.flow.label if self.flow.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
         args['point'] = point
         args['start_time'] = self._start_time

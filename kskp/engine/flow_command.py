@@ -71,15 +71,15 @@ class FlowCommand(Command):
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow_datum:Flow, lock_uuid:str=None, is_main:bool=True, preprocessor=None):
+    def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True, preprocessor=None):
         super().__init__()
 
         # 実行前にフローJSONの書式の検証をする
-        flow_datum.flow_data.valid_flow_json_or_raise()
+        flow.flow_data.valid_flow_json_or_raise()
 
         # フローJSONをコピーする
         # (TODO: なぜコピーする必要があるのか忘れてしまった)
-        self._flow_data = flow_datum.flow_data.copy()
+        self._flow_data = flow.flow_data.copy()
 
         # メインフローであればTrue
         self.is_main = is_main
@@ -101,12 +101,12 @@ class FlowCommand(Command):
         # データソースを追加する
         from kskp.store.factory import DatumFactory
         from .appenders import FolderDataSourcePrepender
-        self._datum_factory = DatumFactory(flow_datum._session)
+        self._datum_factory = DatumFactory(flow._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         # Activity期間中は同じPreprocessorインスタンスを使う
         from .preprocessor import Preprocessor
-        self._preprocessor = preprocessor or Preprocessor(flow_datum, self._datum_factory, lock_uuid)
+        self._preprocessor = preprocessor or Preprocessor(flow, self._datum_factory, lock_uuid)
 
         # 
         # データデストか否かの判定をする
@@ -131,7 +131,7 @@ class FlowCommand(Command):
             # フローJSONを解釈する
             self._parse_nodes(vis_args, use_cache)
             # フローを前処理する
-            self._preprocessor.execute(flow_command=self, vis_args=vis_args, use_cache=use_cache)
+            self._preprocessor.execute(flow_cmd=self, vis_args=vis_args, use_cache=use_cache)
 
         # フロー変数を取得する
         params = args.get('params') or {}
@@ -351,21 +351,21 @@ class FlowCommand(Command):
             flow_uuid = node.get('uuid')
             if flow_json is not None:
                 # リテラル定義されたフローを取得する
-                sub_flow_datum = Flow(self._datum_factory._session, None, node.get('label'), FlowData(flow_json))
+                sub_flow = Flow(self._datum_factory._session, None, node.get('label'), FlowData(flow_json))
             elif flow_uuid is not None:
                 try:
                     # サブフローをDBから取得する
-                    sub_flow_datum = self._datum_factory.find_by_uuid(flow_uuid)
+                    sub_flow = self._datum_factory.find_by_uuid(flow_uuid)
                 except NotAuthorizedException:
                     raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
             else:
                 raise Exception(f'共有フロー({node})のUUIDまたはリテラルが指定されていません')
             # サブフローのFlowCommandを生成する
-            flow_cmd = FlowCommand(sub_flow_datum, is_main=False, preprocessor=self._preprocessor)
+            flow_cmd = FlowCommand(sub_flow, is_main=False, preprocessor=self._preprocessor)
             # サブフローのフローJSONからStepointを生成する
             flow_cmd._parse_nodes(vis_args, use_cache)
             # フローを前処理する
-            return self._preprocessor.execute(flow_command=flow_cmd, vis_args=vis_args)
+            return self._preprocessor.execute(flow_cmd=flow_cmd, vis_args=vis_args)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
