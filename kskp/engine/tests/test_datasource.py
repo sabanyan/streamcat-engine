@@ -1586,7 +1586,7 @@ class DataSourceTest(TestCaseBase):
             "nodes": [
                 {
                     "id": "d",
-                    "label": "d",
+                    "label": "この世界で君に会えた日から輝き始めてる",
                     "type": "frame",
                     "uuid": None,
                     "makeCache": False,
@@ -1670,6 +1670,7 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
         self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.label.startswith('この世界で君に会えた日から輝き始めてる'))
         self.assertTrue(out_frame.file_exists)
 
         # ほかす
@@ -1706,7 +1707,7 @@ class DataSourceTest(TestCaseBase):
             "nodes": [
                 {
                     "id": "d",
-                    "label": "d",
+                    "label": "ひとつひとつ叶えて行けるかな　そばにいて",
                     "type": "frame",
                     "uuid": None,
                     "makeCache": False,
@@ -1792,10 +1793,12 @@ class DataSourceTest(TestCaseBase):
         # 一つ目の出力結果が出力されていること
         out_frame1 = lasts['f0_d2']
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame1.label.startswith('ひとつひとつ叶えて行けるかな　そばにいて'))
         self.assertTrue(out_frame1.file_exists)
         # 二つ目の出力結果が出力されていること
         out_frame2 = lasts['f0_d3']
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame2.label.startswith('ひとつひとつ叶えて行けるかな　そばにいて'))
         self.assertTrue(out_frame2.file_exists)
 
         # ほかす
@@ -1845,7 +1848,7 @@ class DataSourceTest(TestCaseBase):
                 },
                 {
                     "id": "d",
-                    "label": "d",
+                    "label": "どこにいても見えない　未来なんてもっと退屈な光",
                     "type": "frame",
                     "uuid": None,
                     "makeCache": False,
@@ -1943,6 +1946,7 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(f1_d2)を出力しませんでした')
         out_frame = lasts['f1_d2']
         self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.label.startswith('どこにいても見えない　未来なんてもっと退屈な光'))
         self.assertTrue(out_frame.file_exists)
 
         # フローを実行する
@@ -1955,6 +1959,7 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
         self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.label.startswith('どこにいても見えない　未来なんてもっと退屈な光'))
         self.assertTrue(out_frame.file_exists)
 
         # ほかす
@@ -1999,7 +2004,7 @@ class DataSourceTest(TestCaseBase):
             "nodes": [
                 {
                     "id": "d",
-                    "label": "d",
+                    "label": "とっておきの場所で一緒に隠れた　陽射し揺れて",
                     "type": "frame",
                     "uuid": None,
                     "makeCache": False,
@@ -2041,7 +2046,7 @@ class DataSourceTest(TestCaseBase):
                 },
                 {
                     "id": "d1",
-                    "label": "d1",
+                    "label": "あと少しの距離を待ち望んでいるの？",
                     "type": "frame",
                     "uuid": None,
                     "makeCache": False,
@@ -2135,6 +2140,7 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame1 = lasts['f0_d2']
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame1.label.startswith('とっておきの場所で一緒に隠れた　陽射し揺れて'))
         self.assertTrue(out_frame1.file_exists)
         # 
         self.assertIsNotNone(lasts['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
@@ -2166,7 +2172,7 @@ class DataSourceTest(TestCaseBase):
             "nodes": [
                 {
                     "id": "d",
-                    "label": "d",
+                    "label": "いつだってもどかしいよ　離れないで",
                     "type": "frame",
                     "uuid": None,
                     "value": [["顧客", "数量", "金額"],
@@ -2239,6 +2245,7 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
         self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame.label.startswith('いつだってもどかしいよ　離れないで'))
         self.assertTrue(out_frame.file_exists)
 
         # ほかす
@@ -3169,7 +3176,7 @@ class DataSourceTest(TestCaseBase):
                 {
                     "id": "d", 
                     "type": "frame", 
-                    "label": "d", 
+                    "label": "この世界に君が居てくれる道は　不思議と好きになる", 
                     "dataSource": "csv"
                 }, 
                 {
@@ -3519,6 +3526,8 @@ class DataSourceTest(TestCaseBase):
         out_frame2 = lasts['f1_d2_1']
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FLOW_TYPE))
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(out_frame1.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
+        self.assertTrue(out_frame2.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
 
         # ほかす
         sub_flow1.throw_away()

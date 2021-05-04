@@ -140,14 +140,14 @@ class FlowCommand(Command):
         # 実行において、再び縦型探索される
         return self._stepoints.run(params, inputs)
 
-    def _parse_nodes(self, vis_args, use_cache:bool):
+    def _parse_nodes(self, vis_args, use_cache:bool, src_point:Point=None):
         # フローJSONからStepointを生成する
         if self._flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
             nodes_json = self._flow_data.get_nodes(use_exec_auth=True)
             # フローJSONからStepとPointを生成する
-            self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args, use_cache)
+            self._stepoints = self._update_flow_by_runnable(nodes_json, vis_args, use_cache, src_point)
             # フローの入出力Portを作成する
             # (Stepoints.run()でPortが必要になる)
             self._stepoints.i_ports = self._parse_flow_ports(self._flow_data.i_ports)
@@ -199,7 +199,7 @@ class FlowCommand(Command):
                 return runnable_port
         return None
 
-    def _update_flow_by_runnable(self, nodes_json, vis_args, use_cache):
+    def _update_flow_by_runnable(self, nodes_json, vis_args, use_cache, src_point):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -211,25 +211,41 @@ class FlowCommand(Command):
         substeps = []
         points = Points()
 
+        # Commandに繋がらない孤立したデータノードからもPointを生成する為
+        # ここで全てのデータノードからPointを生成する
+        for node_json in nodes_json:
+            node = FlowCommand.Node(node_json)
+            if node.is_frame or node.is_store:
+                p = Point(node.id, makeCache=node.get('makeCache'))
+                p.label = node.get('label')
+                points.add(p)
+
         # まず、runnableを集める
         for node_json in nodes_json:
             node = FlowCommand.Node(node_json)
 
-            if node.is_frame:
-                # Commandに繋がらない孤立したデータノードからもPointを生成する為
-                # ここで全てのデータノードからPointを生成する
-                self._upsert_point(points, id=node.id)
-
             if not node.is_runnable:
                 continue
 
-            # CommandまたはFlowを取得する
-            cmd = self._create_command(node, vis_args, use_cache)
-            
             # MCommandに不要な引数を設定するとエラーになる
             args = node.get('args') or {}
             srcs = node.get('srcs') or {}
             dsts = node.get('dsts') or {}
+
+            if len(srcs)==1 and len(dsts)==0:
+            # TODO: ここではコマンドの'classification'でデータデストか否かを判定する
+            # if node.get('classification')=='data_dest':
+                # データデストには入力Pointのidを渡す
+                src_point_id = next(iter(srcs.values()))
+                node_src_point = points.get(src_point_id)
+            else:
+                # 中継する
+                node_src_point = src_point
+
+            # 
+            # CommandまたはFlowを取得する
+            # 
+            cmd = self._create_command(node, vis_args, use_cache, node_src_point)
 
             # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
             # 'params'の下にフロー変数を格納する
@@ -300,8 +316,8 @@ class FlowCommand(Command):
             if target_point is None:
                 continue
 
-            target_point.makeCache = node.get('makeCache')
-            target_point.label = node.get('label')
+            # target_point.makeCache = node.get('makeCache')
+            # target_point.label = node.get('label')
 
             # Storeの場合、StoreオブジェクトをPointに格納する
             if node.is_store:
@@ -340,7 +356,7 @@ class FlowCommand(Command):
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.makeCache = False
 
-    def _create_command(self, node, vis_args, use_cache):
+    def _create_command(self, node, vis_args, use_cache, src_point):
         from kskp.store.auth import NotAuthorizedException
         from kskp.depo.std.commands import CommandLink
 
@@ -363,9 +379,9 @@ class FlowCommand(Command):
             # サブフローのFlowCommandを生成する
             flow_cmd = FlowCommand(sub_flow, is_main=False, preprocessor=self._preprocessor)
             # サブフローのフローJSONからStepointを生成する
-            flow_cmd._parse_nodes(vis_args, use_cache)
+            flow_cmd._parse_nodes(vis_args, use_cache, src_point)
             # フローを前処理する
-            return self._preprocessor.execute(flow_cmd=flow_cmd, vis_args=vis_args)
+            return self._preprocessor.execute(flow_cmd=flow_cmd, vis_args=vis_args, src_point=src_point)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
@@ -429,13 +445,6 @@ class FlowCommand(Command):
     @property
     def outs(self):
         return {p.point.id: p.point.datum for p in self.o_ports}
-
-    @property
-    def is_datadst(self):
-        """
-        データデストの場合はTrueを返す
-        """
-        return len(self.i_ports) == 1 and len(self.o_ports) == 0
 
     def is_i_port(self, point:Point):
         return any(p.point==point for p in self.i_ports)

@@ -27,6 +27,13 @@ class Step:
         from .flow_command import FlowCommand
         return isinstance(self.runnable, FlowCommand)
 
+    @property
+    def is_datadst(self):
+        """
+        データデストの場合はTrueを返す
+        """
+        return len(self.runnable.i_ports) == 1 and len(self._o_ports) == 0
+
     def run(self, inputs):
         """
         コマンドを実行する

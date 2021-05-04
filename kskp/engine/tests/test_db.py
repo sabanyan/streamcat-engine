@@ -25,34 +25,34 @@ class DbTest(TestCaseBase):
       "nodes": [
         {
           "id": "f",
-          "args": {},
-          "dsts": {
-            "d1": "d"
-          },
-          "srcs": {},
+          "label": "PostgreSQLデータソース",
           "type": "flow",
           "uuid": "8cfbce33-f2f9-4f52-a97d-ce170f70f6e3",
-          "label": "PostgreSQLデータソース",
+          "args": {},
+          "srcs": {},
+          "dsts": {
+            "d1": "d"
+          }
         },
         {
           "id": "d",
+          "label": "🌲🌳🌲🍁",
           "type": "frame",
           "uuid": None,
-          "label": "d",
           "makeCache": False,
           "dataSource": "csv",
           "cacheCreatedAt": None
         },
         {
           "id": "f1",
+          "label": "PostgreSQLデータデスト1",
+          "type": "flow",
+          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
           "args": {},
-          "dsts": {},
           "srcs": {
             "d1": "d"
           },
-          "type": "flow",
-          "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
-          "label": "PostgreSQLデータデスト1"
+          "dsts": {}
         }
       ]
     }
@@ -78,17 +78,14 @@ class DbTest(TestCaseBase):
           "srcs": {},
           "type": "flow",
           "uuid": "8cfbce33-f2f9-4f52-a97d-ce170f70f6e3",
-          "error": {},
           "label": "PostgreSQLデータソース",
-          "invalid": {},
           "srcsOrder": []
         },
         {
           "id": "d",
+          "label": "コーヒープラペチーノ",
           "type": "frame",
           "uuid": None,
-          "error": {},
-          "label": "d",
           "invalid": {},
           "makeCache": False,
           "dataSource": "csv",
@@ -103,9 +100,7 @@ class DbTest(TestCaseBase):
           },
           "type": "flow",
           "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
-          "error": {},
           "label": "PostgreSQLデータデスト1",
-          "invalid": {},
           "srcsOrder": [
             "d1"
           ]
@@ -119,9 +114,7 @@ class DbTest(TestCaseBase):
           },
           "type": "flow",
           "uuid": "b3e980d4-8338-4e83-a238-dd4537148c43",
-          "error": {},
           "label": "PostgreSQLデータデスト2",
-          "invalid": {},
           "srcsOrder": [
             "d1"
           ]
@@ -178,6 +171,7 @@ class DbTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         datasource_f1 = lasts['f1_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
+        self.assertTrue(datasource_f1.label.startswith('🌲🌳🌲🍁'))
 
         # 後片付け
         postgre_src.delete()
@@ -219,6 +213,8 @@ class DbTest(TestCaseBase):
         datasource_f2 = lasts['f2_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
         self.assertTrue(self.factory.data.exists(datasource_f2.uuid))
+        self.assertTrue(datasource_f1.label.startswith('コーヒープラペチーノ'))
+        self.assertTrue(datasource_f2.label.startswith('コーヒープラペチーノ'))
 
         # 後片付け
         postgre_src.delete()

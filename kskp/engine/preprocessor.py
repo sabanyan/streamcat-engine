@@ -1,5 +1,6 @@
 from .flow_command import FlowCommand
 from .flow_port import FlowPort
+from .point import Point
 
 class Preprocessor:
     """
@@ -49,7 +50,7 @@ class Preprocessor:
         # flow_datumのLockのUUID
         self._lock_uuid = lock_uuid
 
-    def execute(self, flow_cmd:FlowCommand, vis_args:dict, use_cache:bool=False):
+    def execute(self, flow_cmd:FlowCommand, vis_args:dict, use_cache:bool=False, src_point:Point=None):
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand
 
@@ -102,6 +103,8 @@ class Preprocessor:
                         'flow_uuid'    : self._context.flow_uuid,
                         'flow_label'   : self._context.flow_label,
                         'result_folder': self._context.flow.find_parent(),
+                        # データデストの入力PointのlabelをSaverCommandに渡す
+                        'src_point' : src_point,
                         'start_time'   : self._context.start_time,
                         'activity_uuid': self._context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
@@ -193,7 +196,6 @@ class Preprocessor:
         フローの出力ポートを親フローに中継する
         """
         from kskp.core import Datum, Port
-        from .point import Point
         from .tube import Tube
 
         # サブフローから中継された出力Portに紐づくPointを新規作成する

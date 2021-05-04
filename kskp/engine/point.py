@@ -52,10 +52,10 @@ class Point:
             return f'{self.id}<{dom_o} -({self.datum})-> {cod_i}>'
 
     def __eq__(self, other):
-        return self.id == other.id
+        return other is not None and self.id == other.id
 
     def __ne__(self, other):
-        return self.id != other.id
+        return other is None or self.id != other.id
 
     def __hash__(self):
         # # PointをDictのキーとして扱う場合同じインスタンスで同じとみなす

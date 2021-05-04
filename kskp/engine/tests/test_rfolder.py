@@ -34,13 +34,13 @@ class RemoteFolderTest(TestCaseBase):
           "srcs": {},
           "type": "flow",
           "uuid": "78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e",
-          "label": "PostgreSQLデータソース",
+          "label": "Windowsデータソース",
         },
         {
           "id": "d",
+          "label": "(=^ェ^=)",
           "type": "frame",
           "uuid": None,
-          "label": "d",
           "makeCache": False,
           "dataSource": "csv",
           "cacheCreatedAt": None
@@ -54,7 +54,7 @@ class RemoteFolderTest(TestCaseBase):
           },
           "type": "flow",
           "uuid": "8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5",
-          "label": "PostgreSQLデータデスト1"
+          "label": "Windowsデータデスト1"
         }
       ]
     }
@@ -81,16 +81,16 @@ class RemoteFolderTest(TestCaseBase):
           "type": "flow",
           "uuid": "78b407a7-e0a6-4fd6-b1ae-67a6a96dbb5e",
           "error": {},
-          "label": "PostgreSQLデータソース",
+          "label": "Windowsデータソース",
           "invalid": {},
           "srcsOrder": []
         },
         {
           "id": "d",
+          "label": "(=^x^=)",
           "type": "frame",
           "uuid": None,
           "error": {},
-          "label": "d",
           "invalid": {},
           "makeCache": False,
           "dataSource": "csv",
@@ -106,7 +106,7 @@ class RemoteFolderTest(TestCaseBase):
           "type": "flow",
           "uuid": "8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5",
           "error": {},
-          "label": "PostgreSQLデータデスト1",
+          "label": "Windowsデータデスト1",
           "invalid": {},
           "srcsOrder": [
             "d1"
@@ -122,7 +122,7 @@ class RemoteFolderTest(TestCaseBase):
           "type": "flow",
           "uuid": "8f8bf3eb-73aa-4400-b53d-5a2cbd325bc5",
           "error": {},
-          "label": "PostgreSQLデータデスト2",
+          "label": "Windowsデータデスト2",
           "invalid": {},
           "srcsOrder": [
             "d1"
@@ -178,6 +178,7 @@ class RemoteFolderTest(TestCaseBase):
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(datasource_f1.label.startswith('(=^ェ^=)'))
 
         # 後片付け
         windows_src.delete()
@@ -226,6 +227,8 @@ class RemoteFolderTest(TestCaseBase):
         datasource_f2 = lasts['f2_d2']
         self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
         self.assertTrue(self.factory.data.exists(datasource_f2.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(datasource_f1.label.startswith('(=^x^=)'))
+        self.assertTrue(datasource_f1.label.startswith('(=^x^=)'))
 
         # 後片付け
         windows_src.delete()
