@@ -11,7 +11,9 @@ class Preprocessor:
         """
         Preprocessorを再帰的に下降して呼び出すときに参照する共通の格納場所
         """
-        def __init__(self, flow, activity_uuid):
+        def __init__(self, datum_factory, flow, activity_uuid):
+            self.datum_factory = datum_factory
+
             self.flow = flow
             self.flow_uuid = flow.uuid
             self.flow_label = flow.label
@@ -40,7 +42,7 @@ class Preprocessor:
         self._activity_data_dest_appender = ActivityDataDestAppender(flow.uuid)
 
         # Context
-        self._context = Preprocessor.Context(flow, self._activity_data_dest_appender.activity_uuid)
+        self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity_uuid)
         
         # Appenders
         self._folder_data_dest_appender = FolderDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_time)
@@ -105,6 +107,7 @@ class Preprocessor:
                         'result_folder': self._context.flow.find_parent(),
                         # データデストの入力PointのlabelをSaverCommandに渡す
                         'src_point' : src_point,
+                        'datum_factory' : self._context.datum_factory,
                         'start_time'   : self._context.start_time,
                         'activity_uuid': self._context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
