@@ -281,9 +281,9 @@ class FlowCommand(Command):
                     raise Exception(f'コマンド({node})の出力({d_port_label})が指定されていません')
 
                 # 定義上に存在しないポート名がdstsに存在していないかの確認
-                dst_port = self._get_port_by_label(step.runnable.o_ports, d_port_label)
+                dst_port = self._get_port_by_label(step.command.o_ports, d_port_label)
                 if dst_port is None:
-                    raise Exception(f'指定しているport名({d_port_label})が"{node}"の定義しているポート群({step.runnable.o_ports})に存在しません')
+                    raise Exception(f'指定しているport名({d_port_label})が"{node}"の定義しているポート群({step.command.o_ports})に存在しません')
 
                 # pointを作成する（作成対象がすでにあれば更新する）
                 dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step))

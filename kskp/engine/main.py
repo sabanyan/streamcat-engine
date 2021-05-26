@@ -18,7 +18,7 @@ class DefaultHandler(PatternMatchingEventHandler):
 job_complete_handler = None
 
 
-def execute(runnable, args={}, inputs={}, job_complete_handler=None):
+def execute(command, args={}, inputs={}, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
@@ -32,7 +32,7 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
 
     try:
         # runnableからstepを作成する
-        step = Step('main_flow', runnable, args)
+        step = Step('main_flow', command, args)
 
         # jobを作成する
         job = Job(step, inputs)
@@ -44,9 +44,9 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
         job.dtor()
 
         # 結果を返却する
-        # job.step.runnable.cachesでキャッシュの結果も取れる
+        # job.step.command.cachesでキャッシュの結果も取れる
         # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
-        return job.step.runnable.outs
+        return job.step.command.outs
 
     except Exception as e:
         raise
@@ -64,7 +64,7 @@ def execute(runnable, args={}, inputs={}, job_complete_handler=None):
 #
 #     # try:
 #     #     return [Point(port.label, None, step, inputs[port.label]) for port
-#     #                                                               in step.runnable.i_ports]
+#     #                                                               in step.command.i_ports]
 #     # except KeyError as e:
 #     #     # inputsに必要な引数が与えられていない
 #     #     raise Exception('inputsに必要な引数が与えられていません') from e

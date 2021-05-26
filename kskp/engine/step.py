@@ -4,12 +4,12 @@ class Step:
     """
     コマンド等の実行可能ノードのインスタンスを表現するクラス
     """
-    def __init__(self, id:str, runnable:Command, args:dict={}, o_ports=None, ex_acceptable:bool=False):
-        if not isinstance(runnable, Command):
-            raise Exception('runnableにFlowCommandまたはCommand以外のオブジェクトが指定されました')
+    def __init__(self, id:str, command:Command, args:dict={}, o_ports=None, ex_acceptable:bool=False):
+        if not isinstance(command, Command):
+            raise Exception('commandにFlowCommandまたはCommand以外のオブジェクトが指定されました')
 
         self.id = id
-        self.runnable = runnable
+        self.command = command
         self.args = args
 
         # 入力データが例外の場合、コマンドに渡すか否か
@@ -17,7 +17,7 @@ class Step:
         
         # 可変長Port'*'の展開済みのo_ports
         # make_exception_outputs()でのみ用いる
-        self._o_ports = o_ports or runnable.o_ports
+        self._o_ports = o_ports or command.o_ports
 
     def __repr__(self):
         return self.id
@@ -25,14 +25,14 @@ class Step:
     @property
     def is_flow(self):
         from .flow_command import FlowCommand
-        return isinstance(self.runnable, FlowCommand)
+        return isinstance(self.command, FlowCommand)
 
     @property
     def is_datadst(self):
         """
         データデストの場合はTrueを返す
         """
-        return len(self.runnable.i_ports) == 1 and len(self._o_ports) == 0
+        return len(self.command.i_ports) == 1 and len(self._o_ports) == 0
 
     def run(self, inputs):
         """
@@ -58,7 +58,7 @@ class Step:
                         return make_exception_outputs(self._o_ports, cmd_ex=input)
             
             # コマンドを実行する
-            return self.runnable.run(self.args, inputs)
+            return self.command.run(self.args, inputs)
         except AttributeError as e:
             raise e
         except Exception as e:
@@ -71,7 +71,7 @@ class Step:
 
             # 出力Portが無ければ、送出(raise)する以外に例外を渡す方法が無い
             # 出力Portが有っても、メインフローは例外を渡す相手がいない
-            is_root_flow = self.is_flow and self.runnable.is_main
+            is_root_flow = self.is_flow and self.command.is_main
             if is_root_flow or len(self._o_ports) == 0:
                 raise e
 
@@ -79,7 +79,7 @@ class Step:
             return make_exception_outputs(self._o_ports, cmd_ex=CommandException(e))
 
     def dtor(self):
-        self.runnable.dtor(self.args)
+        self.command.dtor(self.args)
 
     def replace_args(self, flow_args):
         """

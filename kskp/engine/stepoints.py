@@ -121,7 +121,7 @@ class Stepoints():
                     inputs[dst_tube.port.label] = p.datum
 
             # 実行したい処理の中にどのステップなのかを渡す
-            step.runnable.context['step_id'] = step.id
+            step.command.context['step_id'] = step.id
 
             # jobを作る
             job = Job(step, inputs)
@@ -148,7 +148,7 @@ class Stepoints():
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
             # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
             from kskp.depo.std.commands import RunfuncCommand
-            if isinstance(step.runnable, RunfuncCommand):
+            if isinstance(step.command, RunfuncCommand):
                 for value in results.values():
                     self.module_store.append(value.content)
 

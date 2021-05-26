@@ -74,7 +74,7 @@ class Preprocessor:
                 continue
 
             # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
-            if isinstance(src_tube.step.runnable, SaverCommand):
+            if isinstance(src_tube.step.command, SaverCommand):
                 o_port = FlowPort(point.id, 'mcmd', point)
                 flow_cmd.open_o_port(o_port)
                 # 中継済みのポートとして記録する
@@ -88,7 +88,7 @@ class Preprocessor:
                 continue
 
             # フローが中継ポートを持っている場合
-            for port in step.runnable.relayed_o_ports:
+            for port in step.command.relayed_o_ports:
                 # 中継する
                 new_port = self._relay_o_port(flow_cmd, step, port)
                 # 中継済みのポートとして記録する
@@ -99,7 +99,7 @@ class Preprocessor:
         for step in flow_cmd.substeps:
             if step.is_flow:
                 continue
-            if isinstance(step.runnable, SCommand):
+            if isinstance(step.command, SCommand):
                 # SCommand共通引数を作成する
                 args = {'flow'         : self._context.flow,
                         'flow_uuid'    : self._context.flow_uuid,
