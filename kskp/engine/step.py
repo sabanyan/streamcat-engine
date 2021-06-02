@@ -89,29 +89,29 @@ class Step:
         早めに書き換えたかったので、とりあえずStepに記載してある
         """
         # フロー変数が存在する場合は、フロー変数を置き換え対象にする
-        if 'params' in self.args and isinstance(self.args['params'], dict):
-            # フロー変数は'params'の下に格納されている
-            args = self.args.get('params') or {}
+        if 'flow_args' in self.args and isinstance(self.args['flow_args'], dict):
+            # フロー変数は'flow_args'の下に格納されている
+            args = self.args.get('flow_args') or {}
         else:
             args = self.args
 
         # TODO: 正規表現やreplace対象を外に出す
-        for param, value in flow_args.items():
+        for arg, value in flow_args.items():
             for step_param, step_value in args.items():
                 if isinstance(step_value, str):
                     # 文字列の場合は通常通り置換を行う
-                    self._replace_arg_internal(args, param, value, step_param, step_value)
+                    self._replace_arg_internal(args, arg, value, step_param, step_value)
                 elif isinstance(step_value, list):
                     # リストの場合は、リストの要素それぞれに対して置換を行う
                     for list_value in step_value:
                         if isinstance(list_value, dict):
                             # リストの要素がDictの場合
                             for list_value_dict_key, list_value_dict_val in list_value.items():
-                                self._replace_arg_internal(list_value, param, value, list_value_dict_key, list_value_dict_val)
+                                self._replace_arg_internal(list_value, arg, value, list_value_dict_key, list_value_dict_val)
                         else:
                             # リストの要素がDict以外の場合(msimとmsummary)
                             for list_value_dict_val in list_value:
-                                self._replace_arg_internal(list_value, param, value, step_param, list_value_dict_val)
+                                self._replace_arg_internal(list_value, arg, value, step_param, list_value_dict_val)
 
     def _replace_arg_internal(self, args, param, value, step_param, step_value):
         """
