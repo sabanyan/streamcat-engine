@@ -1519,7 +1519,7 @@ class DataSourceTest(TestCaseBase):
           }
         }
         flow_link = FlowCommand(flow)
-        args = {'vis':vis_args, 'params': {'frame_uuid':in_frame.uuid}}
+        args = {'vis':vis_args, 'flow_args': {'frame_uuid':in_frame.uuid}}
         lasts = execute(flow_link, args, {})
         lasts = convert_from_activity_vis(lasts)
 
@@ -1937,7 +1937,7 @@ class DataSourceTest(TestCaseBase):
 
         # サブフローを実行する
         flow_link = FlowCommand(sub_flow)
-        args = {'params': {'frame_uuid':in_frame.uuid}}
+        args = {'flow_args': {'frame_uuid':in_frame.uuid}}
         lasts = execute(flow_link, args, {})
         lasts = convert_from_activity(lasts)
 

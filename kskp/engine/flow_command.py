@@ -81,6 +81,9 @@ class FlowCommand(Command):
         # (TODO: なぜコピーする必要があるのか忘れてしまった)
         self._flow_data = flow.flow_data.copy()
 
+        # 仮引数を保持する
+        self.params = self._flow_data.params or {}
+
         # メインフローであればTrue
         self.is_main = is_main
 
@@ -133,12 +136,29 @@ class FlowCommand(Command):
             # フローを前処理する
             self._preprocessor.execute(flow_cmd=self, vis_args=vis_args, use_cache=use_cache)
 
-        # フロー変数を取得する
-        flow_args = args.get('flow_args') or {}
+        # フローが定義する仮引数とこれに対応する値をDictで用意する
+        flow_args = self._make_complete_flow_args(args)
 
         # フローを実行する
         # 実行において、再び縦型探索される
         return self._stepoints.run(flow_args, inputs)
+
+    def _make_complete_flow_args(self, args:dict) -> dict:
+        """
+        フローが定義する仮引数にフロー変数の値(実引数)を設定する
+        仮引数に対応するフロー変数の値が無い場合は空文字を設定する
+        (params:仮引数、args:実引数)
+        """
+        # フロー変数の値を取得する
+        flow_args = args.get('flow_args') or {}
+
+        # フローが定義する仮引数に対応する値を設定する
+        complete_flow_args = {}
+        for param in self.params:
+            param_name = param['name']
+            complete_flow_args[param_name] = flow_args.get(param_name, '')
+
+        return complete_flow_args
 
     def _parse_nodes(self, vis_args, use_cache:bool, src_point:Point=None):
         # フローJSONからStepointを生成する

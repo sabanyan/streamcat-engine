@@ -2873,7 +2873,7 @@ class MainTest(TestCaseBase):
         }
 
         args = {
-          'params': {
+          'flow_args': {
             "sensor": "0,1",
             "customer": "顧客"
           }
@@ -4660,7 +4660,7 @@ class MainTest(TestCaseBase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        args = {'params': {"new_param1":"B", "new_param2":"C"}}
+        args = {'flow_args': {"new_param1":"B", "new_param2":"C"}}
         lasts = execute(FlowCommand(flow), args, {})
         lasts = convert_from_activity(lasts)
 
