@@ -102,9 +102,9 @@ class Tubes:
         """
         Stepに紐づくTubesを返す
         """
-        ret = Tubes()
-        ret._tubes = [tube for tube in self._tubes if tube.step==step]
-        return ret
+        rets = Tubes()
+        rets._tubes = [tube for tube in self._tubes if tube.step==step]
+        return rets
 
     def have_step(self, step):
         return len(self.filter_by_step(step)) > 0
