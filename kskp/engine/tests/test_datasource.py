@@ -2107,6 +2107,17 @@ class DataSourceTest(TestCaseBase):
                     "makeCache": False,
                     "dataSource": "csv",
                     "cacheCreatedAt": None
+                },
+                {
+                    "id": 'o0', 
+                    "label": "ライブラリ出力🖨", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "srcs": {
+                        "d": 'd1'
+                    },
+                    "dsts": {}, 
+                    "uuid": self.data_dst.uuid
                 }
             ]
         }
@@ -2146,6 +2157,7 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
         out_frame2 = lasts['d1']
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame2.label.startswith('d1'))
         self.assertTrue(out_frame2.file_exists)
 
         # ほかす
@@ -2376,27 +2388,38 @@ class DataSourceTest(TestCaseBase):
             ],
             "nodes": [
                 {
-                "id": "c1", 
-                "label": "c1", 
-                "type": "command", 
-                "commandId": "mnewstr",
-                "args": {
-                    "a": "static", 
-                    "l": "13", 
-                    "v": "𠮷野家"
-                }, 
-                "srcs": {}, 
-                "dsts": {
-                    "o": "d1"
-                }
+                    "id": "c1", 
+                    "label": "c1", 
+                    "type": "command", 
+                    "commandId": "mnewstr",
+                    "args": {
+                        "a": "static", 
+                        "l": "13", 
+                        "v": "𠮷野家"
+                    }, 
+                    "srcs": {}, 
+                    "dsts": {
+                        "o": "d1"
+                    }
                 },
                 {
-                "id": "d1", 
-                "label": "d1", 
-                "type": "frame", 
-                "makeCache": False, 
-                "dataSource": "csv", 
-                "cacheCreatedAt": None
+                    "id": "d1", 
+                    "label": "d1", 
+                    "type": "frame", 
+                    "makeCache": False, 
+                    "dataSource": "csv", 
+                    "cacheCreatedAt": None
+                },
+                {
+                    "id": 'o0', 
+                    "label": "ライブラリ出力🖨", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "srcs": {
+                        "d": 'd1'
+                    },
+                    "dsts": {}, 
+                    "uuid": self.data_dst.uuid
                 }
             ]
         }
@@ -3526,6 +3549,7 @@ class DataSourceTest(TestCaseBase):
         out_frame2 = lasts['f1_d2_1']
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FLOW_TYPE))
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FLOW_TYPE))
+        print(out_frame1.label)
         self.assertTrue(out_frame1.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
         self.assertTrue(out_frame2.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
 
@@ -3833,6 +3857,17 @@ class DataSourceTest(TestCaseBase):
                     "label": "d1", 
                     "type": "frame", 
                     "dataSource": "csv"
+                },
+                {
+                    "id": 'o0', 
+                    "label": "ライブラリ出力🖨", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "srcs": {
+                        "d": 'd1'
+                    },
+                    "dsts": {}, 
+                    "uuid": self.data_dst.uuid
                 }
             ], 
             "creator": "ユーザー管理者", 
@@ -3987,6 +4022,17 @@ class DataSourceTest(TestCaseBase):
                     "label": "d1", 
                     "type": "frame", 
                     "dataSource": "csv"
+                },
+                {
+                    "id": 'o0', 
+                    "label": "ライブラリ出力🖨", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "srcs": {
+                        "d": 'd1'
+                    },
+                    "dsts": {}, 
+                    "uuid": self.data_dst.uuid
                 }
             ], 
             "creator": "ユーザー管理者", 

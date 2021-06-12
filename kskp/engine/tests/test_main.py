@@ -5,6 +5,7 @@ from kskp.store import FlowData, List, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowCommand
+from .make_flow_json import create_flow_by_flow_id, get_flow_json_by_flow_id
 
 class MainTest(TestCaseBase):
     """
@@ -487,7 +488,7 @@ class MainTest(TestCaseBase):
         mコマンド１個のフロー実行
         """
         flow_json = copy.deepcopy(self.flow_json)
-        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -538,7 +539,7 @@ class MainTest(TestCaseBase):
         flow_json = copy.deepcopy(self.flow_json)
         flow_json['nodes'].append(add_cmd)
         flow_json['nodes'].append(add_datum)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -755,8 +756,8 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
-                                  {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -867,7 +868,7 @@ class MainTest(TestCaseBase):
         mコマンド１個（２つのinputを持つ）のフロー実行
         """
         flow_json = copy.deepcopy(self.flow_json_inputs)
-        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -895,8 +896,8 @@ class MainTest(TestCaseBase):
         mコマンド１個（２つのoutputを持つ）のフロー実行
         """
         flow_json = copy.deepcopy(self.flow_json_outputs)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
-                                  {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
         
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -932,7 +933,7 @@ class MainTest(TestCaseBase):
                 node['dsts'] = {'o': 'd2'}
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -963,7 +964,7 @@ class MainTest(TestCaseBase):
                 node['dsts'] = {'u': 'd3'}
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd2']
-        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -1080,8 +1081,8 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_cmd_1)
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'},
-                                  {'nodeId':'d4', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
+        flow_json['nodes'].append(self.create_data_dst_node('d4'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -1244,7 +1245,7 @@ class MainTest(TestCaseBase):
         """
 
         flow_json = copy.deepcopy(self.flow_json_inputs_mnewnumber)
-        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -1277,8 +1278,8 @@ class MainTest(TestCaseBase):
         mnrcommonの実行テスト
         """
         flow_json = copy.deepcopy(self.flow_json_outputs_and_inputs)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
-                                  {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -1356,7 +1357,7 @@ class MainTest(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub1', sub_uuid)
 
-        mainflow_json['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
@@ -1428,7 +1429,7 @@ class MainTest(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub1', sub_uuid)
 
-        mainflow_json['ports'] = [[],[{'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
@@ -1583,8 +1584,8 @@ class MainTest(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub2', sub_uuid)
 
-        mainflow_json['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
-                                      {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd2'))
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
@@ -1878,6 +1879,10 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_datum_2)
+
+        # データデストの追加
+        flow_json['nodes'].append(self.create_data_dst_node('dd4'))
+        flow_json['nodes'].append(self.create_data_dst_node('dd5'))
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
@@ -2242,7 +2247,7 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
@@ -2341,7 +2346,7 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         # テスト用のフロー作成
         # キャッシュを生成するテストなので、nodeのuuidが書き換わっているかのテストも行わないといけないため
@@ -2485,8 +2490,8 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'dd4', 'label':'lbl1', 'type':'frame'},
-                                  {'nodeId':'dd5', 'label':'lbl2', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('dd4'))
+        flow_json['nodes'].append(self.create_data_dst_node('dd5'))
 
         # サブフローの作成
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
@@ -2583,8 +2588,8 @@ class MainTest(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub3', sub_uuid)
 
-        mainflow_json['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
-                                      {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd2'))
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
@@ -2601,7 +2606,7 @@ class MainTest(TestCaseBase):
         self.assertEqual(result_dd3, correct['dd3'])
 
         # 後片付け
-        self.assertTrue (self.delete_flow(sub_uuid))
+        self.assertTrue(self.delete_flow(sub_uuid))
         lasts['dd2'].delete()
         lasts['dd3'].delete()
 
@@ -2660,8 +2665,8 @@ class MainTest(TestCaseBase):
         sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
         self.create_flow('sub4', sub_uuid)
 
-        mainflow_json['ports'] = [[],[{'nodeId':'dd2', 'label':'lbl', 'type':'frame'},
-                                      {'nodeId':'dd3', 'label':'lbl', 'type':'frame'}]]
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd2'))
+        mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
@@ -2702,7 +2707,7 @@ class MainTest(TestCaseBase):
         update_flow_node_uuid(self.flow_json_use_by_csv, 'i', frame.uuid)
 
         flow_json = copy.deepcopy(self.flow_json_use_by_csv)
-        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         flow= self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -2781,7 +2786,7 @@ class MainTest(TestCaseBase):
         flow_json['nodes'].append(add_datum_1)
         flow_json['nodes'].append(add_cmd_2)
         flow_json['nodes'].append(add_datum_2)
-        flow_json['ports'] = [[],[{'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         # 中間データ作成
         data = [
@@ -2816,13 +2821,17 @@ class MainTest(TestCaseBase):
         外部からframeを与えて実行する
         args指定はなし
         """
-        # サブフローの作成
-        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
-        self.create_flow('sub2', sub_uuid)
+        # フローJSONを取得する
+        flow_json = get_flow_json_by_flow_id('sub2')
+        # サブフローにデータデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
+        flow_json['nodes'].append(self.create_data_dst_node('d4'))
+        # サブフローを作成する
+        flow = self.root.create_flow('sub2', FlowData(flow_json))
+        flow.uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        flow.save()
 
-        flow = self.factory.data.find_by_uuid(sub_uuid)
-        flow_link = FlowCommand(flow)
-
+        # フローを実行する
         inputs = {
             'd1': List([["顧客", "数量", "金額"],
                         ["A", 1, 10],
@@ -2831,6 +2840,7 @@ class MainTest(TestCaseBase):
                         ["B", 3, 40],
                         ["B", 1, 50]])
         }
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, inputs)
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -2845,7 +2855,7 @@ class MainTest(TestCaseBase):
         self.assertEqual(result_d4, correct['d4'])
 
         # 後片付け
-        self.assertTrue (self.delete_flow(sub_uuid))
+        self.assertTrue (self.delete_flow(flow.uuid))
         lasts['d3'].delete()
         lasts['d4'].delete()
 
@@ -2856,13 +2866,17 @@ class MainTest(TestCaseBase):
         外部からframeを与えて実行する
         args指定する
         """
-        # サブフローの作成
-        sub_uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
-        self.create_flow('sub3', sub_uuid)
+        # フローJSONを取得する
+        flow_json = get_flow_json_by_flow_id('sub3')
+        # サブフローにデータデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
+        flow_json['nodes'].append(self.create_data_dst_node('d4'))
+        # サブフローを作成する
+        flow = self.root.create_flow('sub3', FlowData(flow_json))
+        flow.uuid = '62dbe8d6-5f09-450e-a0b8-fab88ecfafd3'
+        flow.save()
 
-        flow = self.factory.data.find_by_uuid(sub_uuid)
-        flow_link = FlowCommand(flow)
-
+        # フローを実行する
         inputs = {
             'd1': List([["顧客", "数量", "金額"],
                         ["A", 1, 10],
@@ -2871,14 +2885,13 @@ class MainTest(TestCaseBase):
                         ["B", 3, 40],
                         ["B", 1, 50]])
         }
-
         args = {
           'flow_args': {
             "sensor": "0,1",
             "customer": "顧客"
           }
         }
-
+        flow_link = FlowCommand(flow)
         lasts = execute(flow_link, args, inputs)
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
@@ -2893,7 +2906,7 @@ class MainTest(TestCaseBase):
         self.assertEqual(result_d4, correct['d4'])
 
         # 後片付け
-        self.assertTrue (self.delete_flow(sub_uuid))
+        self.assertTrue(self.delete_flow(flow.uuid))
         lasts['d3'].delete()
         lasts['d4'].delete()
 
@@ -2958,7 +2971,7 @@ class MainTest(TestCaseBase):
         flow_json = copy.deepcopy(self.flow_json)
         flow_json['nodes'].append(add_cmd)
         flow_json['nodes'].append(add_datum)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -2976,9 +2989,9 @@ class MainTest(TestCaseBase):
         lasts['d2'].delete()
 
     # @unittest.skip
-    def test_simple_flow_vis_use_nmcmd(self):
+    def test_simple_flow_execute_use_nmcmd(self):
         """
-        mコマンド２個のフローVis
+        mコマンド２個のフロー
         確認したいことはnm.cmdの動作（mchkcsvを実行している）
         nm.cmdから出るものをVisするテスト
         """
@@ -3007,7 +3020,7 @@ class MainTest(TestCaseBase):
         flow_json = copy.deepcopy(self.flow_json)
         flow_json['nodes'].append(add_cmd)
         flow_json['nodes'].append(add_datum)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -3047,7 +3060,7 @@ class MainTest(TestCaseBase):
 
         # キャッシュ生成時にjsonを書き換える処理があるため、一旦物理ファイル化
         flow_json = copy.deepcopy(self.flow_json_use_mchkcsv)
-        flow_json['ports'] = [[],[{'nodeId':'d1', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
         flow = self.save_flow('test', flow_json)
 
         flow_link = FlowCommand(flow)
@@ -3102,8 +3115,8 @@ class MainTest(TestCaseBase):
         update_flow_node_uuid(self.flow_json_outputs_pcmd, 'i', frame.uuid)
 
         flow_json = copy.deepcopy(self.flow_json_outputs_pcmd)
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'},
-                                  {'nodeId':'d3', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
+        flow_json['nodes'].append(self.create_data_dst_node('d3'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -3155,7 +3168,7 @@ class MainTest(TestCaseBase):
                 # node['dsts'] = {'o': 'd2'}
                 break
         flow_json['nodes'] = [node for node in flow_json['nodes'] if node['id'] != 'd3']
-        flow_json['ports'] = [[],[{'nodeId':'d2', 'label':'lbl', 'type':'frame'}]]
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -3295,6 +3308,9 @@ class MainTest(TestCaseBase):
         # フローJSONの入力データにUUIDを設定する
         update_flow_node_uuid(flow_json, 'd1', frame.uuid)
 
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
+
         # フローを作成する
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
 
@@ -3403,6 +3419,9 @@ class MainTest(TestCaseBase):
         # フローJSONの入力データにUUIDを設定する
         update_flow_node_uuid(flow_json, 'd', frame.uuid)
         update_flow_node_uuid(flow_json, 'd1', frame.uuid)
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
 
         # フローを作成する
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
@@ -3526,6 +3545,10 @@ class MainTest(TestCaseBase):
           "description": ""
         }
 
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
+        flow_json['nodes'].append(self.create_data_dst_node('d2'))
+
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -3622,6 +3645,9 @@ class MainTest(TestCaseBase):
           "description": ""
         }
 
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d'))
+
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
@@ -3715,6 +3741,10 @@ class MainTest(TestCaseBase):
           "projectId": None, 
           "description": ""
         }
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d'))
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.save_flow(self.flow_json['label'], flow_json)
@@ -3824,6 +3854,9 @@ class MainTest(TestCaseBase):
           "projectId": None, 
           "description": ""
         }
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
@@ -4659,6 +4692,9 @@ class MainTest(TestCaseBase):
           "description": ""
         }
 
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
+
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         args = {'flow_args': {"new_param1":"B", "new_param2":"C"}}
         lasts = execute(FlowCommand(flow), args, {})
@@ -4762,6 +4798,10 @@ class MainTest(TestCaseBase):
           "projectId": None, 
           "description": ""
         }
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d'))
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
@@ -4889,6 +4929,10 @@ class MainTest(TestCaseBase):
           "description": ""
         }
 
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d'))
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
+
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
@@ -4966,6 +5010,9 @@ class MainTest(TestCaseBase):
                 }
             ]
         }
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('dd2'))
 
         # フローを作成する
         flow =self.save_flow(self.flow_json['label'], flow_json)
@@ -5780,6 +5827,9 @@ class MainTest(TestCaseBase):
         sub_flow.uuid = '5cd94ccf-a1bb-4cae-82ed-d75ddb77c535'
         sub_flow.save()
 
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
+
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))
 
@@ -5965,6 +6015,9 @@ class MainTest(TestCaseBase):
         sub_flow = self.root.create_flow('', FlowData(sub_flow_json))
         sub_flow.uuid = '5cd94ccf-a1bb-4cae-82ed-d75ddb77c535'
         sub_flow.save()
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
         # フローを作成する
         flow = self.root.create_flow('', FlowData(flow_json))

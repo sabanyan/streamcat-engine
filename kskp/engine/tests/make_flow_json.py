@@ -15,6 +15,10 @@ def create_flow_by_flow_id(parent, flow_id, uuid):
     # save()によりreadable=Noneになるため再取得する
     return flow.reload()
 
+def get_flow_json_by_flow_id(flow_id):
+    import copy
+    return copy.deepcopy(test_json[flow_id])
+
 sub1 = {
     "description": "サブフロー",
     "label": "サブフロー",

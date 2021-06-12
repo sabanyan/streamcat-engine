@@ -4,13 +4,16 @@ class Step:
     """
     コマンド等の実行可能ノードのインスタンスを表現するクラス
     """
-    def __init__(self, id:str, command:Command, args:dict={}, o_ports=None, ex_acceptable:bool=False):
+    def __init__(self, id:str, command:Command, args:dict={}, o_ports=None, classification:str=None, ex_acceptable:bool=False):
         if not isinstance(command, Command):
             raise Exception('commandにFlowCommandまたはCommand以外のオブジェクトが指定されました')
 
         self.id = id
         self.command = command
         self.args = args
+
+        # classificationはサブフローノードで定義される
+        self.classification = classification
 
         # 入力データが例外の場合、コマンドに渡すか否か
         self.ex_acceptable = ex_acceptable
@@ -32,7 +35,8 @@ class Step:
         """
         データデストの場合はTrueを返す
         """
-        return len(self.command.i_ports) == 1 and len(self._o_ports) == 0
+        # return len(self.command.i_ports) == 1 and len(self._o_ports) == 0
+        return self.classification == 'data_dest'
 
     def run(self, inputs):
         """

@@ -252,10 +252,10 @@ class FlowCommand(Command):
             srcs = node.get('srcs') or {}
             dsts = node.get('dsts') or {}
 
+            # NOTE: SaverCommandの入力Pointのidを取得する為だけに残しているが、
+            # Proprocessor._get_src_point_of_data_dst()にその機能を統合してもいいかも
             if len(srcs)==1 and len(dsts)==0:
-            # TODO: ここではコマンドの'classification'でデータデストか否かを判定する
-            # if node.get('classification')=='data_dest':
-                # データデストには入力Pointのidを渡す
+                # データデストまたはSaverCommandには入力Pointのidを渡す
                 src_point_id = next(iter(srcs.values()))
                 node_src_point = points.get(src_point_id)
             else:
@@ -263,7 +263,7 @@ class FlowCommand(Command):
                 node_src_point = src_point
 
             # 
-            # CommandまたはFlowを取得する
+            # CommandまたはFlowCommandを取得する
             # 
             cmd = self._create_command(node, vis_args, use_cache, node_src_point)
 
@@ -279,7 +279,7 @@ class FlowCommand(Command):
             o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
 
             # runnableのインスタンス化を行う
-            step = Step(node.id, cmd, args, o_ports=o_ports)
+            step = Step(node.id, cmd, args, o_ports=o_ports, classification=node.get('classification'))
             # Stepを集める
             substeps.append(step)
 
@@ -401,7 +401,7 @@ class FlowCommand(Command):
             flow_cmd = FlowCommand(sub_flow, is_main=False, preprocessor=self._preprocessor)
             # サブフローのフローJSONからStepointを生成する
             flow_cmd._parse_nodes(vis_args, use_cache, src_point)
-            # フローを前処理する
+            # サブフローを前処理する
             return self._preprocessor.execute(flow_cmd=flow_cmd, vis_args=vis_args, src_point=src_point)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')

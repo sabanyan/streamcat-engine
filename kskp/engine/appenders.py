@@ -256,10 +256,10 @@ class ActivityDataDestAppender():
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
-    def do_append(self, flow, point, original_out_point):
+    def do_append(self, flow, point, src_point_of_data_dst):
         # Activity Stepのargsにpointを追加する
         port_label = str(self._next_port_no)
-        self.activity_step.args['points'][port_label] = original_out_point
+        self.activity_step.args['points'][port_label] = src_point_of_data_dst
 
         # PointにActivity Stepを繋げる
         point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))

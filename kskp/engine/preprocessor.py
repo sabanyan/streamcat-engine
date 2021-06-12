@@ -1,6 +1,6 @@
 from .flow_command import FlowCommand
 from .flow_port import FlowPort
-from .point import Point
+from .point import Points, Point
 
 class Preprocessor:
     """
@@ -106,8 +106,8 @@ class Preprocessor:
                         'flow_label'   : self._context.flow_label,
                         'result_folder': self._context.flow.find_parent(),
                         # データデストの入力PointのlabelをSaverCommandに渡す
-                        'src_point' : src_point,
-                        'datum_factory' : self._context.datum_factory,
+                        'src_point'    : src_point,
+                        'datum_factory': self._context.datum_factory,
                         'start_time'   : self._context.start_time,
                         'activity_uuid': self._context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
@@ -126,7 +126,7 @@ class Preprocessor:
         is_vis = len(vis_ids) > 0
 
 
-        # lasts出力処理（メインフローの場合のみ）
+        # lasts出力処理 (メインフローの場合のみ)
         if is_vis:
             # プレビューの結果を得るのに不要なコマンドをStepointsでrun()させない為
             # メインフローの全ての出力Portを閉じる
@@ -146,22 +146,34 @@ class Preprocessor:
                 out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
         else:
 
-            for original_out_point in [p.point for p in flow_cmd.o_ports]:
-                # original_out_pointが、中継したフロー出力Pointの場合はTrue
-                src_tube = original_out_point.src_tubes.find_command_tube()
-                in_port_label_exists = src_tube is not None and src_tube.port is not None
-                out_point_is_relayed = in_port_label_exists and src_tube.port in flow_cmd.relayed_o_ports
-                if out_point_is_relayed:
-                    # フローの出力Pointが、中継したフロー出力Pointでもある場合、
-                    # 既にSaverコマンドが繋がっているので、そのPointにSaverコマンドを付加しない
-                    out_point = original_out_point
-                else:
-                    # Saverコマンドを付加する
-                    out_point = self._folder_data_dest_appender.do_append(flow_cmd, original_out_point)
-                # Runsコマンドを付加する
-                out_point = self._runs_command_appender.do_append(flow_cmd, out_point)
+            # for original_out_point in [p.point for p in flow_cmd.o_ports]:
+            #     # original_out_pointが、中継したフロー出力Pointの場合はTrue
+            #     src_tube = original_out_point.src_tubes.find_command_tube()
+            #     in_port_label_exists = src_tube is not None and src_tube.port is not None
+            #     out_point_is_relayed = in_port_label_exists and src_tube.port in flow_cmd.relayed_o_ports
+            #     if out_point_is_relayed:
+            #         # フローの出力Pointが、中継したフロー出力Pointでもある場合、
+            #         # 既にSaverコマンドが繋がっているので、そのPointにSaverコマンドを付加しない
+            #         out_point = original_out_point
+            #     else:
+            #         # Saverコマンドを付加する
+            #         out_point = self._folder_data_dest_appender.do_append(flow_cmd, original_out_point)
+            #     # Runsコマンドを付加する
+            #     out_point = self._runs_command_appender.do_append(flow_cmd, out_point)
+            #     # Activity Stepを付加する
+            #     out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
+            #     # 出力Point設定を元のPointからActivity_pointに変更する
+            #     flow_cmd.close_o_port_by_point(original_out_point)
+            #     out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+
+            # SaverCommandとそのサブクラスのコマンドの出力Pointに、Runs StepとActivity Stepを付加する
+            for original_out_point in [p.point for p in flow_cmd.relayed_o_ports]:
+                # データデストの入力Pointを取得する、取得できない場合はSaverCommandの出力Pointを用いる
+                src_point_of_data_dst = self._get_src_point_of_data_dst(flow_cmd.points, original_out_point) or original_out_point
+                # Runs Stepを付加する
+                out_point = self._runs_command_appender.do_append(flow_cmd, original_out_point)
                 # Activity Stepを付加する
-                out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
+                out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
                 # 出力Point設定を元のPointからActivity_pointに変更する
                 flow_cmd.close_o_port_by_point(original_out_point)
                 out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
@@ -217,6 +229,43 @@ class Preprocessor:
 
         # 作成した親フローの出力Portを返す
         return o_port
+
+    def _get_src_point_of_data_dst(self, flow_points:Points, dst_point_of_data_dst:Point) -> Point:
+        """
+        データデストの入力Pointを取得する、取得できない場合はNoneを返す
+        """
+        # 出力PointからCommandに紐づくTubeを取得する
+        src_tube = dst_point_of_data_dst.src_tubes.find_command_tube()
+        if src_tube is None:
+            return None
+
+        if src_tube.step.is_datadst:
+            # 出力Pointに紐づくCommandがデータデストの場合
+            # そのデータデストの入力Pointを取得する
+            for point in flow_points:
+                if point.dst_tubes.have_step(src_tube.step):
+                    return point
+            # データデストの入力Pointが取得できなかった場合はNoneを返す
+            return None
+
+        elif src_tube.step.is_flow:
+            # 出力Pointに紐づくCommandがデータデスト以外のフローの場合
+            # そのフローの出力ポートに紐づくフロー出力Pointを取得する
+            sub_flow_cmd = src_tube.step.command
+            for flow_port in sub_flow_cmd.o_ports:
+                if flow_port == src_tube.port:
+                    # フロー出力Point
+                    dst_point_of_sub_flow_cmd = flow_port.point
+                    break
+            # フロー出力Pointが取得できなかった場合はNoneを返す
+            if dst_point_of_sub_flow_cmd is None:
+                return None
+            # サブフロー内へデータデストを探しに行く
+            return self._get_src_point_of_data_dst(sub_flow_cmd.points, dst_point_of_sub_flow_cmd)
+
+        else:
+            # 出力Pointに紐づくCommandがフローでない場合はNoneを返す
+            return None
 
     # def _pick_necessary_dst_ids(self, nodes, datum_ids):
     #     """
