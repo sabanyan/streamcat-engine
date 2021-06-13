@@ -9,6 +9,7 @@ class Ports():
 
     def __init__(self, ports:set=set()):
         # portsはset型なのでPortの重複は無い
+        # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
         self._ports = list(ports)
 
     def add(self, port:Port):

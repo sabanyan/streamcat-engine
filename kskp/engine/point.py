@@ -94,7 +94,7 @@ class Points:
 
     def __init__(self, points:set=set()):
         # pointsはset型なのでPointの重複は無い
-        # TODO: list(points) -> set(points) では?
+        # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
         self._points = list(points)
 
     def add(self, point:Point):
