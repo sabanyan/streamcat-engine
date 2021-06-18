@@ -1,16 +1,17 @@
 from typing import Iterator
-from .tube import Tubes
+from .tube import Tube, Tubes
 
 class Point:
     """
     データノードのインスタンスを表現するクラス
     """
-    def __init__(self, point_id, src_tube=None, datum=None, dst_tube=None, makeCache:bool=False):
-        if point_id is None:
+    def __init__(self, id:str, src_tube:Tube=None, datum=None, dst_tube:Tube=None, makeCache:bool=False):
+        if id is None:
             raise Exception('point_idにNoneは指定できません')
 
-        self.id = point_id
-        self.label = ''
+        self.id = id
+        # ラベルが指定されない場合はidと同じ値を設定する
+        self.label = id
 
         # 親フローに繋がるPoint、かつコマンドの出力Pointの場合、src_tubesは2つのTubeを持つ
         if src_tube is None:
