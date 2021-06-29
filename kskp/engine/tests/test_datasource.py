@@ -686,7 +686,7 @@ class DataSourceTest(TestCaseBase):
                         "S": "1", 
                         "a": "no", 
                         "e": "seq", 
-                        "s": "amount%n"
+                        "s": "金額"
                     }, 
                     "srcs": {
                         "i": "d"
@@ -876,7 +876,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(1, len(lasts))
 
         # 正しいVisが得られるか
-        correct = {'d1': [['A','20180101','5200'], ['B','20180112','4300'],['A','20180105','2000'], ['B','20180107','4000']]}
+        correct = {'d1': [['x','1','10','1'], ['x','2','20','2'], ['y','1','30','3'], ['y','3','40','4'], ['z','1','50','5']]}
         self.assertDictEqual(lasts, correct)
 
         # フローを削除する
