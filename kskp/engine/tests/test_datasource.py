@@ -1,3 +1,4 @@
+import io
 import copy
 import unittest
 import shutil
@@ -995,6 +996,11 @@ class DataSourceTest(TestCaseBase):
         フローの途中に出力ポイントを配置するサブフローを呼び出した場合、
         出力ポイントより後ろのコマンドは実行されないこと
         """
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+        # 参照先フレームを作成する
+        frame1 = root.create_frame('CSV1', io.BytesIO(b''))
+        frame1.save()
 
         sub_flow_json = {
             "nodes": [
@@ -1002,7 +1008,7 @@ class DataSourceTest(TestCaseBase):
                     "id": "d", 
                     "type": "frame", 
                     "label": "testData", 
-                    "uuid": "4392797b-54da-406c-9482-57b572359c27", 
+                    "uuid": frame1.uuid, 
                     "makeCache": False, 
                     "dataSource": "csv", 
                     "cacheCreatedAt": None
@@ -2702,13 +2708,22 @@ class DataSourceTest(TestCaseBase):
         十分に深い呼出関係のサブフローをプレビューできること
         """
 
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+        # 参照先フレームを作成する
+        frame1 = root.create_frame('CSV1', io.BytesIO(b''))
+        frame1.save()
+        # 参照先サブフローを作成する
+        sub_flow1 = root.create_flow('サブフロー1', FlowData({}))
+        sub_flow1.save()
+
         sub_flow4 = {
             "label": "subflow4", 
             "nodes": [
                 {
                     "id": "d", 
                     "type": "frame", 
-                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "uuid": frame1.uuid, 
                     "label": "testData", 
                     "dataSource": "csv"
                 }, 
@@ -2776,7 +2791,7 @@ class DataSourceTest(TestCaseBase):
                 {
                     "id": "d", 
                     "type": "frame", 
-                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "uuid": frame1.uuid, 
                     "label": "testData", 
                     "dataSource": "csv"
                 }, 
@@ -2855,14 +2870,14 @@ class DataSourceTest(TestCaseBase):
                 {
                     "id": "d", 
                     "type": "frame", 
-                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "uuid": frame1.uuid, 
                     "label": "testData", 
                     "dataSource": "csv"
                 }, 
                 {
                     "id": "d1", 
                     "type": "frame", 
-                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "uuid": frame1.uuid, 
                     "label": "testData", 
                     "dataSource": "csv"
                 }, 
@@ -2986,7 +3001,7 @@ class DataSourceTest(TestCaseBase):
                 {
                     "id": "d", 
                     "type": "frame", 
-                    "uuid": "30576973-0dc9-42e1-8fd6-aba699517043", 
+                    "uuid": frame1.uuid, 
                     "label": "testData", 
                     "dataSource": "csv"
                 }, 

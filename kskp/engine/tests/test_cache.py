@@ -618,16 +618,16 @@ class CacheTest(TestCaseBase):
         project.save()
         project = project.reload()
 
-        # 乱数をデータソースとするフローを作成する
-        flow = project.create_flow('響きよくある明日の前に', FlowData(flow_json))
-        flow.save()
-        flow = flow.reload()
-
         # サブフローを作成する
-        sub_flow = project.create_flow('見つけあった今日が　愛おしいとか', FlowData(sub_flow_json))
+        sub_flow = project.create_flow('響きよくある明日の前に', FlowData(sub_flow_json))
         sub_flow.uuid = 'a469bdd3-5236-4be3-a9f6-25ec9780f735'
         sub_flow.save()
         sub_flow = sub_flow.reload()
+
+        # 乱数をデータソースとするフローを作成する
+        flow = project.create_flow('見つけあった今日が　愛おしいとか', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
         cache_folder = self.factory0.data.load_cache_folder()
@@ -875,16 +875,16 @@ class CacheTest(TestCaseBase):
         project.save()
         project = project.reload()
 
-        # 乱数をデータソースとするフローを作成する
-        flow = project.create_flow('cache test 3', FlowData(flow_json))
-        flow.save()
-        flow = flow.reload()
-
         # サブフローを作成する
         sub_flow = project.create_flow('あと何十回、何千時間一緒にいれば', FlowData(sub_flow_json))
         sub_flow.uuid = '171d415d-eae5-4249-9601-fc8f19e5fec6'
         sub_flow.save()
         sub_flow = sub_flow.reload()
+
+        # 乱数をデータソースとするフローを作成する
+        flow = project.create_flow('cache test 3', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
         cache_folder = self.factory0.data.load_cache_folder()
@@ -1487,17 +1487,17 @@ class CacheTest(TestCaseBase):
         project = root.create_project_folder('お母にゃん')
         project.save()
         project = project.reload()
-        
-        # フローを作成する
-        flow = project.create_flow('あににゃん', FlowData(flow_json))
-        flow.save()
-        flow = flow.reload()
 
         # プロジェクトの下にフレームを作成する
         import io
         frame = project.create_frame('たびにゃん', io.BytesIO(b'date,amount\n20100101,2300'))
         frame.uuid = '30576973-0dc9-42e1-8fd6-aba699517043'
         frame.save()
+
+        # フローを作成する
+        flow = project.create_flow('あににゃん', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
 
         # データソースファイルの権限を削除して参照不可にする
         everyone_role = self.factory.role.load_everyone_role()
