@@ -3,13 +3,12 @@ import copy
 import unittest
 import shutil
 from pathlib import Path
-from unittest import result
 
 from kskp.core import Datum
 from kskp.store import DatabaseConn, FlowData, NysolModule
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.engine import execute, FlowCommand
-from .test_main import convert_from_activity, convert_from_activity_vis, convert_from_activity_exs
+from .test_main import convert_from_activity, convert_from_activity_vis
 from .make_flow_json import create_flow_by_flow_id
 
 class DataSourceTest(TestCaseBase):
@@ -650,8 +649,6 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    # 入力ポイントより前のコマンドの実行を許可するか否か、仕様が未定
-    # そのため、エラーになる
     def test_subflow_has_outin_on_way(self):
         """
         フローの途中に出力と入力ポイントの順に配置するサブフローを呼び出した場合、
