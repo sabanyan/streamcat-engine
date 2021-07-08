@@ -52,6 +52,17 @@ class Preprocessor:
         # flow_datumのLockのUUID
         self._lock_uuid = lock_uuid
 
+    def init(self):
+        """
+        初期状態に戻す
+        """
+        from .appenders import RunsCommandAppender, ActivityDataDestAppender
+        self._runs_command_appender = RunsCommandAppender()
+        self._activity_data_dest_appender = ActivityDataDestAppender(self._context.flow_uuid)
+        self._context = Preprocessor.Context(self._context.datum_factory,
+                                             self._context.flow,
+                                             self._activity_data_dest_appender.activity_uuid)
+
     def execute(self, flow_cmd:FlowCommand, vis_args:dict, use_cache:bool=False, src_point:Point=None):
         from kskp.depo.std.commands import SCommand
         from kskp.depo.std.commands.scmd.script import SaverCommand

@@ -4091,3 +4091,136 @@ class DataSourceTest(TestCaseBase):
         out_frame2 = results['d1']
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
+
+    def test_runt_flow_cmd_reentrant(self):
+        """
+        Flow Commandのrun()を再実行できること
+        """
+        # ルートデータストアを取得する
+        root = self.factory.data.load_root()
+
+        flow_json ={
+            "label": "flow", 
+            "nodes": [
+                {
+                    "id": "c", 
+                    "label": "c", 
+                    "type": "command", 
+                    "commandId": "mnewrand",
+                    "args": {
+                        "a": "a", 
+                        "l": "10"
+                    }, 
+                    "srcs": {}, 
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d", 
+                    "label": "d", 
+                    "type": "frame", 
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "o", 
+                    "label": "ライブラリ", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "args": {},
+                    "srcs": {
+                        "d": "d"
+                    },
+                    "dsts": {}, 
+                    "flow": {
+                        "label": "ライブラリ", 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "d", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "s", 
+                                "label": "ライブラリ",
+                                "type": "store", 
+                                "uuid": root.uuid
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1", 
+                                "type": "command", 
+                                "commandId": "saver",
+                                "args": {}, 
+                                "srcs": {
+                                    "i": "d", 
+                                    "folder": "s"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }
+                            }, 
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "ports": [
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "i", 
+                                    "nodeId": "d"
+                                }
+                            ], 
+                            []
+                        ], 
+                        "params": []
+                    }
+                }
+            ], 
+            "ports": [
+                [], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ]
+            ], 
+            "params": []
+        }
+
+        # フローを作成する
+        flow = root.create_flow('Main', FlowData(flow_json))
+
+        # フローを実行する
+        flow_cmd = FlowCommand(flow)
+        lasts1 = flow_cmd.run()
+        lasts1 = convert_from_activity(lasts1)
+
+        # ライブラリに出力結果が出力されていること
+        self.assertEqual(len(lasts1), 1)
+        self.assertIsNotNone(lasts1['d'], 'SaverCommandは結果(d)を出力しませんでした')
+        out_frame1 = lasts1['d']
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame1.file_exists)
+
+        # 同じFlowCommandオブジェクトを用いて
+        # 再度フローを実行する
+        lasts2 = flow_cmd.run()
+        lasts2 = convert_from_activity(lasts2)
+
+        # ライブラリに出力結果が出力されていること
+        self.assertEqual(len(lasts2), 1)
+        self.assertIsNotNone(lasts2['d'], 'SaverCommandは結果(d)を出力しませんでした!')
+        out_frame2 = lasts2['d']
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame2.file_exists)
+
+        # 初回と再実行はそれぞれ異なる出力結果を出力すること
+        self.assertNotEqual(out_frame1.uuid, out_frame2.uuid)
