@@ -146,11 +146,12 @@ class Preprocessor:
 
             for original_out_point in [flow_cmd.points[pid] for pid in vis_ids]:
                 # Visualizerコマンドのための前処理コマンドを付加する
-                out_point = self._vis_data_dest_appender.do_append(flow_cmd, original_out_point, vis_args)
+                o_point, u_point = self._vis_data_dest_appender.do_append(flow_cmd, original_out_point, vis_args)
                 # Runsコマンドを付加する
-                out_point = self._runs_command_appender.do_append(flow_cmd, out_point)
+                o_point, u_point = self._runs_command_appender.do_append(flow_cmd, o_point, u_point)
                 # Visualizeコマンドを付加する
-                out_point = self._vis_data_dest_appender.do_append_after_runs(flow_cmd, out_point, original_out_point, vis_args)
+                vis_arg = vis_args.get(original_out_point.id)
+                out_point = self._vis_data_dest_appender.do_append_after_runs(flow_cmd, o_point, u_point, vis_arg)
                 # Activity Stepを付加する
                 out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
                 # Activity_pointを出力Pointに設定する
@@ -182,7 +183,7 @@ class Preprocessor:
                 # データデストの入力Pointを取得する、取得できない場合はSaverCommandの出力Pointを用いる
                 src_point_of_data_dst = self._get_src_point_of_data_dst(flow_cmd.points, original_out_point) or original_out_point
                 # Runs Stepを付加する
-                out_point = self._runs_command_appender.do_append(flow_cmd, original_out_point)
+                out_point, none_point = self._runs_command_appender.do_append(flow_cmd, original_out_point)
                 # Activity Stepを付加する
                 out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
                 # 出力Point設定を元のPointからActivity_pointに変更する

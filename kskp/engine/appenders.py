@@ -170,8 +170,13 @@ class VisDataDestAppender():
         point_id = point.id + '_mchkcsv'
         mchkcsv_point = Point(point_id, Tube(Port('o', 'frame'), mchkcsv_step), None, Tube(Port('i', 'frame'), tolist_step))
         # ToListコマンドを繋げる
-        point_id = point.id + '_tolist'
-        tolist_point = Point(point_id, Tube(Port('o', 'frame'), tolist_step))
+        point_id = point.id + '_tolist_o'
+        tolist_point_o = Point(point_id, Tube(Port('o', 'frame'), tolist_step))
+        if not vcmd_is_table:
+            point_id = point.id + '_tolist_u'
+            tolist_point_u = Point(point_id, Tube(Port('u', 'frame'), tolist_step))
+        else:
+            tolist_point_u = None
 
         # pointにsaverコマンドを付加する
         # (pointが終端でない場合は、二股の出力Portになる)
@@ -184,29 +189,39 @@ class VisDataDestAppender():
         flow.points.add(convtoutf8_point)
         flow.points.add(rowrange_point)
         flow.points.add(mchkcsv_point)
-        flow.points.add(tolist_point)
+        flow.points.add(tolist_point_o)
+        if tolist_point_u is not None:
+            flow.points.add(tolist_point_u)
 
-        return tolist_point
+        return tolist_point_o, tolist_point_u
 
-    def do_append_after_runs(self, flow, point, original_out_point, vis_args):
+    def do_append_after_runs(self, flow, o_point:Point, u_point:Point, vis_arg:dict):
         """
-        vcmdを付加する
+        VCommandを付加する
         """
-        if 'args' not in vis_args[original_out_point.id]:
-            raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください.')
+        if vis_arg is None:
+            raise Exception(f'APIのJSON引数にPoint idを指定してください')
 
-        vcmd_args = vis_args[original_out_point.id]['args']
-        vcmd_id = vis_args[original_out_point.id].get('command_id') or vcmd_args.get('visualizer')
+        if 'args' not in vis_arg:
+            raise Exception(f'APIのJSON引数({o_point.id})の下にargs属性を指定してください.')
+
+        vcmd_args = vis_arg['args']
+        vcmd_id = vis_arg.get('command_id') or vcmd_args.get('visualizer')
         
         if vcmd_id is None:
             raise Exception('command_id属性でvcmdのidを指定してください')
 
+        # VCommandを作成する
         vcmd = CommandLink(vcmd_id).resolve()
         vcmd_step = Step(vcmd.label, vcmd, vcmd_args)
-        vcmd_point = Point(point.id + '_v', Tube(Port('o', 'datum'), vcmd_step))
+        # VCommandの出力Pointを作成する
+        vcmd_point = Point(o_point.id + '_v', Tube(Port('o', 'datum'), vcmd_step))
 
-        # VisPointにVisualizerフローを繋げる
-        point.dst_tubes = Tubes(Tube(Port('i', 'frame'), vcmd_step))
+        # VCommandにRunsCommandの出力Pointを繋げる
+        o_point.dst_tubes = Tubes(Tube(Port('i', 'frame'), vcmd_step))
+        # グラフ表示の場合はVCommandにヘッダ出力(u)も繋げる
+        if u_point is not None:
+            u_point.dst_tubes = Tubes(Tube(Port('m', 'frame'), vcmd_step))
 
         flow.substeps.append(vcmd_step)
         flow.points.add(vcmd_point)
@@ -228,9 +243,17 @@ class RunsCommandAppender():
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
-    def do_append(self, flow, point):
+    def do_append(self, flow, point1:Point, point2:Point=None):
+        if point2 is None:
+            return self._do_append_one(flow, point1), None
+        else:
+            return self._do_append_one(flow, point1), self._do_append_one(flow, point2)
+
+    def _do_append_one(self, flow, point):
         # RunsCommandに繋げるPointを作成する
         port_label = str(self._next_port_no)
+        self._next_port_no += 1
+
         point_id = point.id + '_runs'
         runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step))
 
@@ -239,8 +262,6 @@ class RunsCommandAppender():
 
         # ここでRunsCommandを繋げる
         point.dst_tubes = Tubes(Tube(Port(port_label, 'mcmd'), self.runs_step))
-
-        self._next_port_no += 1
 
         if not self._already_step_added:
             flow.substeps.append(self.runs_step)
