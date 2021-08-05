@@ -120,11 +120,19 @@ class VisDataDestAppender():
 
     def do_append(self, flow, point, vis_args):
         """
-        RowRangeコマンドを付加する
-        ToListコマンドを付加する
+        テーブル又はグラフ表示のための前処理を付加する
         """
         if 'args' not in vis_args[point.id]:
             raise Exception(f'JSON属性({point.id})の下にargs属性を指定してください')
+
+        # グラフ種別を取得する
+        vcmd_args = vis_args[point.id]['args']
+        vcmd_id = vis_args[point.id].get('command_id') or vcmd_args.get('visualizer')
+        if vcmd_id is None:
+            raise Exception('command_id属性でvcmdのidを指定してください')
+
+        # テーブル表示の場合はTrue
+        vcmd_is_table = vcmd_id == 'csvtohtmltable'
 
         # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
@@ -134,7 +142,10 @@ class VisDataDestAppender():
         # RowRange Stepへの引数を作成する
         rowrange_args = vis_args[point.id]['args']
         # RowRange Stepを作成する
-        rowrange_cmd = CommandLink('rowrange').resolve()
+        if vcmd_is_table:
+            rowrange_cmd = CommandLink('rowrange').resolve()
+        else:
+            rowrange_cmd = CommandLink('rowrandom').resolve()
         rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
 
         # MchkCsv Stepを作成する
@@ -142,8 +153,12 @@ class VisDataDestAppender():
         mchkcsv_step = Step(mchkcsv_cmd.label, mchkcsv_cmd)
 
         # ToList Stepを作成する 
-        tolist_cmd = CommandLink('to_list').resolve()
-        tolist_step = Step(tolist_cmd.label, tolist_cmd)
+        # tolist_cmd = CommandLink('to_pipe').resolve()
+        if vcmd_is_table:
+            tolist_cmd = CommandLink('to_list').resolve()
+        else:
+            tolist_cmd = CommandLink('to_tlist').resolve()
+        tolist_step = Step(tolist_cmd.label, tolist_cmd, vcmd_args)
 
         # ConvToUtf8 Stepを繋げる
         point_id = point.id + '_convtoutf8'
