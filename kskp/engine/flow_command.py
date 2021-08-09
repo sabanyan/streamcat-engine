@@ -142,7 +142,7 @@ class FlowCommand(Command):
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
 
-        # フローを実行する
+        # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
         return self._stepoints.run(flow_args, inputs)
 
@@ -466,9 +466,9 @@ class FlowCommand(Command):
     def lasts(self, value):
         pass
 
-    @property
-    def outs(self):
-        return {p.point.id: p.point.datum for p in self.o_ports}
+    # @property
+    # def outs(self):
+    #     return {p.point.id: p.point.datum for p in self.o_ports}
 
     def is_i_port(self, point:Point):
         return any(p.point==point for p in self.i_ports)

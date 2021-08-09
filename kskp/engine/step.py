@@ -19,7 +19,7 @@ class Step:
         self.ex_acceptable = ex_acceptable
         
         # 可変長Port'*'の展開済みのo_ports
-        # make_exception_outputs()でのみ用いる
+        # make_exception_outs()でのみ用いる
         self._o_ports = o_ports or command.o_ports
 
     def __repr__(self):
@@ -45,21 +45,21 @@ class Step:
         """
         from kskp.store import CommandException
 
-        def make_exception_outputs(o_ports, cmd_ex):
+        def make_exception_outs(o_ports, cmd_ex):
             """
             全ての出力ポートに例外を格納する
             """
-            outputs = {}
+            outs = {}
             for o_port in o_ports:
-                outputs[o_port.label] = cmd_ex
-            return outputs
+                outs[o_port.label] = cmd_ex
+            return outs
 
         try:
             if not self.ex_acceptable:
                 # 入力データに1つでも例外があれば、全ての出力ポートに例外を格納する
                 for input in inputs.values():
                     if isinstance(input, CommandException):
-                        return make_exception_outputs(self._o_ports, cmd_ex=input)
+                        return make_exception_outs(self._o_ports, cmd_ex=input)
             
             # コマンドを実行する
             return self.command.run(self.args, inputs)
@@ -80,7 +80,7 @@ class Step:
                 raise e
 
             # コマンドのrun()から例外が送出された場合、全ての出力Portに例外を格納する
-            return make_exception_outputs(self._o_ports, cmd_ex=CommandException(e))
+            return make_exception_outs(self._o_ports, cmd_ex=CommandException(e))
 
     def dtor(self):
         self.command.dtor(self.args)

@@ -40,7 +40,7 @@ class Stepoints():
             # print('invokable_steps3', invokable_steps, self.points, '\n')
 
         # 実行すべきrunnableがもう残っていないなら、終了
-        return self._make_outputs()
+        return self._make_outs()
 
     def _prepare_inputs(self, inputs:dict):
         """
@@ -155,7 +155,7 @@ class Stepoints():
             # jobの終了処理
             job.dtor()
 
-    def _make_outputs(self):
+    def _make_outs(self):
         """
         実行すべきstepがなくなった後呼び出される
         pointsの結果をまとめてoutputの形式に合うように整えて返す

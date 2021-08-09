@@ -38,7 +38,7 @@ def execute(command, args={}, inputs={}, job_complete_handler=None):
         job = Job(step, inputs)
 
         # jobを開始する
-        results = job.start()
+        outs = job.start()
 
         # 後始末をする
         job.dtor()
@@ -46,7 +46,7 @@ def execute(command, args={}, inputs={}, job_complete_handler=None):
         # 結果を返却する
         # job.step.command.cachesでキャッシュの結果も取れる
         # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
-        return job.step.command.outs
+        return outs
 
     except Exception as e:
         raise
