@@ -142,10 +142,7 @@ class VisDataDestAppender():
         # RowRange Stepへの引数を作成する
         rowrange_args = vis_args[point.id]['args']
         # RowRange Stepを作成する
-        if vcmd_is_table:
-            rowrange_cmd = CommandLink('rowrange').resolve()
-        else:
-            rowrange_cmd = CommandLink('rowrandom').resolve()
+        rowrange_cmd = CommandLink('rowrange').resolve()
         rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
 
         # MchkCsv Stepを作成する
