@@ -198,7 +198,7 @@ class FlowCommand(Command):
             rets.append(new_port)
         return rets
 
-    def _replace_variadic_port(self, i_ports, srcs):
+    def _replace_variadic_port(self, i_ports, srcs:dict):
         """
         *のPortを複数のPortに変換する
         """
@@ -277,7 +277,7 @@ class FlowCommand(Command):
                 args = {'flow_args':args, 'use_cache':use_cache}
 
             # CommandoのPortのlabelに'*'が指定されていれば、可変長Port指定なので
-            # Commandノードの入出力ポート指定(srcsまたはdsts)からPortを生成する
+            # Commandノードの入出力Port指定(srcsまたはdsts)からPortを生成する
             i_ports = self._replace_variadic_port(cmd.i_ports, srcs)
             o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
 

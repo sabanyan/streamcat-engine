@@ -5,7 +5,7 @@ from kskp.store import FlowData, List, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowCommand
-from .make_flow_json import create_flow_by_flow_id, get_flow_json_by_flow_id
+from .make_flow_json import get_flow_json_by_flow_id
 
 class MainTest(TestCaseBase):
     """
@@ -495,7 +495,7 @@ class MainTest(TestCaseBase):
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
 
-        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         # テスト
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
@@ -545,7 +545,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d2': [['A', '1'], ['A', '2']]}
+        correct = {'d2': [['顧客', '数量'], ['A', '1'], ['A', '2']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -763,7 +763,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d2': [['A', '1'], ['A', '2']], 'd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -874,7 +874,8 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['A', '1', '10', '21'],
+        correct = {'d1': [['顧客%0', '数量', '金額', '年齢'],
+                          ['A', '1', '10', '21'],
                           ['A', '2', '20', '21'],
                           ['B', '1', '30', '31'],
                           ['B', '3', '40', '31'],
@@ -903,8 +904,8 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
-                   'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+        correct = {'d2': [['顧客', '数量', '金額'], ['A', '1', '10'], ['A', '2', '20']],
+                   'd3': [['顧客', '数量', '金額'], ['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -939,7 +940,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
+        correct = {'d2': [['顧客', '数量', '金額'], ['A', '1', '10'], ['A', '2', '20']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -970,7 +971,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
+        correct = {'d3': [['顧客', '数量', '金額'], ['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -1088,7 +1089,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -1251,7 +1252,8 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['0'],
+        correct = {'d1': [['No.'],
+                          ['0'],
                           ['1'],
                           ['2'],
                           ['3'],
@@ -1285,8 +1287,8 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d2': [['20080203', '10'], ['20080203', '45']],
-                   'd3': [['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
+        correct = {'d2': [['日付%0', '金額'], ['20080203', '10'], ['20080203', '45']],
+                   'd3': [['日付%0', '金額'], ['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -1590,7 +1592,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -1891,7 +1893,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowCommand(flow), {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
+        correct = {'dd4': [['顧客'], ['A'], ['A']], 'dd5': [['数量'], ['1'], ['3'], ['1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2257,7 +2259,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['A', '1']]}
+        correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2340,7 +2342,6 @@ class MainTest(TestCaseBase):
           "cacheCreatedAt": ""
         }
 
-
         flow_json = copy.deepcopy(self.flow_json)
         flow_json['nodes'].append(add_cmd_1)
         flow_json['nodes'].append(add_datum_1)
@@ -2356,7 +2357,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['A', '1']]}
+        correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2505,7 +2506,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'dd4': [['A'], ['A']], 'dd5': [['1'], ['3'], ['1']]}
+        correct = {'dd4': [['顧客'], ['A'], ['A']], 'dd5': [['数量'], ['1'], ['3'], ['1']]}
 
         # テスト
 
@@ -2594,7 +2595,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2671,7 +2672,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'dd2': [['A', '1'], ['A', '2']], 'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2713,7 +2714,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2802,7 +2803,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['A', '1']]}
+        correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2843,7 +2844,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, inputs)
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2894,7 +2895,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, args, inputs)
         lasts = convert_from_activity(lasts)
-        correct = {'d3': [['A', '1'], ['A', '2']], 'd4': [['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -2977,56 +2978,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
-
-        # テスト
-        # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
-        result = self.get_frame_by_uuid(lasts['d2'].uuid)
-        self.assertEqual(result, correct['d2'])
-
-        # 後片付け
-        lasts['d2'].delete()
-
-    # @unittest.skip
-    def test_simple_flow_execute_use_nmcmd(self):
-        """
-        mコマンド２個のフロー
-        確認したいことはnm.cmdの動作（mchkcsvを実行している）
-        nm.cmdから出るものをVisするテスト
-        """
-        add_cmd = {
-          "type": "command",
-          "id": "c2",
-          "label": "c2",
-          "srcs": {
-            "i": "d1"
-          },
-          "dsts": {
-            "o": "d2"
-          },
-          "args": {},
-          "commandId": "mchkcsv"
-        }
-
-        add_datum = {
-          "type": "frame",
-          "id": "d2",
-          "label": "d2",
-          "uuid": None,
-          "dataSource": "csv"
-        }
-
-        flow_json = copy.deepcopy(self.flow_json)
-        flow_json['nodes'].append(add_cmd)
-        flow_json['nodes'].append(add_datum)
-        flow_json['nodes'].append(self.create_data_dst_node('d2'))
-
-        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
-        correct = {'d2':[['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
+        correct = {'d2':[['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -3068,7 +3020,7 @@ class MainTest(TestCaseBase):
         caches = convert_from_activity_cache(lasts)
         results = convert_from_activity(lasts)
 
-        correct = {'d1':[['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
+        correct = {'d1':[['顧客', '数量', '金額'],['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
 
         # テスト
         # DBにframeデータが生成されているか
@@ -3324,8 +3276,8 @@ class MainTest(TestCaseBase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d2 = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50'],
-                      ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        correct_d2 = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'],
+                      ['B','1','50'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(correct_d2, result_d2)
 
@@ -3436,7 +3388,7 @@ class MainTest(TestCaseBase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d2 = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50'],
+        correct_d2 = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50'],
                       ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(correct_d2, result_d2)
@@ -3561,7 +3513,7 @@ class MainTest(TestCaseBase):
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d1 = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        correct_d1 = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(correct_d1, result_d1)
         result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
@@ -3659,7 +3611,7 @@ class MainTest(TestCaseBase):
         # DBにframeデータが生成されているか
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        correct_d = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d = self.get_frame_by_uuid(lasts['d'].uuid)
         self.assertEqual(correct_d, result_d)
 
@@ -3758,10 +3710,10 @@ class MainTest(TestCaseBase):
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d'].uuid))
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d = [['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
+        correct_d = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d = self.get_frame_by_uuid(lasts['d'].uuid)
         self.assertEqual(correct_d, result_d)
-        correct_d1 = [['A','1','10','1','2'], ['A','2','20','1','2'], ['B','1','30','1','2'], ['B','3','40','1','2'], ['B','1','50','1','2']]
+        correct_d1 = [['顧客', '数量', '金額', 'add', 'add1'], ['A','1','10','1','2'], ['A','2','20','1','2'], ['B','1','30','1','2'], ['B','3','40','1','2'], ['B','1','50','1','2']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(correct_d1, result_d1)
 
@@ -3769,7 +3721,7 @@ class MainTest(TestCaseBase):
         lasts['d'].delete()
         lasts['d1'].delete()
 
-    
+
     def test_one_output_from_branch(self):
         """
         二股出力コマンドのうち一つだけを出力ポイントに指定した場合
@@ -3869,9 +3821,9 @@ class MainTest(TestCaseBase):
         # DBにframeデータが生成されている
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d1 = [['B','3','40'], ['B','1','50']]
+        correct_d1 = [['顧客', '数量', '金額'], ['B','3','40'], ['B','1','50']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
-        self.assertEqual(correct_d1, result_d1)
+        self.assertEqual(result_d1, correct_d1)
 
         # 後片付け
         lasts['d1'].delete()
@@ -4705,12 +4657,126 @@ class MainTest(TestCaseBase):
         # DBにframeデータが生成されている
         self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
-        correct_d1 = [['B', 'C', '2.5']]
+        correct_d1 = [['fld1', 'fld2', 'covar'],['B', 'C', '2.5']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
-        self.assertEqual(correct_d1, result_d1)
+        self.assertEqual(result_d1, correct_d1)
 
         # 後片付け
         lasts['d1'].delete()
+
+    def test_inputs_sort(self):
+        """
+        コマンドのrun()のinputs引数には
+        入力Portのlabel順に入力値が格納されること
+        """
+        data00 = [['A', 'B', 'C'],
+                  ['a', 0, 00],
+                  ['b', 1, 10]]
+        data01 = [['A', 'B', 'C'],
+                  ['c', 2, 20],
+                  ['d', 3, 30]]
+        data02 = [['A', 'B', 'C'],
+                  ['e', 4, 40],
+                  ['f', 5, 50]]
+        data03 = [['A', 'B', 'C'],
+                  ['g', 6, 60],
+                  ['h', 7, 70]]
+
+        frame0 = self.create_data(Path(self.TESTDATA_DIR) / 'tst0.csv', data00)
+        frame2 = self.create_data(Path(self.TESTDATA_DIR) / 'tst2.csv', data02)
+
+        flow_json = {
+          "label": "m2cat", 
+          "nodes": [
+            {
+              "id": "d0",
+              "label": "d0",
+              "type": "frame",
+              "uuid": frame0.uuid
+            }, {
+              "id": "d1",
+              "label": "d1",
+              "type": "frame",
+              "value": data01
+              # "uuid": frame1.uuid
+            }, 
+            {
+              "id": "d2",
+              "label": "d2",
+              "type": "frame",
+              "uuid": frame2.uuid
+            }, 
+            {
+              "id": "d3",
+              "label": "d3",
+              "type": "frame",
+              "value": data03
+              # "uuid": frame3.uuid
+            }, 
+            {
+              "id": "c1", 
+              "label": "データの併合", 
+              "type": "command",  
+              "commandId": "mcat",
+              "srcs": {
+                "*1": "d1",
+                "*0": "d0",
+                "*3": "d3",
+                "*2": "d2",
+              }, 
+              "dsts": {
+                "o": "d9"
+              },
+              "srcsOrder": [
+                "*1","*0","*3","*2"
+              ]
+            },
+            {
+              "id": "d9",
+              "label": "d9",
+              "type": "frame"
+            }, 
+          ], 
+          "ports": [
+            [], 
+            [
+              {
+                "type": "frame", 
+                "label": "d9", 
+                "nodeId": "d9"
+              }
+            ]
+          ], 
+          "params": [], 
+          "creator": "開発用", 
+          "createdAt": "2020-03-16 17:15:22", 
+          "projectId": None, 
+          "description": ""
+        }
+
+        # データデストを追加する
+        flow_json['nodes'].append(self.create_data_dst_node('d9'))
+
+        flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
+        outs = execute(FlowCommand(flow))
+        outs = convert_from_activity(outs)
+
+        # frameデータは1つ生成されているか
+        self.assertEqual(1, len(outs))
+        # DBにframeデータが生成されている
+        self.assertIsNotNone(self.factory.data.find_by_uuid(outs['d9'].uuid))
+        # 実ファイルが指定ディレクトリに存在するか
+        expected = [['A', 'B',  'C'],
+                    ['a', '0',  '0'],
+                    ['b', '1', '10'],
+                    ['c', '2', '20'],
+                    ['d', '3', '30'],
+                    ['e', '4', '40'],
+                    ['f', '5', '50'],
+                    ['g', '6', '60'],
+                    ['h', '7', '70']]
+        result_d1 = self.get_frame_by_uuid(outs['d9'].uuid, header=True)
+        self.assertEqual(result_d1, expected)
 
     def test_mcmd_error_with_two_outputs(self):
         """
@@ -6230,6 +6296,7 @@ class MainTest(TestCaseBase):
               rows = csv.reader(f)
               if header:
                   header = next(rows)
+                  result.append(header)
               for row in rows:
                   result.append(row)
         except Exception as e:
