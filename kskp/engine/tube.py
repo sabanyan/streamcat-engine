@@ -22,6 +22,12 @@ class Tube:
     def __ne__(self, other):
         return self.port != other.port or self.step != other.step
 
+    def __lt__(self, other):
+        return self.port < other.port
+
+    def __gt__(self, other):
+        return self.port > other.port
+
     @property
     def is_null(self):
         return self.port is None and self.step is None
@@ -105,6 +111,12 @@ class Tubes:
         rets = Tubes()
         rets._tubes = [tube for tube in self._tubes if tube.step==step]
         return rets
+
+    def sort(self):
+        """
+        Portのlabelでソートする
+        """
+        return sorted(self._tubes)
 
     def have_step(self, step):
         return len(self.filter_by_step(step)) > 0

@@ -113,12 +113,18 @@ class Stepoints():
             if len(flow_args) > 0:
                 step.replace_args(flow_args)
 
-            # jobを作るためにinputsを集める
-            inputs = {}
+            # jobを作るためにinputを集める
+            input_list = []
             for p in self.points:
                 for dst_tube in p.dst_tubes.filter_by_step(step):
-                    # コマンドのinputs引数に値を格納する
-                    inputs[dst_tube.port.label] = p.datum
+                    # コマンドのinputs引数に渡す値を集める
+                    input = (dst_tube.port, p.datum)
+                    input_list.append(input)
+
+            # inputsは入力Portでソートする
+            # (m2catで入力Port順に併合するため)
+            sorted_input_list = sorted(input_list, key=lambda x: x[0])
+            inputs = {input[0].label : input[1] for input in sorted_input_list}
 
             # 実行したい処理の中にどのステップなのかを渡す
             step.command.context['step_id'] = step.id
