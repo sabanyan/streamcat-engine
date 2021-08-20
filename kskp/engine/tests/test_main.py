@@ -6378,45 +6378,45 @@ def update_flow_node_uuid(flow_json, node_id, uuid):
             return True
     return False
 
-def convert_from_activity(lasts):
+def convert_from_activity(outs):
     """
     execute()の戻り値から
     pointのidとframeのDictに置き換える
     """
     from kskp.store import Activity
     # Activityを取得して返り値とする
-    for point_id, datum in lasts.items():
+    for point_id, datum in outs.items():
         if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.lasts}
+            return {point.id : frame for point, frame in datum.outs}
 
-def convert_from_activity_vis(lasts):
+def convert_from_activity_vis(outs):
     """
     execute()の戻り値から
     pointのidとvisのDictに置き換える
     """
     from kskp.store import Activity
-    for point_id, datum in lasts.items():
+    for point_id, datum in outs.items():
         if isinstance(datum, Activity):
-            return {point.id : vis.result['reader'] for point, vis in datum.lasts}
+            return {point.id : vis.result['reader'] for point, vis in datum.outs}
 
-def convert_from_activity_cache(lasts):
+def convert_from_activity_cache(outs):
     """
     execute()の戻り値から
     pointのidとcacheのDictに置き換える
     """
     from kskp.store import Activity
     # Activityを取得して返り値とする
-    for point_id, datum in lasts.items():
+    for point_id, datum in outs.items():
         if isinstance(datum, Activity):
             return {point.id : frame for point, frame in datum.caches}
 
-def convert_from_activity_exs(lasts):
+def convert_from_activity_exs(outs):
     """
     execute()の戻り値から
     pointのidとframeのDictに置き換える
     """
     from kskp.store import Activity
     # Activityを取得して返り値とする
-    for point_id, datum in lasts.items():
+    for point_id, datum in outs.items():
         if isinstance(datum, Activity):
             return {point.id : exs for point, exs in datum.exs}
