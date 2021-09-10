@@ -269,18 +269,16 @@ class RunsCommandAppender():
 
 
 class ActivityDataDestAppender():
-    def __init__(self, flow_uuid):
-        # core.pyで定義されているFlowはf
-        # flow.pyで定義されているFlowはflowと表記する
-        self.flow_uuid = flow_uuid
-
+    def __init__(self, datum_factory, flow):
+        self.flow_uuid = flow.uuid
+        # アクティビティフォルダを取得する
+        folder_store = datum_factory.load_activity_folder()
         # Activityコマンドを取得する
         activity_cmd = CommandLink('activity').resolve()
         # Activity Datumを作成する
-        from kskp.store import Activity
-        activity = Activity(None, None, 'activity', flow_uuid)
+        activity = folder_store.create_activity(flow.label, flow)
         # Activity Stepへの引数を作成する
-        activity_args = {'activity': activity, 'points':{}}
+        activity_args = {'activity': activity, 'is_vis':False, 'points':{}}
         # Activity Stepを作成する
         self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
         self.activity_uuid = activity.uuid
@@ -289,7 +287,10 @@ class ActivityDataDestAppender():
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
-    def do_append(self, flow, point, src_point_of_data_dst):
+    def set_is_vis(self):
+        self.activity_step.args['is_vis'] = True
+
+    def do_append(self, flow_cmd, point, src_point_of_data_dst):
         # Activity Stepのargsにpointを追加する
         port_label = str(self._next_port_no)
         self.activity_step.args['points'][port_label] = src_point_of_data_dst
@@ -297,17 +298,22 @@ class ActivityDataDestAppender():
         # PointにActivity Stepを繋げる
         point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))
 
-        # Activity_pointを作成し、これにActivity Stepを繋げる
-        point_id = point.id + '_activity_' + port_label
-        activity_point = Point(point_id, Tube(Port('o', 'activity'), self.activity_step))
-
         self._next_port_no += 1
 
         if self._already_step_added:
             # Pointを新規追加しない場合はNoneを返す
             return None
 
-        flow.substeps.append(self.activity_step)
-        flow.points.add(activity_point)
+        # Activity_pointを作成し、これにActivity Stepを繋げる
+        point_id = point.id + '_activity_' + port_label
+        return self.make_activity_point(flow_cmd, point_id)
+
+    def make_activity_point(self, flow_cmd, point_id:str):
+        """
+        Activity Pointを作成する
+        """
+        activity_point = Point(point_id, Tube(Port('o', 'activity'), self.activity_step))
+        flow_cmd.substeps.append(self.activity_step)
+        flow_cmd.points.add(activity_point)
         self._already_step_added = True
         return activity_point

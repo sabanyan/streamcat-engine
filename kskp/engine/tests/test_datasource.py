@@ -2363,7 +2363,7 @@ class DataSourceTest(TestCaseBase):
         lasts = convert_from_activity(lasts)
 
         # ライブラリにデータソースが出力されないこと
-        self.assertIsNone(lasts)
+        self.assertEqual(len(lasts), 0)
 
         # ほかす
         sub_flow.throw_away()

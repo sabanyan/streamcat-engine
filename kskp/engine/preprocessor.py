@@ -39,7 +39,7 @@ class Preprocessor:
 
         # Appenders
         self._runs_command_appender = RunsCommandAppender()
-        self._activity_data_dest_appender = ActivityDataDestAppender(flow.uuid)
+        self._activity_data_dest_appender = ActivityDataDestAppender(datum_factory, flow)
 
         # Context
         self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity_uuid)
@@ -58,7 +58,7 @@ class Preprocessor:
         """
         from .appenders import RunsCommandAppender, ActivityDataDestAppender
         self._runs_command_appender = RunsCommandAppender()
-        self._activity_data_dest_appender = ActivityDataDestAppender(self._context.flow_uuid)
+        self._activity_data_dest_appender = ActivityDataDestAppender(self._context.datum_factory, self._context.flow)
         self._context = Preprocessor.Context(self._context.datum_factory,
                                              self._context.flow,
                                              self._activity_data_dest_appender.activity_uuid)
@@ -144,6 +144,9 @@ class Preprocessor:
             # (_search_invokable_steps()では出力Portを起点に実行すべきコマンドを探す)
             flow_cmd.close_all_o_ports()
 
+            # プレビュー実行の場合、実行結果情報を保存しない
+            self._activity_data_dest_appender.set_is_vis()
+
             for original_out_point in [flow_cmd.points[pid] for pid in vis_ids]:
                 # Visualizerコマンドのための前処理コマンドを付加する
                 o_point, u_point = self._vis_data_dest_appender.do_append(flow_cmd, original_out_point, vis_args)
@@ -189,6 +192,11 @@ class Preprocessor:
                 # 出力Point設定を元のPointからActivity_pointに変更する
                 flow_cmd.close_o_port_by_point(original_out_point)
                 out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+
+            # SaverCommandとそのサブクラスのコマンドが存在しない場合でも、Activity Stepを付加する
+            if len(flow_cmd.o_ports) == 0:
+                out_point = self._activity_data_dest_appender.make_activity_point(flow_cmd, 'activity_0')
+                flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
 
 
         # キャッシュを利用しない指定がされていれば、キャッシュデータデストを付加しない
