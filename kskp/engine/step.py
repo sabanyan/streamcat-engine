@@ -127,6 +127,9 @@ class Step:
         args/step_param/step_value それぞれのstepに与えられた「仮引数」
         """
         import re
+        if step_value is None:
+            # issue#30への対応
+            return
         for r in re.finditer(r'@\[(\S*?)\]', step_value):
             if r is None:
                 continue
