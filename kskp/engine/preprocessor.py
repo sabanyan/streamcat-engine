@@ -1,3 +1,4 @@
+from typing import List
 from .flow_command import FlowCommand
 from .flow_port import FlowPort
 from .point import Points, Point
@@ -64,16 +65,61 @@ class Preprocessor:
                                              self._activity_data_dest_appender.activity_uuid)
 
     def execute(self, flow_cmd:FlowCommand, vis_args:dict, use_cache:bool=False, src_point:Point=None):
-        from kskp.depo.std.commands import SCommand
-        from kskp.depo.std.commands.scmd.script import SaverCommand
-
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない
         # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
         # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
         # 
 
-        # SaverCommandの出力PointをRootフローに中継する
+        # フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
+        # そのフロー出力ポートを中継ポートに設定する
+        self._open_saver_cmd_points(flow_cmd)
+
+        # フロー内の全ての中継ポートを再中継する
+        self._relay_o_ports(flow_cmd)
+
+        # SCommandに共通の引数を設定する
+        self._set_scmds_args(flow_cmd.substeps, src_point)
+
+        # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
+        # また、キャッシュの出力処理もしない
+        if not flow_cmd.is_main:
+            return flow_cmd
+
+
+        # プレビューを取得するPoint
+        vis_ids = vis_args.keys()
+        is_vis = len(vis_ids) > 0
+
+
+        # lasts出力処理 (メインフローの場合のみ)
+        if is_vis:
+            # Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
+            self._terminate_for_vizs(flow_cmd, vis_args, vis_ids)
+
+        else:
+            # フロー出力PointにRunsコマンドとActivityコマンドを付加する
+            self._terminate_for_exec(flow_cmd)
+
+        # キャッシュを利用しない指定がされていれば、キャッシュデータデストを付加しない
+        if not use_cache:
+            return flow_cmd
+
+        # キャッシュ出力=ONのPointにキャッシュデータデストを付加する
+        # ・サブフロー内ではキャッシュは作成しない
+        # ・is_outかつis_cacheなPointにも対応できるよう
+        #   データデストを付加した後にキャッシュデータデストを付加すること
+        self._append_cache_saver_cmds(flow_cmd)
+
+        return flow_cmd
+
+    def _open_saver_cmd_points(self, flow_cmd:FlowCommand):
+        """
+        フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
+        そのフロー出力ポートを中継ポートに設定する
+        """
+        from kskp.depo.std.commands.scmd.script import SaverCommand
+
         for point in flow_cmd.points:
             # 既にフロー出力Pointの場合は中継しない
             if flow_cmd.is_o_port(point):
@@ -91,7 +137,10 @@ class Preprocessor:
                 # 中継済みのポートとして記録する
                 flow_cmd.relayed_o_ports.add(o_port)
 
-        # 中継ポートを中継する
+    def _relay_o_ports(self, flow_cmd:FlowCommand):
+        """
+        フロー内の全ての中継ポートを再中継する
+        """
         for step in flow_cmd.substeps:
             # コマンドにはポートを動的に追加できないため、
             # コマンドがデータデストの場合は、そのコマンドは実行できない
@@ -105,128 +154,7 @@ class Preprocessor:
                 # 中継済みのポートとして記録する
                 flow_cmd.relayed_o_ports.add(new_port)
 
-
-        # コマンド共通引数を設定する
-        for step in flow_cmd.substeps:
-            if step.is_flow:
-                continue
-            if isinstance(step.command, SCommand):
-                # SCommand共通引数を作成する
-                args = {'flow'         : self._context.flow,
-                        'flow_uuid'    : self._context.flow_uuid,
-                        'flow_label'   : self._context.flow_label,
-                        'result_folder': self._context.flow.find_parent(),
-                        # データデストの入力PointのlabelをSaverCommandに渡す
-                        'src_point'    : src_point,
-                        'datum_factory': self._context.datum_factory,
-                        'start_time'   : self._context.start_time,
-                        'activity_uuid': self._context.activity_uuid}
-                # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
-                args.update(step.args)
-                step.args = args
-
-
-        # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
-        # また、キャッシュの出力処理もしない
-        if not flow_cmd.is_main:
-            return flow_cmd
-
-
-        # プレビューを取得するPoint
-        vis_ids = vis_args.keys()
-        is_vis = len(vis_ids) > 0
-
-
-        # lasts出力処理 (メインフローの場合のみ)
-        if is_vis:
-            # プレビューの結果を得るのに不要なコマンドをStepointsでrun()させない為
-            # メインフローの全ての出力Portを閉じる
-            # (_search_invokable_steps()では出力Portを起点に実行すべきコマンドを探す)
-            flow_cmd.close_all_o_ports()
-
-            # プレビュー実行の場合、実行結果情報を保存しない
-            self._activity_data_dest_appender.set_is_vis()
-
-            for original_out_point in [flow_cmd.points[pid] for pid in vis_ids]:
-                # Visualizerコマンドのための前処理コマンドを付加する
-                o_point, u_point = self._vis_data_dest_appender.do_append(flow_cmd, original_out_point, vis_args)
-                # Runsコマンドを付加する
-                o_point, u_point = self._runs_command_appender.do_append(flow_cmd, o_point, u_point)
-                # Visualizeコマンドを付加する
-                vis_arg = vis_args.get(original_out_point.id)
-                out_point = self._vis_data_dest_appender.do_append_after_runs(flow_cmd, o_point, u_point, vis_arg)
-                # Activity Stepを付加する
-                out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
-                # Activity_pointを出力Pointに設定する
-                out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
-        else:
-
-            # for original_out_point in [p.point for p in flow_cmd.o_ports]:
-            #     # original_out_pointが、中継したフロー出力Pointの場合はTrue
-            #     src_tube = original_out_point.src_tubes.find_command_tube()
-            #     in_port_label_exists = src_tube is not None and src_tube.port is not None
-            #     out_point_is_relayed = in_port_label_exists and src_tube.port in flow_cmd.relayed_o_ports
-            #     if out_point_is_relayed:
-            #         # フローの出力Pointが、中継したフロー出力Pointでもある場合、
-            #         # 既にSaverコマンドが繋がっているので、そのPointにSaverコマンドを付加しない
-            #         out_point = original_out_point
-            #     else:
-            #         # Saverコマンドを付加する
-            #         out_point = self._folder_data_dest_appender.do_append(flow_cmd, original_out_point)
-            #     # Runsコマンドを付加する
-            #     out_point = self._runs_command_appender.do_append(flow_cmd, out_point)
-            #     # Activity Stepを付加する
-            #     out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
-            #     # 出力Point設定を元のPointからActivity_pointに変更する
-            #     flow_cmd.close_o_port_by_point(original_out_point)
-            #     out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
-
-            # SaverCommandとそのサブクラスのコマンドの出力Pointに、Runs StepとActivity Stepを付加する
-            for original_out_point in [p.point for p in flow_cmd.relayed_o_ports]:
-                # データデストの入力Pointを取得する、取得できない場合はSaverCommandの出力Pointを用いる
-                src_point_of_data_dst = self._get_src_point_of_data_dst(flow_cmd.points, original_out_point) or original_out_point
-                # Runs Stepを付加する
-                out_point, none_point = self._runs_command_appender.do_append(flow_cmd, original_out_point)
-                # Activity Stepを付加する
-                out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
-                # 出力Point設定を元のPointからActivity_pointに変更する
-                flow_cmd.close_o_port_by_point(original_out_point)
-                out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
-
-            # SaverCommandとそのサブクラスのコマンドが存在しない場合でも、Activity Stepを付加する
-            if len(flow_cmd.o_ports) == 0:
-                out_point = self._activity_data_dest_appender.make_activity_point(flow_cmd, 'activity_0')
-                flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
-
-
-        # キャッシュを利用しない指定がされていれば、キャッシュデータデストを付加しない
-        if not use_cache:
-            return flow_cmd
-
-
-        # キャッシュ作成処理
-        # サブフロー内ではキャッシュは作成しない
-        # is_outかつis_cacheなPointにも対応できるよう
-        # データデストを付加した後にキャッシュデータデストを付加すること
-        for cache_point in [p for p in flow_cmd.points if p.makeCache]:
-            # Cache Stepを挿入する
-            out_point, frame_point = self._cache_data_dest_appender.do_append(flow_cmd, cache_point)
-
-            # 
-            # TODO: エラー発生時にdtor()でCacheフレームを削除する為、CacheSaverのPort(u)をActivityコマンドに繋げたが
-            # そうすると、プレビュー実行に関係のないコマンドのrun()が実行されてしまう
-            # 解決方法は、やはりNysolModule.contextにCacheフレームを格納してActivityコマンドにまで渡すことだろう
-            # 全てのコマンドでNysolModuleインスタンスを使い回すための修正が必要になる
-            # 
-            # # Activity Stepを付加する
-            # out_point = self._activity_data_dest_appender.do_append(flow_cmd, frame_point, cache_point)
-            # # Activity_pointを出力Pointに設定する
-            # out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
-
-
-        return flow_cmd
-
-    def _relay_o_port(self, flow_cmd, step, port):
+    def _relay_o_port(self, flow_cmd:FlowCommand, step, port):
         """
         フローの出力ポートを親フローに中継する
         """
@@ -249,6 +177,95 @@ class Preprocessor:
 
         # 作成した親フローの出力Portを返す
         return o_port
+
+    def _set_scmds_args(self, steps:List, src_point:Point):
+        """
+        SCommandに共通の引数を設定する
+        """
+        from kskp.depo.std.commands import SCommand
+
+        for step in steps:
+            if step.is_flow:
+                continue
+            if isinstance(step.command, SCommand):
+                # SCommand共通引数を作成する
+                args = {'flow'         : self._context.flow,
+                        'flow_uuid'    : self._context.flow_uuid,
+                        'flow_label'   : self._context.flow_label,
+                        'result_folder': self._context.flow.find_parent(),
+                        # データデストの入力PointのlabelをSaverCommandに渡す
+                        'src_point'    : src_point,
+                        'datum_factory': self._context.datum_factory,
+                        'start_time'   : self._context.start_time,
+                        'activity_uuid': self._context.activity_uuid}
+                # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
+                args.update(step.args)
+                step.args = args
+
+    def _terminate_for_vizs(self, flow_cmd:FlowCommand, vis_args:dict, vis_ids:List[str]):
+        """
+        Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
+        """
+        # プレビューの結果を得るのに不要なコマンドをStepointsでrun()させない為
+        # メインフローの全ての出力Portを閉じる
+        # (_search_invokable_steps()では出力Portを起点に実行すべきコマンドを探す)
+        flow_cmd.close_all_o_ports()
+
+        # プレビュー実行の場合、実行結果情報を保存しない
+        self._activity_data_dest_appender.set_is_vis()
+
+        for original_out_point in [flow_cmd.points[pid] for pid in vis_ids]:
+            # Visualizerコマンドのための前処理コマンドを付加する
+            o_point, u_point = self._vis_data_dest_appender.do_append(flow_cmd, original_out_point, vis_args)
+            # Runsコマンドを付加する
+            o_point, u_point = self._runs_command_appender.do_append(flow_cmd, o_point, u_point)
+            # Visualizeコマンドを付加する
+            vis_arg = vis_args.get(original_out_point.id)
+            out_point = self._vis_data_dest_appender.do_append_after_runs(flow_cmd, o_point, u_point, vis_arg)
+            # Activity Stepを付加する
+            out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
+            # Activity_pointを出力Pointに設定する
+            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+
+    def _terminate_for_exec(self, flow_cmd:FlowCommand):
+        """
+        フロー出力PointにRunsコマンドとActivityコマンドを付加する
+        """
+        # SaverCommandとそのサブクラスのコマンドの出力Pointに、Runs StepとActivity Stepを付加する
+        for original_out_point in [p.point for p in flow_cmd.relayed_o_ports]:
+            # データデストの入力Pointを取得する、取得できない場合はSaverCommandの出力Pointを用いる
+            src_point_of_data_dst = self._get_src_point_of_data_dst(flow_cmd.points, original_out_point) or original_out_point
+            # Runs Stepを付加する
+            out_point, none_point = self._runs_command_appender.do_append(flow_cmd, original_out_point)
+            # Activity Stepを付加する
+            out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
+            # 出力Point設定を元のPointからActivity_pointに変更する
+            flow_cmd.close_o_port_by_point(original_out_point)
+            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+
+        # SaverCommandとそのサブクラスのコマンドが存在しない場合でも、Activity Stepを付加する
+        if len(flow_cmd.o_ports) == 0:
+            out_point = self._activity_data_dest_appender.make_activity_point(flow_cmd, 'activity_0')
+            flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+
+    def _append_cache_saver_cmds(self, flow_cmd:FlowCommand):
+        """
+        キャッシュ出力=ONのPointにキャッシュデータデストを付加する
+        """
+        for cache_point in [p for p in flow_cmd.points if p.makeCache]:
+            # Cache Stepを挿入する
+            out_point, frame_point = self._cache_data_dest_appender.do_append(flow_cmd, cache_point)
+
+            # 
+            # TODO: エラー発生時にdtor()でCacheフレームを削除する為、CacheSaverのPort(u)をActivityコマンドに繋げたが
+            # そうすると、プレビュー実行に関係のないコマンドのrun()が実行されてしまう
+            # 解決方法は、やはりNysolModule.contextにCacheフレームを格納してActivityコマンドにまで渡すことだろう
+            # 全てのコマンドでNysolModuleインスタンスを使い回すための修正が必要になる
+            # 
+            # # Activity Stepを付加する
+            # out_point = self._activity_data_dest_appender.do_append(flow_cmd, frame_point, cache_point)
+            # # Activity_pointを出力Pointに設定する
+            # out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
 
     def _get_src_point_of_data_dst(self, flow_points:Points, dst_point_of_data_dst:Point) -> Point:
         """
@@ -286,22 +303,3 @@ class Preprocessor:
         else:
             # 出力Pointに紐づくCommandがフローでない場合はNoneを返す
             return None
-
-    # def _pick_necessary_dst_ids(self, nodes, datum_ids):
-    #     """
-    #     指定したnodesの中で、指定したdatum_id群を取得するのに必要なdstsのid群を取得する
-    #     """
-    #     ids = []
-    #     for datum_id in datum_ids:
-    #         for node in nodes['nodes']:
-    #             if self._is_outputting_datum_node(node, datum_id):
-    #                 # 対象のnode
-    #                 ids.extend(self._pick_necessary_dst_ids(nodes, list(node['srcs'].values())))
-    #         ids.append(datum_id)
-    #     return list(set(ids))
-
-    # def _is_outputting_datum_node(self, node, datum_id):
-    #     """
-    #     指定したdatumを出力するnodeかを調べる
-    #     """
-    #     return self._is_runnable_node(node) and datum_id in list(node['dsts'].values())
