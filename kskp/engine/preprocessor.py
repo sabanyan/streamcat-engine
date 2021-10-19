@@ -83,33 +83,26 @@ class Preprocessor:
 
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
         # また、キャッシュの出力処理もしない
-        if not flow_cmd.is_main:
-            return flow_cmd
+        if flow_cmd.is_main:
+            # プレビューを取得するPoint
+            vis_ids = vis_args.keys()
+            is_vis = len(vis_ids) > 0
 
+            # outs出力処理
+            if is_vis:
+                # Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
+                self._terminate_for_vizs(flow_cmd, vis_args, vis_ids)
+            else:
+                # フロー出力PointにRunsコマンドとActivityコマンドを付加する
+                self._terminate_for_exec(flow_cmd)
 
-        # プレビューを取得するPoint
-        vis_ids = vis_args.keys()
-        is_vis = len(vis_ids) > 0
-
-
-        # lasts出力処理 (メインフローの場合のみ)
-        if is_vis:
-            # Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
-            self._terminate_for_vizs(flow_cmd, vis_args, vis_ids)
-
-        else:
-            # フロー出力PointにRunsコマンドとActivityコマンドを付加する
-            self._terminate_for_exec(flow_cmd)
-
-        # キャッシュを利用しない指定がされていれば、キャッシュデータデストを付加しない
-        if not use_cache:
-            return flow_cmd
-
-        # キャッシュ出力=ONのPointにキャッシュデータデストを付加する
-        # ・サブフロー内ではキャッシュは作成しない
-        # ・is_outかつis_cacheなPointにも対応できるよう
-        #   データデストを付加した後にキャッシュデータデストを付加すること
-        self._append_cache_saver_cmds(flow_cmd)
+            # キャッシュを利用する指定がされていれば、キャッシュデータデストを付加する
+            if use_cache:
+                # キャッシュ出力=ONのPointにキャッシュデータデストを付加する
+                # ・サブフロー内ではキャッシュは作成しない
+                # ・is_outかつis_cacheなPointにも対応できるよう
+                #   データデストを付加した後にキャッシュデータデストを付加すること
+                self._append_cache_saver_cmds(flow_cmd)
 
         return flow_cmd
 
