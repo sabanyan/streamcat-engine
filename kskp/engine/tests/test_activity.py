@@ -125,9 +125,9 @@ class ActivityTest(TestCaseBase):
         self.assertEqual(activity_json['creator'], self.USER2.name)
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
-        self.assertEqual(activity_json['flow_uuid'], flow.uuid)
-        self.assertIsNotNone(activity_json['start_time'])
-        self.assertIsNotNone(activity_json['end_time'])
+        self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertIsNotNone(activity_json['startAt'])
+        self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumの値が正しいこと
         self.assertEqual(len(activity_json['outs']), 2)
         self.assertEqual(activity_json['outs'][0]['id'], 'd')
@@ -197,9 +197,9 @@ class ActivityTest(TestCaseBase):
         self.assertEqual(activity_json['creator'], self.USER3.name)
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
-        self.assertEqual(activity_json['flow_uuid'], flow.uuid)
-        self.assertIsNotNone(activity_json['start_time'])
-        self.assertIsNotNone(activity_json['end_time'])
+        self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertIsNotNone(activity_json['startAt'])
+        self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumは0件であること
         self.assertEqual(len(activity_json['outs']), 0)
         # キャッシュは0件であること
@@ -265,9 +265,9 @@ class ActivityTest(TestCaseBase):
         self.assertEqual(activity_json['creator'], self.USER2.name)
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
-        self.assertEqual(activity_json['flow_uuid'], flow.uuid)
-        self.assertIsNotNone(activity_json['start_time'])
-        self.assertIsNotNone(activity_json['end_time'])
+        self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertIsNotNone(activity_json['startAt'])
+        self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumは0件であること
         self.assertEqual(len(activity_json['outs']), 0)
         # Point(d)からキャッシュが出力されるが、

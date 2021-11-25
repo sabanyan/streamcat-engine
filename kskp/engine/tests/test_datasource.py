@@ -21,7 +21,7 @@ class DataSourceTest(TestCaseBase):
       'hostname' : "db", 
       'port'     : 5432, 
       'database' : "kskp", 
-      'user_id'  : "kskp", 
+      'userId'  : "kskp", 
       'password' : 'ZQZtVgL6G32Vy6p6WJtG3C3K84yuJ4zz'
     }
     database_conn = DatabaseConn(conn_json)

@@ -24,7 +24,7 @@ class Preprocessor:
 
             # 処理の開始時刻を取得する
             from datetime import datetime, timezone
-            self.start_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+            self.start_at = datetime.utcnow().replace(tzinfo=timezone.utc)
 
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
@@ -46,8 +46,8 @@ class Preprocessor:
         self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity_uuid)
         
         # Appenders
-        self._folder_data_dest_appender = FolderDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_time)
-        self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_time)
+        self._folder_data_dest_appender = FolderDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
+        self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
         self._vis_data_dest_appender = VisDataDestAppender()
 
         # flow_datumのLockのUUID
@@ -189,7 +189,7 @@ class Preprocessor:
                         # データデストの入力PointのlabelをSaverCommandに渡す
                         'src_point'    : src_point,
                         'datum_factory': self._context.datum_factory,
-                        'start_time'   : self._context.start_time,
+                        'start_at'   : self._context.start_at,
                         'activity_uuid': self._context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(step.args)

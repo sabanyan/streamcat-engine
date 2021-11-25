@@ -127,7 +127,7 @@ class DbTest(TestCaseBase):
     #   'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
     #   'port'     : 5432, 
     #   'database' : "kskp", 
-    #   'user_id'  : "kskp", 
+    #   'userId'  : "kskp", 
     #   'password' : r'J2-pH|%B'
     # }
     conn_json = {
@@ -135,7 +135,7 @@ class DbTest(TestCaseBase):
       'hostname' : "db", 
       'port'     : 5432, 
       'database' : "kskp", 
-      'user_id'  : "kskp", 
+      'userId'  : "kskp", 
       'password' : 'ZQZtVgL6G32Vy6p6WJtG3C3K84yuJ4zz'
     }
     database_conn = DatabaseConn(conn_json)

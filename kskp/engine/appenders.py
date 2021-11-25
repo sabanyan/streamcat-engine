@@ -31,20 +31,20 @@ class FolderDataSourcePrepender():
 
 
 class FolderDataDestAppender():
-    def __init__(self, flow, datum_factory, lock_uuid, start_time):
+    def __init__(self, flow, datum_factory, lock_uuid, start_at):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow = flow
         self._datum_factory = datum_factory
         # フローのlock_uuid
         self._lock_uuid = lock_uuid
-        self._start_time = start_time
+        self._start_at = start_at
 
     def do_append(self, flow, point):
         # フローの実行位置に実行結果フォルダ(フローの名前)が生成される
         folder_store = self.flow.find_parent()
         saver = CommandLink('saver').resolve()
-        # saver_step, saver_point, saver_point2 = self._put_saver(point, flow, folder_store, saver, start_time)
+        # saver_step, saver_point, saver_point2 = self._put_saver(point, flow, folder_store, saver, start_at)
         saver_point = self._put_saver(flow, point, folder_store, saver, 'saver')
         # # ↓のappend()は↑の_put_saver()の中に記述したいが、そのようにするとtest_mainがパスしなくなる(T_T ??
         # flow.points.add(saver_point2)
@@ -72,7 +72,7 @@ class FolderDataDestAppender():
         args['flow_label'] = self.flow.label if self.flow.label is not None else ''
         # args['point_label'] = point.label if point.label is not None else point.id
         args['point'] = point
-        args['start_time'] = self._start_time
+        args['start_at'] = self._start_at
 
         # saverコマンドのstepを作成する
         saver_step = Step(saver.label, saver, args)
