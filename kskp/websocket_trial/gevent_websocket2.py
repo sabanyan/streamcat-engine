@@ -1,5 +1,4 @@
-from geventwebsocket import WebSocketServer, WebSocketApplication, Resource
-from collections import OrderedDict
+from geventwebsocket import WebSocketServer, WebSocketApplication
 
 class EchoApplication(WebSocketApplication):
     def on_open(self):
