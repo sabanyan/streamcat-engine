@@ -23,6 +23,9 @@ class Point:
             self.dst_tubes = Tubes()
         else:
             self.dst_tubes = Tubes(dst_tube)
+
+        # 入力ポートと出力ポートの型が不一致ならば例外を送出する
+        self._validate_port_type(src_tube)
         
         self.makeCache = makeCache
 
@@ -90,6 +93,52 @@ class Point:
         """
         return self.dst_tubes.is_null
 
+    def add_src_tube(self, src_tube:Tube):
+        """
+        入力ポートを追加する
+        """
+        # 入力ポートと出力ポートの型が不一致ならば例外を送出する
+        self._validate_port_type(src_tube)
+        # 入力ポートを追加する
+        self.src_tubes.add(src_tube)
+
+    def add_dst_tube(self, dst_tube:Tube):
+        """
+        出力ポートを追加する
+        """
+        # 入力ポートと出力ポートの型が不一致ならば例外を送出する
+        self._validate_port_type(dst_tube)
+        # 出力ポートを追加する
+        self.dst_tubes.add(dst_tube)
+
+    def _validate_port_type(self, tube:Tube):
+        """
+        引数で指定したPortが入出力Portの型に一致していることを確認する
+        """
+        def are_equal_type(tube1:Tube, tube2:Tube):
+            # Portの型を比較する
+            return tube1.port.types in tube2.port.types
+
+        def raise_type_error(self_tube:Tube, other_tube:Tube):
+            port_types = self_tube.port.types
+            cmd_label = self_tube.step.command.label
+            step_id = self_tube.step.id
+            other_port_types = other_tube.port.types
+            other_cmd_label = other_tube.step.command.label
+            other_step_id = other_tube.step.id
+            raise Exception(
+                f'{cmd_label}({step_id})と{other_cmd_label}({other_step_id})の間でPortの型が一致しません' + \
+                f'({port_types}!={other_port_types})')
+
+        # 指定したPortがNoneの場合は確認しない
+        if tube is None:
+            return
+        # 入力Portと一致することを確認する
+        if not self.src_tubes.is_null and not are_equal_type(tube, self.src_tubes[0]):
+            raise_type_error(tube, self.src_tubes[0])
+        # 出力Portと一致することを確認する
+        elif not self.dst_tubes.is_null and not are_equal_type(tube, self.dst_tubes[0]):
+            raise_type_error(tube, self.dst_tubes[0])
 
 class Points:
 

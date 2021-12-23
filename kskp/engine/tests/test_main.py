@@ -1,7 +1,7 @@
 import copy
 import unittest
 from pathlib import Path
-from kskp.store import FlowData, List, CommandException
+from kskp.store import FlowData, Matrix, CommandException
 from kskp.store.tests.test_case_base import TestCaseBase
 from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from kskp.engine import execute, FlowCommand
@@ -2834,7 +2834,7 @@ class MainTest(TestCaseBase):
 
         # フローを実行する
         inputs = {
-            'd1': List([["顧客", "数量", "金額"],
+            'd1': Matrix([["顧客", "数量", "金額"],
                         ["A", 1, 10],
                         ["A", 2, 20],
                         ["B", 1, 30],
@@ -2879,7 +2879,7 @@ class MainTest(TestCaseBase):
 
         # フローを実行する
         inputs = {
-            'd1': List([["顧客", "数量", "金額"],
+            'd1': Matrix([["顧客", "数量", "金額"],
                         ["A", 1, 10],
                         ["A", 2, 20],
                         ["B", 1, 30],
@@ -2923,7 +2923,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
         lasts = convert_from_activity(lasts)
-        correct = {'d1': List([['A', '1', '10'],
+        correct = {'d1': Matrix([['A', '1', '10'],
                               ['A', '2', '20'],
                               ['B', '1', '30'],
                               ['B', '3', '40'],

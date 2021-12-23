@@ -6,8 +6,8 @@ class FlowPort(Port):
     フローのPort
     - フローのPortとPointは一対一で対応する
     """
-    def __init__(self, label, port_type, point:Point):
-        super().__init__(label, port_type)
+    def __init__(self, label, port_types, point:Point):
+        super().__init__(label, port_types)
 
         # Portに対応するフロー内のPoint
         self.point = point

@@ -15,7 +15,7 @@ class FolderDataSourcePrepender():
         folder_store = frame.find_parent()
         self._put_loader(flow, point, folder_store, frame_uuid)
 
-    def _put_loader(self, flow, target_point, store, frame_uuid):
+    def _put_loader(self, flow, target_point:Point, store, frame_uuid):
         """
         target_point(uuidが既にあるdatumのpoint)の前に
         LoaderStepとStorePointをくっつける
@@ -25,7 +25,8 @@ class FolderDataSourcePrepender():
         loader_step = Step('loader', loader_cmd, {'uuid':frame_uuid})
         point_id = target_point.id + '_loader'
         store_point = Point(point_id, None, store, Tube(Port('folder', 'store'), loader_step))
-        target_point.src_tubes = Tubes(Tube(Port('o', 'frame'), loader_step))
+        target_point.src_tubes = Tubes()
+        target_point.add_src_tube(Tube(Port('o', 'frame'), loader_step))
         flow.points.add(store_point)
         flow.substeps.append(loader_step)
 
@@ -80,7 +81,7 @@ class FolderDataDestAppender():
 
         # pointにsaverコマンドを付加する
         # (pointが終端でない場合は、二股の出力Portになる)
-        point.dst_tubes.add(Tube(Port('i', 'frame'), saver_step))
+        point.add_dst_tube(Tube(Port('i', 'frame'), saver_step))
 
         flow.substeps.append(saver_step)
         flow.points.add(saver_point)
@@ -89,7 +90,7 @@ class FolderDataDestAppender():
 
 
 class CacheDataDestAppender(FolderDataDestAppender):
-    def do_append(self, flow, point):
+    def do_append(self, flow, point:Point):
         # TODO: 適当なコードだがまた後で修正することになるからとりあえずこれで
 
         folder_store = self._datum_factory.load_cache_folder()
@@ -103,7 +104,8 @@ class CacheDataDestAppender(FolderDataDestAppender):
         saver_point = self._put_saver(flow, point, folder_store, saver, 'cachesaver')
 
         # saver_pointの後に繋げる
-        saver_point.dst_tubes = tmp_tubes
+        for tmp_tube in tmp_tubes:
+            saver_point.add_dst_tube(tmp_tube)
 
         # saver_pointからsaver stepを取り出して
         saver_step = saver_point.src_tubes[0].step
@@ -118,7 +120,7 @@ class VisDataDestAppender():
     def __init__(self):
         pass
 
-    def do_append(self, flow, point, vis_args):
+    def do_append(self, flow, point:Point, vis_args):
         """
         テーブル又はグラフ表示のための前処理を付加する
         """
@@ -177,7 +179,7 @@ class VisDataDestAppender():
 
         # pointにsaverコマンドを付加する
         # (pointが終端でない場合は、二股の出力Portになる)
-        point.dst_tubes.add(Tube(Port('i', 'frame'), convtoutf8_step))
+        point.add_dst_tube(Tube(Port('i', ['mcmd','matrix']), convtoutf8_step))
 
         flow.substeps.append(convtoutf8_step)
         flow.substeps.append(rowrange_step)
@@ -215,10 +217,10 @@ class VisDataDestAppender():
         vcmd_point = Point(o_point.id + '_v', Tube(Port('o', 'datum'), vcmd_step))
 
         # VCommandにRunsCommandの出力Pointを繋げる
-        o_point.dst_tubes = Tubes(Tube(Port('i', 'frame'), vcmd_step))
+        o_point.add_dst_tube(Tube(Port('i', 'datum'), vcmd_step))
         # グラフ表示の場合はVCommandにヘッダ出力(u)も繋げる
         if u_point is not None:
-            u_point.dst_tubes = Tubes(Tube(Port('m', 'frame'), vcmd_step))
+            u_point.add_dst_tube(Tube(Port('m', 'datum'), vcmd_step))
 
         flow.substeps.append(vcmd_step)
         flow.points.add(vcmd_point)
@@ -246,19 +248,19 @@ class RunsCommandAppender():
         else:
             return self._do_append_one(flow, point1), self._do_append_one(flow, point2)
 
-    def _do_append_one(self, flow, point):
+    def _do_append_one(self, flow, point:Point):
         # RunsCommandに繋げるPointを作成する
         port_label = str(self._next_port_no)
         self._next_port_no += 1
 
         point_id = point.id + '_runs'
-        runs_point = Point(point_id, Tube(Port(port_label, 'datum?'), self.runs_step))
+        runs_point = Point(point_id, Tube(Port(port_label, 'datum'), self.runs_step))
 
         # Stepのportsに追加する
-        self.runs_o_ports.append(Port(port_label, 'datum?'))
+        self.runs_o_ports.append(Port(port_label, 'datum'))
 
         # ここでRunsCommandを繋げる
-        point.dst_tubes = Tubes(Tube(Port(port_label, 'mcmd'), self.runs_step))
+        point.add_dst_tube(Tube(Port(port_label, 'mcmd'), self.runs_step))
 
         if not self._already_step_added:
             flow.substeps.append(self.runs_step)
@@ -290,13 +292,13 @@ class ActivityDataDestAppender():
     def set_is_vis(self):
         self.activity_step.args['is_vis'] = True
 
-    def do_append(self, flow_cmd, point, src_point_of_data_dst):
+    def do_append(self, flow_cmd, point:Point, src_point_of_data_dst):
         # Activity Stepのargsにpointを追加する
         port_label = str(self._next_port_no)
         self.activity_step.args['points'][port_label] = src_point_of_data_dst
 
         # PointにActivity Stepを繋げる
-        point.dst_tubes = Tubes(Tube(Port(port_label, 'datum'), self.activity_step))
+        point.add_dst_tube(Tube(Port(port_label, 'datum'), self.activity_step))
 
         self._next_port_no += 1
 

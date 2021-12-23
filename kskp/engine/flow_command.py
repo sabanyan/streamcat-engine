@@ -192,22 +192,22 @@ class FlowCommand(Command):
                 raise Exception(f'Port({port_json["label"]})に紐づくPoint({port_json["nodeId"]})がフロー({self})に存在しません')
             # TODO: 'nodeId'はサブフロー内でのノードIdなので、ポートの識別子には'label'を使うべきか？
             # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
-            new_port = FlowPort(port_json['nodeId'], port_json['type'], point)
+            new_port = FlowPort(port_json['nodeId'], port_json.get('type') or port_json['types'], point)
             if new_port in rets:
                 raise Exception(f'同じlabelのPort({new_port.label})が存在します')
             rets.append(new_port)
         return rets
 
-    def _replace_variadic_port(self, i_ports, srcs:dict):
+    def _replace_variadic_port(self, ports, targets:dict):
         """
         *のPortを複数のPortに変換する
         """
         ret = []
-        for src_port in i_ports:
-            if src_port.label == '*':
-                ret.extend([Port(p, 'frame') for p in srcs.keys()])
+        for port in ports:
+            if port.label == '*':
+                ret.extend([Port(p, port.types) for p in targets.keys()])
             else:
-                ret.append(src_port)
+                ret.append(port)
         return ret
 
     def _get_port_by_label(self, runnable_ports, port_label):
@@ -358,8 +358,8 @@ class FlowCommand(Command):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
-                        from kskp.store import List
-                        target_point.datum = List(node['value'])
+                        from kskp.store import Matrix
+                        target_point.datum = Matrix(node['value'])
                     else:
                         target_point.datum = node['value']
                 elif node.get('uuid') is not None:
@@ -420,8 +420,8 @@ class FlowCommand(Command):
             points.add(point)
         else:
             # 既存のpointを更新する
-            src_tube is None or point.src_tubes.add(src_tube)
-            dst_tube is None or point.dst_tubes.add(dst_tube)
+            src_tube is None or point.add_src_tube(src_tube)
+            dst_tube is None or point.add_dst_tube(dst_tube)
         return point
 
     @property

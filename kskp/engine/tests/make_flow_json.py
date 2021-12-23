@@ -24,8 +24,8 @@ sub1 = {
     "label": "サブフロー",
     "params": [],
     "ports": [
-        [{"label": "入力", "nodeId": "d1", "type": "int"}],
-        [{"label": "出力", "nodeId": "d3", "type": "int"}]
+        [{"label": "入力", "nodeId": "d1", "type": "matrix"}],
+        [{"label": "出力", "nodeId": "d3", "type": "matrix"}]
     ],
     "nodes": [
         {
