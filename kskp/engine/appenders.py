@@ -214,13 +214,13 @@ class VisDataDestAppender():
         vcmd = CommandLink(vcmd_id).resolve()
         vcmd_step = Step(vcmd.label, vcmd, vcmd_args)
         # VCommandの出力Pointを作成する
-        vcmd_point = Point(o_point.id + '_v', Tube(Port('o', 'datum'), vcmd_step))
+        vcmd_point = Point(o_point.id + '_v', Tube(Port('o', 'out'), vcmd_step))
 
         # VCommandにRunsCommandの出力Pointを繋げる
-        o_point.add_dst_tube(Tube(Port('i', 'datum'), vcmd_step))
+        o_point.add_dst_tube(Tube(Port('i', 'out'), vcmd_step))
         # グラフ表示の場合はVCommandにヘッダ出力(u)も繋げる
         if u_point is not None:
-            u_point.add_dst_tube(Tube(Port('m', 'datum'), vcmd_step))
+            u_point.add_dst_tube(Tube(Port('m', 'out'), vcmd_step))
 
         flow.substeps.append(vcmd_step)
         flow.points.add(vcmd_point)
@@ -254,10 +254,10 @@ class RunsCommandAppender():
         self._next_port_no += 1
 
         point_id = point.id + '_runs'
-        runs_point = Point(point_id, Tube(Port(port_label, 'datum'), self.runs_step))
+        runs_point = Point(point_id, Tube(Port(port_label, 'out'), self.runs_step))
 
         # Stepのportsに追加する
-        self.runs_o_ports.append(Port(port_label, 'datum'))
+        self.runs_o_ports.append(Port(port_label, 'out'))
 
         # ここでRunsCommandを繋げる
         point.add_dst_tube(Tube(Port(port_label, 'mcmd'), self.runs_step))
@@ -298,7 +298,7 @@ class ActivityDataDestAppender():
         self.activity_step.args['points'][port_label] = src_point_of_data_dst
 
         # PointにActivity Stepを繋げる
-        point.add_dst_tube(Tube(Port(port_label, 'datum'), self.activity_step))
+        point.add_dst_tube(Tube(Port(port_label, 'out'), self.activity_step))
 
         self._next_port_no += 1
 
