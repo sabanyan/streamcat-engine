@@ -31,7 +31,6 @@ class Preprocessor:
 
     def __init__(self, flow, datum_factory=None, lock_uuid=None):
         from .appenders import (
-            FolderDataDestAppender,
             CacheDataDestAppender,
             VisDataDestAppender,
             ActivityDataDestAppender,
@@ -46,7 +45,6 @@ class Preprocessor:
         self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity_uuid)
         
         # Appenders
-        # self._folder_data_dest_appender = FolderDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
         self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
         self._vis_data_dest_appender = VisDataDestAppender()
 
