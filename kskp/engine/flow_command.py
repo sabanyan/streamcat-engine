@@ -7,7 +7,7 @@ from .ports import Ports
 
 class FlowCommand(Command):
     """
-    フローコマンド
+    フローJSONを実行するコマンド
     """
 
     class Node():
