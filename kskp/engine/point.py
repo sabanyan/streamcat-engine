@@ -185,7 +185,7 @@ class Points:
     def __getitem__(self, point_id:str):
         point = self.get(point_id)
         if point is None:
-            raise Exception(f'PointsにPoint({point.id})は存在しません')
+            raise Exception(f'PointsにPoint({point_id})は存在しません')
         else:
             return point
         
