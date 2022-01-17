@@ -147,9 +147,9 @@ class VisDataDestAppender():
         rowrange_cmd = CommandLink('rowrange').resolve()
         rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
 
-        # MchkCsv Stepを作成する
-        mchkcsv_cmd = CommandLink('mchkcsv').resolve()
-        mchkcsv_step = Step(mchkcsv_cmd.label, mchkcsv_cmd)
+        # Align Stepを作成する
+        align_cmd = CommandLink('align').resolve()
+        align_step = Step(align_cmd.label, align_cmd)
 
         # ToList Stepを作成する 
         # tolist_cmd = CommandLink('to_pipe').resolve()
@@ -164,10 +164,10 @@ class VisDataDestAppender():
         convtoutf8_point = Point(point_id, Tube(Port('o', 'frame'), convtoutf8_step), None, Tube(Port('i', 'frame'), rowrange_step))
         # RowRange Stepを繋げる
         point_id = point.id + '_rowrange'
-        rowrange_point = Point(point_id, Tube(Port('o', 'frame'), rowrange_step), None, Tube(Port('i', 'frame'), mchkcsv_step))
-        # MchkCsv Stepを繋げる
-        point_id = point.id + '_mchkcsv'
-        mchkcsv_point = Point(point_id, Tube(Port('o', 'frame'), mchkcsv_step), None, Tube(Port('i', 'frame'), tolist_step))
+        rowrange_point = Point(point_id, Tube(Port('o', 'frame'), rowrange_step), None, Tube(Port('i', 'frame'), align_step))
+        # Align Stepを繋げる
+        point_id = point.id + '_align'
+        align_point = Point(point_id, Tube(Port('o', 'frame'), align_step), None, Tube(Port('i', 'frame'), tolist_step))
         # ToListコマンドを繋げる
         point_id = point.id + '_tolist_o'
         tolist_point_o = Point(point_id, Tube(Port('o', 'frame'), tolist_step))
@@ -183,11 +183,11 @@ class VisDataDestAppender():
 
         flow.substeps.append(convtoutf8_step)
         flow.substeps.append(rowrange_step)
-        flow.substeps.append(mchkcsv_step)
+        flow.substeps.append(align_step)
         flow.substeps.append(tolist_step)
         flow.points.add(convtoutf8_point)
         flow.points.add(rowrange_point)
-        flow.points.add(mchkcsv_point)
+        flow.points.add(align_point)
         flow.points.add(tolist_point_o)
         if tolist_point_u is not None:
             flow.points.add(tolist_point_u)
