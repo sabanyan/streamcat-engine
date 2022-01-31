@@ -1,15 +1,11 @@
 """
 外部とのインターフェースを規定している
-基本的にはexecute_flow_by_uuidしか使わないはず
 
 TODO: 外部からコマンド実行できるように
 """
 
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
-
-from .core import Step, Job
-
 
 class DefaultHandler(PatternMatchingEventHandler):
     """
@@ -22,54 +18,40 @@ class DefaultHandler(PatternMatchingEventHandler):
 job_complete_handler = None
 
 
-def execute(link, args, inputs, job_complete_handler=None):
+def execute(command, args={}, inputs={}, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
+    from .step import Step
+    from .job import Job
 
     # 進捗を取得する準備を行う
-    prepare_observer(job_complete_handler)
+    # prepare_observer(job_complete_handler)
 
     # exs = []
 
     try:
-        # ここで実行するlinkは一番上の親であることを定義する
-        link.is_root = True
+        # runnableからstepを作成する
+        step = Step('main_flow', command, args)
 
         # jobを作成する
-        job = make_job(link, args, inputs)
+        job = Job(step, inputs)
 
         # jobを開始する
-        job.start()
+        outs = job.start()
 
         # 後始末をする
         job.dtor()
 
         # 結果を返却する
-        # job.step.runnable.cachesでキャッシュの結果も取れる
+        # job.step.command.cachesでキャッシュの結果も取れる
         # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
-        return job.step.runnable.lasts
+        return outs
 
     except Exception as e:
-        print('main:', e)
         raise
         # exs.append(exception_manager(e))
         # return exs
-
-def make_job(link, args, inputs):
-    # linkからrunnableを生成する
-    runnable = link.resolve()
-
-    # runnableからstepを作成する
-    step = Step('', runnable, args)
-
-    # port情報から、pointを作成する
-    # points = domains(step, inputs)
-
-    # jobを作成する
-    job = Job(step, inputs)
-
-    return job
 
 # def domains(step, inputs):
 #     """
@@ -81,8 +63,8 @@ def make_job(link, args, inputs):
 #     """
 #
 #     # try:
-#     #     return [Point(port.name, None, step, inputs[port.name]) for port
-#     #                                                             in step.runnable.i_ports]
+#     #     return [Point(port.label, None, step, inputs[port.label]) for port
+#     #                                                               in step.command.i_ports]
 #     # except KeyError as e:
 #     #     # inputsに必要な引数が与えられていない
 #     #     raise Exception('inputsに必要な引数が与えられていません') from e

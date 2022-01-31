@@ -3,13 +3,29 @@
 # （別のテストの邪魔をしてそっちのテストが通らなかったり）
 # 小さいフローはテストコードに直接記述してある。
 
+def create_flow_by_flow_id(parent, flow_id, uuid):
+    """
+    指定されたidのフローを作成し、そのフローを返す
+    """
+    from kskp.store import FlowData
+    flow_json = test_json[flow_id]
+    flow = parent.create_flow('test', FlowData(flow_json))
+    flow.uuid = uuid
+    flow.save()
+    # save()によりreadable=Noneになるため再取得する
+    return flow.reload()
+
+def get_flow_json_by_flow_id(flow_id):
+    import copy
+    return copy.deepcopy(test_json[flow_id])
+
 sub1 = {
     "description": "サブフロー",
     "label": "サブフロー",
     "params": [],
     "ports": [
-        [{"label": "入力", "nodeId": "d1", "type": "int"}],
-        [{"label": "出力", "nodeId": "d3", "type": "int"}]
+        [{"label": "入力", "nodeId": "d1", "type": "matrix"}],
+        [{"label": "出力", "nodeId": "d3", "type": "matrix"}]
     ],
     "nodes": [
         {
@@ -6760,7 +6776,6 @@ shindo_sub6 = {
   ]
 }
 
-import os
 from kskp.core import SCHEMA_NAME
 
 # PostgreSQLのデータソース
@@ -6830,7 +6845,7 @@ postgre_src = {
         ]
       }
     ]
-  }
+}
 
 # PostgreSQLのデータデスト
 postgre_dst = {
@@ -6910,6 +6925,444 @@ postgre_dst = {
 	]
 }
 
+postgre_err_src = {
+    "label": "PostgreSQLデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2019-10-02 16:55:56",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "c410cd16-2529-498d-8e7f-490ffa58dc95",
+        "error": {},
+        "label": "データベース?",
+        "invalid": {},
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "error": {},
+        "label": "d1",
+        "invalid": {},
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "schema_name" : SCHEMA_NAME,
+          "table_name": "anonymous"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "error": {},
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "db_loader",
+        "srcsOrder": [
+          "i"
+        ]
+      }
+    ]
+}
+
+# SMBのデータソース
+windows_src = {
+    "label": "Windowsデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2021-02-11 09:55:00",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "8557c193-9bf9-4ce8-8dbb-d1d09864e4a8",
+        "label": "リモートフォルダ",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "label": "d1",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "file_path": "testData.csv"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "remotefolder_loader"
+      }
+    ]
+}
+
+# SMBのデータデスト
+windows_dst = {
+    "label": "Windowsデータデスト",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2021-02-11 09:55:00",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
+		{
+			"id": "d",
+			"type": "store",
+			"uuid": "8557c193-9bf9-4ce8-8dbb-d1d09864e4a8",
+			"label": "リモートフォルダ",
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		},
+		{
+			"id": "d1",
+			"type": "frame",
+			"uuid": None,
+			"label": "d1",
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		},
+		{
+			"id": "c1",
+			"args": {
+				"dir_path": "/"
+			},
+			"dsts": {
+				"o": "d2"
+			},
+			"srcs": {
+				"i": "d1",
+				"store": "d"
+			},
+			"type": "command",
+			"label": "c1",
+			"commandId": "remotefolder_saver"
+		},
+		{
+			"id": "d2",
+			"type": "frame",
+			"uuid": None,
+			"label": "d2",
+			"makeCache": False,
+			"dataSource": "csv",
+			"cacheCreatedAt": None
+		}
+	]
+}
+
+windows_err_src = {
+    "label": "Windowsデータソース",
+    "params": [],
+    "creator": "開発用",
+    "createdAt": "2021-02-11 09:55:00",
+    "projectId": None,
+    "description": "",
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "type": "store",
+        "uuid": "8557c193-9bf9-4ce8-8dbb-d1d09864e4a8",
+        "label": "リモートフォルダ",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "d1",
+        "type": "frame",
+        "uuid": None,
+        "label": "d1",
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "args": {
+          "file_path": "anonymous.txt"
+        },
+        "dsts": {
+          "o": "d1"
+        },
+        "srcs": {
+          "i": "d"
+        },
+        "type": "command",
+        "label": "c1",
+        "invalid": {
+          "table_name": [
+            "入力が必須の項目です"
+          ]
+        },
+        "commandId": "remotefolder_loader"
+      }
+    ]
+}
+
+# Folderデータソース
+folder_src_json = {
+    "label": "Folderデータソース",
+    "creator": "開発用",
+    "createdAt": "2021-03-20 09:21:00",
+    "projectId": None,
+    "description": "",
+    "params": [
+      {
+        "name" : "frame_uuid",
+        "label": "入力ファイルのUUID",
+        "type" : "frame"
+      }
+    ],
+    "ports": [
+      [],
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ]
+    ],
+    "nodes": [
+      {
+        "id": "d",
+        "label": "フォルダ",
+        "type": "store",
+        "uuid": "4062d99c-54e8-477c-8c3b-b08958e0d2f3"
+      },
+      {
+        "id": "c1",
+        "label": "c1",
+        "type": "command",
+        "commandId": "loader",
+        "args": {
+          "uuid": "@[frame_uuid]"
+        },
+        "srcs": {
+          "folder": "d"
+        },
+        "dsts": {
+          "o": "d1"
+        }
+      },
+      {
+        "id": "d1",
+        "label": "d1",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      }
+    ]
+}
+
+# Folderデータデスト
+folder_dst_json = {
+    "label": "Folderデータデスト",
+    "creator": "開発用",
+    "createdAt": "2021-03-20 09:29:00",
+    "projectId": None,
+    "description": "",
+    "params": [],
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
+      {
+        "id": "d1",
+        "label": "d1",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "label": "c1",
+        "type": "command",
+        "commandId": "saver",
+        "args": {},
+        "srcs": {
+          "i": "d1"
+        },
+        "dsts": {
+          "o": "d2"
+        }
+      },
+      {
+        "id": "d2",
+        "label": "d2",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      }
+    ]
+}
+
+# 二つのセーバを持つFolderデータデスト
+two_savers_folder_dst_json = {
+    "label": "複雑なFolderデータデスト",
+    "creator": "開発用",
+    "createdAt": "2021-03-23 18:57:00",
+    "projectId": None,
+    "description": "",
+    "params": [],
+    "ports": [
+      [
+        {
+          "type": "frame",
+          "label": "d1",
+          "nodeId": "d1"
+        }
+      ],
+      []
+    ],
+    "nodes": [
+      {
+        "id": "d1",
+        "label": "d1",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c1",
+        "label": "c1",
+        "type": "command",
+        "commandId": "saver",
+        "args": {},
+        "srcs": {
+          "i": "d1"
+        },
+        "dsts": {
+          "o": "d2"
+        }
+      },
+      {
+        "id": "d2",
+        "label": "d2",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      },
+      {
+        "id": "c2",
+        "label": "c2",
+        "type": "command",
+        "commandId": "saver",
+        "args": {},
+        "srcs": {
+          "i": "d1"
+        },
+        "dsts": {
+          "o": "d3"
+        }
+      },
+      {
+        "id": "d3",
+        "label": "d3",
+        "type": "frame",
+        "uuid": None,
+        "makeCache": False,
+        "dataSource": "csv",
+        "cacheCreatedAt": None
+      }
+    ]
+}
+
 test_json = {
     'sub1': sub1,
     'sub2': sub2,
@@ -6928,5 +7381,9 @@ test_json = {
     'shindo_sub6': shindo_sub6,
     'shindo_sub6': shindo_sub6,
     'postgre_src': postgre_src,
-    'postgre_dst': postgre_dst
+    'postgre_dst': postgre_dst,
+    'postgre_err_src' : postgre_err_src,
+    'windows_src': windows_src,
+    'windows_dst': windows_dst,
+    'windows_err_src' : windows_err_src
 }
