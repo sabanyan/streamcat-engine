@@ -2941,7 +2941,7 @@ class MainTest(TestCaseBase):
         # 後片付け
         lasts['d1'].delete()
 
-    @unittest.skip('mchkcsvを削除した為、このテストは失敗する')
+    @unittest.skip('MCMDのmchkcsvに代わり、nysol_pythonのutil.mchkcsvに変更したので、このテストは失敗する')
     def test_simple_flow_execute_use_nmcmd(self):
         """
         mコマンド２個のフロー実行
@@ -2989,7 +2989,7 @@ class MainTest(TestCaseBase):
         # 後片付け
         lasts['d2'].delete()
 
-    @unittest.skip('mchkcsvを削除した為、このテストは失敗する')
+    @unittest.skip('MCMDのmchkcsvに代わり、nysol_pythonのutil.mchkcsvに変更したので、このテストは失敗する')
     def test_simple_flow_execute_use_mchkcsv_create_cache(self):
         """
         mコマンド1個のフロー実行
@@ -4377,7 +4377,6 @@ class MainTest(TestCaseBase):
         correct = {'d': [['宇宙','そら','B'], ['宇宙','コスモ','A'],['強敵','とも','C'], ['刑事','デカ','C']]}
         self.assertDictEqual(lasts, correct)
 
-    @unittest.skip('mchkcsvを削除した為、このテストは失敗する')
     def test_vizs_mchkcsv(self):
         """
         mchkcsvによるCSVチェックの結果をプレビューできる
