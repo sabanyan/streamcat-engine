@@ -21,9 +21,9 @@ class FlowCommand(Command):
 
         def __repr__(self):
             if self.type == 'command':
-                return self._node_json.get('commandId')
+                return self._node_json.get('commandId', self.id)
             else:
-                return self._node_json.get('label')
+                return self._node_json.get('label', self.id)
 
         def __getitem__(self, key:str):
             value = self._node_json.get(key)
