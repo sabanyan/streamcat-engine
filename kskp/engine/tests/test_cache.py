@@ -844,7 +844,7 @@ class CacheTest(TestCaseBase):
                     "id": "f1", 
                     "args": {}, 
                     "srcs": {
-                        "d1": "d2"
+                        "testData": "d2"
                     }, 
                     "dsts": {
                         "d3": "d3"
@@ -1073,7 +1073,7 @@ class CacheTest(TestCaseBase):
                         "d2": "d1"
                     }, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     }, 
                     "type": "flow", 
                     "uuid": "cc928f40-721b-4bb3-b4b0-e376e3ab9299", 
@@ -1092,7 +1092,7 @@ class CacheTest(TestCaseBase):
                         "d2": "d2"
                     }, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     }, 
                     "type": "flow", 
                     "uuid": "cc928f40-721b-4bb3-b4b0-e376e3ab9299", 
@@ -1111,7 +1111,7 @@ class CacheTest(TestCaseBase):
                         "d2": "d3"
                     }, 
                     "srcs": {
-                        "d": "d6"
+                        "testData": "d6"
                     }, 
                     "type": "flow", 
                     "uuid": "cc928f40-721b-4bb3-b4b0-e376e3ab9299", 
@@ -1130,7 +1130,7 @@ class CacheTest(TestCaseBase):
                         "d2": "d4"
                     }, 
                     "srcs": {
-                        "d": "d7"
+                        "testData": "d7"
                     }, 
                     "type": "flow", 
                     "uuid": "cc928f40-721b-4bb3-b4b0-e376e3ab9299", 

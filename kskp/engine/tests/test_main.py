@@ -1344,8 +1344,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd2" },
-                    "dsts": { "d3": "dd3" }
+                    "srcs": { "入力": "dd2" },
+                    "dsts": { "出力": "dd3" }
                 },
                 {
                     "id": "dd3",
@@ -1403,8 +1403,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" }
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力": "dd2" }
                 },
                 {
                     "id": "dd2",
@@ -1416,8 +1416,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd2" },
-                    "dsts": { "d3": "dd3" }
+                    "srcs": { "入力": "dd2" },
+                    "dsts": { "出力": "dd3" }
                 },
                 {
                     "id": "dd3",
@@ -1478,8 +1478,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" }
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力": "dd2" }
                 },
                 {
                     "id": "dd2",
@@ -1491,8 +1491,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd2" },
-                    "dsts": { "d3": "dd3" }
+                    "srcs": { "入力": "dd2" },
+                    "dsts": { "出力": "dd3" }
                 },
                 {
                     "id": "dd3",
@@ -1566,8 +1566,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -1644,8 +1644,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -1722,8 +1722,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -1783,12 +1783,12 @@ class MainTest(TestCaseBase):
                 [
                   {
                     "type": "frame",
-                    "label": "ラベル",
+                    "label": "ラベル1",
                     "nodeId": "dd4"
                   },
                   {
                     "type": "frame",
-                    "label": "ラベル",
+                    "label": "ラベル2",
                     "nodeId": "dd5"
                   }
                 ]
@@ -1810,8 +1810,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -1945,8 +1945,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -2079,8 +2079,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -2416,8 +2416,8 @@ class MainTest(TestCaseBase):
                     "type": "flow",
                     "uuid": "62dbe8d6-5f09-450e-a0b8-fab88ecfafd3",
                     "args": {},
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -2569,8 +2569,8 @@ class MainTest(TestCaseBase):
                         "sensor": "0,1",
                         "customer": "顧客"
                     },
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -2646,8 +2646,8 @@ class MainTest(TestCaseBase):
                         "sensor2": "数量",
                         "customer": "顧客"
                     },
-                    "srcs": { "d1": "dd1" },
-                    "dsts": { "d3": "dd2" , "d4": "dd3"}
+                    "srcs": { "入力": "dd1" },
+                    "dsts": { "出力1": "dd2" , "出力2": "dd3"}
                 },
                 {
                     "id": "dd2",
@@ -2823,7 +2823,7 @@ class MainTest(TestCaseBase):
         args指定はなし
         """
         # フローJSONを取得する
-        flow_json = get_flow_json_by_flow_id('sub2')
+        flow_json = copy.deepcopy(get_flow_json_by_flow_id('sub2'))
         # サブフローにデータデストを追加する
         flow_json['nodes'].append(self.create_data_dst_node('d3'))
         flow_json['nodes'].append(self.create_data_dst_node('d4'))
@@ -2834,15 +2834,16 @@ class MainTest(TestCaseBase):
 
         # フローを実行する
         inputs = {
-            'd1': Matrix([["顧客", "数量", "金額"],
-                        ["A", 1, 10],
-                        ["A", 2, 20],
-                        ["B", 1, 30],
-                        ["B", 3, 40],
-                        ["B", 1, 50]])
+            '入力': Matrix([["顧客", "数量", "金額"],
+                           ["A", 1, 10],
+                           ["A", 2, 20],
+                           ["B", 1, 30],
+                           ["B", 3, 40],
+                           ["B", 1, 50]])
         }
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, inputs)
+        print(lasts)
         lasts = convert_from_activity(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2879,12 +2880,12 @@ class MainTest(TestCaseBase):
 
         # フローを実行する
         inputs = {
-            'd1': Matrix([["顧客", "数量", "金額"],
-                        ["A", 1, 10],
-                        ["A", 2, 20],
-                        ["B", 1, 30],
-                        ["B", 3, 40],
-                        ["B", 1, 50]])
+            '入力': Matrix([["顧客", "数量", "金額"],
+                           ["A", 1, 10],
+                           ["A", 2, 20],
+                           ["B", 1, 30],
+                           ["B", 3, 40],
+                           ["B", 1, 50]])
         }
         args = {
           'flow_args': {
@@ -6227,7 +6228,7 @@ class MainTest(TestCaseBase):
                     "id": "f1",
                     "args": {},
                     "srcs": {
-                        "d": "d"
+                        "percent": "d"
                     },
                     "dsts": {
                         "d2": "d1"

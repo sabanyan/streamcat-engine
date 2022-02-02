@@ -21,9 +21,9 @@ class FlowCommand(Command):
 
         def __repr__(self):
             if self.type == 'command':
-                return self._node_json.get('commandId')
+                return self._node_json.get('commandId', self.id)
             else:
-                return self._node_json.get('label')
+                return self._node_json.get('label', self.id)
 
         def __getitem__(self, key:str):
             value = self._node_json.get(key)
@@ -190,9 +190,8 @@ class FlowCommand(Command):
             point = self.points.get(port_json['nodeId'])
             if point is None:
                 raise Exception(f'Port({port_json["label"]})に紐づくPoint({port_json["nodeId"]})がフロー({self})に存在しません')
-            # TODO: 'nodeId'はサブフロー内でのノードIdなので、ポートの識別子には'label'を使うべきか？
-            # Commandではポートの識別に'label'を用いているので、Flowも合わせるべきでは？
-            new_port = FlowPort(port_json['nodeId'], port_json.get('type') or port_json['types'], point)
+            # サブフローのポートの識別子には'label'を用いる
+            new_port = FlowPort(port_json['label'], port_json.get('type') or port_json['types'], point)
             if new_port in rets:
                 raise Exception(f'同じlabelのPort({new_port.label})が存在します')
             rets.append(new_port)
