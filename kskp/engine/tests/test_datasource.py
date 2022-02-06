@@ -1105,7 +1105,7 @@ class DataSourceTest(TestCaseBase):
                     "id": "f1",
                     "args": {},
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     },
                     "dsts": {
                         "d1": "d1"
@@ -2117,7 +2117,7 @@ class DataSourceTest(TestCaseBase):
                     "type": "flow", 
                     "classification": "data_dest",
                     "srcs": {
-                        "d": 'd1'
+                        "i": 'd1'
                     },
                     "dsts": {}, 
                     "uuid": self.data_dst.uuid
@@ -2419,7 +2419,7 @@ class DataSourceTest(TestCaseBase):
                     "type": "flow", 
                     "classification": "data_dest",
                     "srcs": {
-                        "d": 'd1'
+                        "i": 'd1'
                     },
                     "dsts": {}, 
                     "uuid": self.data_dst.uuid
@@ -2812,7 +2812,7 @@ class DataSourceTest(TestCaseBase):
                         "d2": "d2"
                     }, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     }, 
                     "type": "flow", 
                     "uuid": "7da92d9d-256a-4172-8587-c593ba72ebd9", 
@@ -2891,7 +2891,7 @@ class DataSourceTest(TestCaseBase):
                         "d3": "d2"
                     }, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     }, 
                     "type": "flow", 
                     "uuid": "99f81446-d805-481c-9329-b555a4b1a240", 
@@ -2910,7 +2910,7 @@ class DataSourceTest(TestCaseBase):
                         "d3": "d3"
                     }, 
                     "srcs": {
-                        "d": "d1"
+                        "testData": "d1"
                     }, 
                     "type": "flow", 
                     "uuid": "99f81446-d805-481c-9329-b555a4b1a240", 
@@ -2964,12 +2964,12 @@ class DataSourceTest(TestCaseBase):
                 [
                     {
                         "type": "frame", 
-                        "label": "testData", 
+                        "label": "testData1", 
                         "nodeId": "d1"
                     }, 
                     {
                         "type": "frame", 
-                        "label": "testData", 
+                        "label": "testData2", 
                         "nodeId": "d"
                     }
                 ], 
@@ -3022,8 +3022,8 @@ class DataSourceTest(TestCaseBase):
                         "d5": "d3"
                     }, 
                     "srcs": {
-                        "d": "d", 
-                        "d1": "d"
+                        "testData1": "d", 
+                        "testData2": "d"
                     }, 
                     "type": "flow", 
                     "uuid": "0ea4d275-9526-498e-98c6-35b92aebc12d", 
@@ -3114,7 +3114,7 @@ class DataSourceTest(TestCaseBase):
                         "d3": "d2"
                     }, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     }, 
                     "type": "flow", 
                     "uuid": "9d406060-7920-4c0e-b4d9-e5db432103dd", 
@@ -3858,7 +3858,7 @@ class DataSourceTest(TestCaseBase):
                     },
                     "args": {}, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     },
                     "dsts": {
                         "d1": "d1"
@@ -3876,7 +3876,7 @@ class DataSourceTest(TestCaseBase):
                     "type": "flow", 
                     "classification": "data_dest",
                     "srcs": {
-                        "d": 'd1'
+                        "i": 'd1'
                     },
                     "dsts": {}, 
                     "uuid": self.data_dst.uuid
@@ -4023,7 +4023,7 @@ class DataSourceTest(TestCaseBase):
                     },
                     "args": {}, 
                     "srcs": {
-                        "d": "d"
+                        "testData": "d"
                     },
                     "dsts": {
                         "d1": "d1"
@@ -4041,7 +4041,7 @@ class DataSourceTest(TestCaseBase):
                     "type": "flow", 
                     "classification": "data_dest",
                     "srcs": {
-                        "d": 'd1'
+                        "i": 'd1'
                     },
                     "dsts": {}, 
                     "uuid": self.data_dst.uuid
@@ -4129,7 +4129,7 @@ class DataSourceTest(TestCaseBase):
                     "classification": "data_dest",
                     "args": {},
                     "srcs": {
-                        "d": "d"
+                        "i": "d"
                     },
                     "dsts": {}, 
                     "flow": {
