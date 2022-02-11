@@ -126,16 +126,16 @@ class DbTest(TestCaseBase):
     #   'dbms'     : "postgresql",
     #   'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
     #   'port'     : 5432, 
-    #   'database' : "kskp", 
-    #   'userId'  : "kskp", 
+    #   'database' : "streamcat", 
+    #   'userId'  : "streamcat", 
     #   'password' : r'J2-pH|%B'
     # }
     conn_json = {
       'dbms'     : "postgresql",
       'hostname' : "db", 
       'port'     : 5432, 
-      'database' : "kskp", 
-      'userId'  : "kskp", 
+      'database' : "streamcat", 
+      'userId'  : "streamcat", 
       'password' : 'ZQZtVgL6G32Vy6p6WJtG3C3K84yuJ4zz'
     }
     database_conn = DatabaseConn(conn_json)
