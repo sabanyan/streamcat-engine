@@ -1487,7 +1487,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../kskp-flow-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -1908,7 +1908,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../kskp-flow-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
