@@ -23,44 +23,44 @@ if __name__ == '__main__':
     def bigAmount0():
         f = None
         # f <<= nm.mstdin()
-        # f <<= nm.mcut(i='kskp/others/sample.csv', x=True, f='0,1,2,3,4', o='kskp/others/sample1.csv')
-        f <<= nm.mcut(i='kskp/others/sample.csv', x=True, f='0,1,2,3,4')
+        # f <<= nm.mcut(i='streamcat/others/sample.csv', x=True, f='0,1,2,3,4', o='streamcat/others/sample1.csv')
+        f <<= nm.mcut(i='streamcat/others/sample.csv', x=True, f='0,1,2,3,4')
         f <<= nm.mstdout()
-        with RedirectStdStreams(stderr=open('kskp/others/stderr0.txt','w')):
+        with RedirectStdStreams(stderr=open('streamcat/others/stderr0.txt','w')):
             f.run(msg='on')
             sys.stderr.flush()
 
     def bigAmount1():
         f = None
         f <<= nm.mstdin()
-        # f <<= nm.mcut(x=True, f='0,1,2,3', o='kskp/others/sample2.csv')
+        # f <<= nm.mcut(x=True, f='0,1,2,3', o='streamcat/others/sample2.csv')
         f <<= nm.mcut(x=True, f='0,1,2,3')
         f <<= nm.mstdout()
-        with RedirectStdStreams(stderr=open('kskp/others/stderr1.txt','w')):
+        with RedirectStdStreams(stderr=open('streamcat/others/stderr1.txt','w')):
             f.run(msg='on')
             sys.stderr.flush()
 
     def bigAmount2():
         f = None
         f <<= nm.mstdin()
-        # f <<= nm.mcut(x=True, f='0,1,2', o='kskp/others/sample3.csv')
+        # f <<= nm.mcut(x=True, f='0,1,2', o='streamcat/others/sample3.csv')
         f <<= nm.mcut(x=True, f='0,1,2')
         f <<= nm.mstdout()
-        with RedirectStdStreams(stderr=open('kskp/others/stderr2.txt','w')):
+        with RedirectStdStreams(stderr=open('streamcat/others/stderr2.txt','w')):
             f.run(msg='on')
             sys.stderr.flush()
 
     def bigAmount3():
         f = None
         f <<= nm.mstdin()
-        # f <<= nm.mcut(x=True, f='0,1', o='kskp/others/sample3.csv')
+        # f <<= nm.mcut(x=True, f='0,1', o='streamcat/others/sample3.csv')
         f <<= nm.mcut(x=True, f='0,1')
         f <<= nm.mstdout()
-        with RedirectStdStreams(stderr=open('kskp/others/stderr3.txt','w')):
+        with RedirectStdStreams(stderr=open('streamcat/others/stderr3.txt','w')):
             f.run(msg='on')
             sys.stderr.flush()
 
-    # with RedirectStdStreams(stderr=open('kskp/others/stderr.txt','w')):
+    # with RedirectStdStreams(stderr=open('streamcat/others/stderr.txt','w')):
     a = None
     a <<= nm.runfunc(bigAmount0)
     a <<= nm.runfunc(bigAmount1)

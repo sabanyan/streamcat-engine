@@ -7,7 +7,7 @@ def create_flow_by_flow_id(parent, flow_id, uuid):
     """
     指定されたidのフローを作成し、そのフローを返す
     """
-    from kskp.store import FlowData
+    from streamcat.store import FlowData
     flow_json = test_json[flow_id]
     flow = parent.create_flow('test', FlowData(flow_json))
     flow.uuid = uuid
@@ -6776,7 +6776,7 @@ shindo_sub6 = {
   ]
 }
 
-from kskp.core import SCHEMA_NAME
+from streamcat.core import SCHEMA_NAME
 
 # PostgreSQLのデータソース
 postgre_src = {

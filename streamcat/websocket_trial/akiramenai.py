@@ -10,9 +10,9 @@ from watchdog.events import PatternMatchingEventHandler
 
 import nysol.mcmd as nm
 
-from kskp.core import Command, Port, Parameter
-import kskp.engine
-from kskp.engine import Flow, Step, Point, Job
+from streamcat.core import Command, Port, Parameter
+import streamcat.engine
+from streamcat.engine import Flow, Step, Point, Job
 
 
 class RedirectStdStreams(object):
@@ -72,7 +72,7 @@ class Mcut(Command):
 # class TestCommand(Command):
 #     def run(self, args, inputs):
 #         f = None
-#         f <<= nm.mcut(i='kskp/data/sample.csv', x=True, f='0,1,2,3,4')
+#         f <<= nm.mcut(i='streamcat/data/sample.csv', x=True, f='0,1,2,3,4')
 #         f <<= nm.runfunc(interrupt, a='a')
 #         f <<= nm.mcut(x=True, f='0,1,2,3,4')
 #         f <<= nm.runfunc(interrupt, a='b')
@@ -80,7 +80,7 @@ class Mcut(Command):
 #         f <<= nm.runfunc(interrupt, a='c')
 #         f <<= nm.mcut(x=True, f='0,1,2')
 #         f <<= nm.runfunc(interrupt, a='d')
-#         f <<= nm.mcut(x=True, f='0,1', o='kskp/data/result.csv')
+#         f <<= nm.mcut(x=True, f='0,1', o='streamcat/data/result.csv')
 #         f <<= nm.runfunc(interrupt, a='e')
         
 #         return {'o': f.run(msg='on')}
@@ -93,7 +93,7 @@ class TestLink:
         step2 = Step('s2', Mcut(), {'f': '0,1,2,3'})
                         
         flow.substeps = [step1, step2]
-        flow.points = [Point('d1', None, None, 'kskp/data/sample.csv', step1.runnable.i_ports[0], step1),
+        flow.points = [Point('d1', None, None, 'streamcat/data/sample.csv', step1.runnable.i_ports[0], step1),
                        Point('d2', step1, step1.runnable.o_ports[0], None, step2.runnable.i_ports[0], step2),
                        Point('d3', step2, step2.runnable.o_ports[0], None, None, None)]
         
@@ -111,7 +111,7 @@ def try_to_execute():
         while True:
             message = ws.receive()
             ws.send(f'you send {message}. thanx.')
-            result = kskp.engine.execute(TestLink(), {}, {}, job_complete_handler=MyHandler(ws))            
+            result = streamcat.engine.execute(TestLink(), {}, {}, job_complete_handler=MyHandler(ws))            
             print('result:', result)
 
 def interrupt(a):
@@ -124,7 +124,7 @@ def interrupt(a):
             tokens = line.strip().split(",")        
             print(",".join(tokens))
 
-    with open(f'kskp/messages/stderr{a}.txt','w') as f:
+    with open(f'streamcat/messages/stderr{a}.txt','w') as f:
         f.write(a)
 
 def main():

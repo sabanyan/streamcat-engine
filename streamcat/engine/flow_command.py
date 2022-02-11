@@ -1,5 +1,5 @@
-from kskp.core import Command, Port
-from kskp.store import Flow, FlowData
+from streamcat.core import Command, Port
+from streamcat.store import Flow, FlowData
 from .stepoints import Stepoints
 from .point import Point, Points
 from .flow_port import FlowPort
@@ -92,7 +92,7 @@ class FlowCommand(Command):
         self.relayed_o_ports = Ports()
 
         # TODO: 用途不明
-        from kskp.store import ModuleStore
+        from streamcat.store import ModuleStore
         self.module_store = ModuleStore()
 
         # 
@@ -102,7 +102,7 @@ class FlowCommand(Command):
         self._stepoints = None
 
         # データソースを追加する
-        from kskp.store.factory import DatumFactory
+        from streamcat.store.factory import DatumFactory
         from .appenders import FolderDataSourcePrepender
         self._datum_factory = DatumFactory(flow._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
@@ -311,7 +311,7 @@ class FlowCommand(Command):
                 # pointを作成する（作成対象がすでにあれば更新する）
                 dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step))
 
-                from kskp.depo.std.commands import AssertCommand
+                from streamcat.depo.std.commands import AssertCommand
                 if isinstance(cmd, AssertCommand):
                     # 出力情報に、AssertCommandの出力ポイントのidを含めるため
                     args['asserted_point'] = dst_point.id
@@ -357,7 +357,7 @@ class FlowCommand(Command):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
-                        from kskp.store import Matrix
+                        from streamcat.store import Matrix
                         target_point.datum = Matrix(node['value'])
                     else:
                         target_point.datum = node['value']
@@ -380,8 +380,8 @@ class FlowCommand(Command):
                     target_point.makeCache = False
 
     def _create_command(self, node, vis_args, use_cache, src_point):
-        from kskp.store.auth import NotAuthorizedException
-        from kskp.depo.std.commands import CommandLink
+        from streamcat.store.auth import NotAuthorizedException
+        from streamcat.depo.std.commands import CommandLink
 
         if node.type == 'command':
             return CommandLink(node['commandId']).resolve()
@@ -510,5 +510,5 @@ class FlowCommand(Command):
         # TmpファイルはNYSOL-Pythonコマンドの入力に使用するので
         # Nysol-Python(Runsコマンド)の実行が終了した後に削除する
         if self.is_main:
-            from kskp.core import Tmp
+            from streamcat.core import Tmp
             Tmp.remove_files()

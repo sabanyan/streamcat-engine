@@ -34,7 +34,7 @@ def myapp(environ, start_response):
 	if path == '/':
 		# start_response('200 OK', [('Content-Type', 'text/html')])
 		start_response('200 OK', [('Content-Type', 'text/plain')])
-		# return open('kskp/websocket_trial/index.html').read()
+		# return open('streamcat/websocket_trial/index.html').read()
 		return 'popop'
 	elif path == '/chat':
 		return chat_handle(environ, start_response)

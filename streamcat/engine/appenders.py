@@ -1,5 +1,5 @@
-from kskp.core import Port
-from kskp.depo.std.commands import CommandLink
+from streamcat.core import Port
+from streamcat.depo.std.commands import CommandLink
 from .point import Point
 from .step import Step
 from .tube import Tubes, Tube

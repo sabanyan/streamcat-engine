@@ -1,8 +1,8 @@
-from kskp.store import ProjectFolder, FlowData
-from kskp.store.lock import lock_manager
-from kskp.store.auth import NotAuthorizedException
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowCommand
+from streamcat.store import ProjectFolder, FlowData
+from streamcat.store.lock import lock_manager
+from streamcat.store.auth import NotAuthorizedException
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_activity_vis, convert_from_activity_cache
 
 class CacheTest(TestCaseBase):

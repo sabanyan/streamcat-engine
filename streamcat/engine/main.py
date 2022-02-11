@@ -124,7 +124,7 @@ def prepare_observer(job_complete_handler):
     # if job_complete_handler is None:
     #     job_complete_handler = DefaultHandler()
     # # print(job_complete_handler)
-    # observer.schedule(job_complete_handler, 'kskp/messages/')
+    # observer.schedule(job_complete_handler, 'streamcat/messages/')
     #
     # # 監視を開始する
     # observer.start()

@@ -2,10 +2,10 @@ import copy
 import unittest
 import pprint
 
-from kskp.store import FlowData, DatabaseConn
-from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowCommand
+from streamcat.store import FlowData, DatabaseConn
+from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_exs
 from .make_flow_json import create_flow_by_flow_id
 

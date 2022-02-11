@@ -68,7 +68,7 @@ class Point:
 
     @property
     def is_store(self):
-        from kskp.store import Store
+        from streamcat.store import Store
         return self.datum is not None and isinstance(self.datum, Store)
 
     @property

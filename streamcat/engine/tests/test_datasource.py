@@ -4,10 +4,10 @@ import unittest
 import shutil
 from pathlib import Path
 
-from kskp.core import Datum
-from kskp.store import DatabaseConn, FlowData, NysolModule
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowCommand
+from streamcat.core import Datum
+from streamcat.store import DatabaseConn, FlowData, NysolModule
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_vis
 from .make_flow_json import create_flow_by_flow_id
 
@@ -1487,7 +1487,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../kskp-flow-engine/kskp/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('../kskp-flow-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -1908,7 +1908,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../kskp-flow-engine/kskp/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('../kskp-flow-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -2452,7 +2452,7 @@ class DataSourceTest(TestCaseBase):
         """
         # コマンドを作成する
         import nysol.mcmd as nm 
-        from kskp.depo.std.commands import CommandLink
+        from streamcat.depo.std.commands import CommandLink
         cmd = CommandLink('ts_axis_0in_generator').resolve()
 
         # コマンド引数

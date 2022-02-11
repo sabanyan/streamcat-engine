@@ -1,8 +1,8 @@
 from sqlalchemy.orm.exc import NoResultFound
-from kskp.core.datum import Datum
-from kskp.store import ProjectFolder, FlowData
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowCommand
+from streamcat.core.datum import Datum
+from streamcat.store import ProjectFolder, FlowData
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_vis
 
 class ActivityTest(TestCaseBase):
@@ -335,7 +335,7 @@ class ActivityTest(TestCaseBase):
         execute()の戻り値から
         pointのidとframeのDictに置き換える
         """
-        from kskp.store import Activity
+        from streamcat.store import Activity
         # Activityを取得して返り値とする
         for point_id, datum in outs.items():
             if isinstance(datum, Activity):
