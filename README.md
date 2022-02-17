@@ -2,7 +2,7 @@
 
 StreamCatは、オープンソースとして公開するデータ分析プラットフォームです
 
-<img alt="streamcat_demo" src="https://user-images.githubusercontent.com/93304382/153734934-9f1dfdfc-b3ec-4dc7-829d-e52271576d21.gif" width="48%">
+<img alt="streamcat_demo" src="https://user-images.githubusercontent.com/93304382/154427837-0ffc301a-9932-4773-abe7-4b2847c76c74.gif" width="48%">
 
 ## 2. 動作環境
 
@@ -37,7 +37,7 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
 
 Webブラウザ(ChromeまたはFirefoxを推奨)で[`http://localhost:5000`](http://localhost:5000)にアクセスして、以下のログイン画面が表示されればインストール完了です。
 
-<img alt="streamcat_login" src="https://user-images.githubusercontent.com/93304382/153735599-dff7f036-77c6-4d97-a839-9f03c1b9086e.png" width="48%">
+<img alt="streamcat_login" src="https://user-images.githubusercontent.com/93304382/154427880-1a7dfd82-71e7-4660-a8fa-8ee836eae458.png" width="48%">
 
 ### 3. 利用開始
 
