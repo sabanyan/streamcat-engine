@@ -18,7 +18,7 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
 
 ### 1. Dockerコンテナの取得と起動
 
-1. [`streamcat.zip`](https://github.com/sabanyan/community/files/8054952/streamcat.zip)をダウンロードする
+1. [`streamcat.zip`](https://github.com/sabanyan/community/files/8103504/streamcat.zip)をダウンロードする
 
 2. 以下のコマンドを上から順に実行する
 
