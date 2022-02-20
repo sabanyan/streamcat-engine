@@ -122,14 +122,6 @@ class DbTest(TestCaseBase):
       ]
     }
 
-    # conn_json = {
-    #   'dbms'     : "postgresql",
-    #   'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
-    #   'port'     : 5432, 
-    #   'database' : "streamcat", 
-    #   'userId'  : "streamcat", 
-    #   'password' : r'J2-pH|%B'
-    # }
     conn_json = {
       'dbms'     : "postgresql",
       'hostname' : "db", 
