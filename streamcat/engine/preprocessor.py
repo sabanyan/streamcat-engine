@@ -111,7 +111,7 @@ class Preprocessor:
         フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
         そのフロー出力ポートを中継ポートに設定する
         """
-        from kskp.depo.std.commands.scmd.script import SaverCommand
+        from streamcat.depo.std.commands.scmd.script import SaverCommand
 
         for point in flow_cmd.points:
             # 既にフロー出力Pointの場合は中継しない
@@ -151,7 +151,7 @@ class Preprocessor:
         """
         フローの出力ポートを親フローに中継する
         """
-        from kskp.core import Datum, Port
+        from streamcat.core import Datum, Port
         from .tube import Tube
 
         # サブフローから中継された出力Portに紐づくPointを新規作成する
@@ -175,7 +175,7 @@ class Preprocessor:
         """
         SCommandに共通の引数を設定する
         """
-        from kskp.depo.std.commands import SCommand
+        from streamcat.depo.std.commands import SCommand
 
         for step in steps:
             if step.is_flow:

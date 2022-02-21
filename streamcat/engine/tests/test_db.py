@@ -2,10 +2,10 @@ import copy
 import unittest
 import pprint
 
-from kskp.store import FlowData, DatabaseConn
-from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowCommand
+from streamcat.store import FlowData, DatabaseConn
+from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_exs
 from .make_flow_json import create_flow_by_flow_id
 
@@ -122,20 +122,12 @@ class DbTest(TestCaseBase):
       ]
     }
 
-    # conn_json = {
-    #   'dbms'     : "postgresql",
-    #   'hostname' : "kskp.cr4gfi5zl5xm.ap-northeast-1.rds.amazonaws.com", 
-    #   'port'     : 5432, 
-    #   'database' : "kskp", 
-    #   'userId'  : "kskp", 
-    #   'password' : r'J2-pH|%B'
-    # }
     conn_json = {
       'dbms'     : "postgresql",
       'hostname' : "db", 
       'port'     : 5432, 
-      'database' : "kskp", 
-      'userId'  : "kskp", 
+      'database' : "streamcat", 
+      'userId'  : "streamcat", 
       'password' : 'ZQZtVgL6G32Vy6p6WJtG3C3K84yuJ4zz'
     }
     database_conn = DatabaseConn(conn_json)

@@ -1,4 +1,4 @@
-from kskp.core import Port
+from streamcat.core import Port
 from .point import Point
 
 class FlowPort(Port):

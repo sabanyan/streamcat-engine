@@ -1,5 +1,5 @@
 from typing import Iterator
-from kskp.core import Port
+from streamcat.core import Port
 
 class Ports():
     """

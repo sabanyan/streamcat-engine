@@ -1,9 +1,9 @@
 import asyncio
 import time
 
-from kskp.core import Command
-import kskp.engine as engine
-from kskp.engine import Flow, Point, Step, Port
+from streamcat.core import Command
+import streamcat.engine as engine
+from streamcat.engine import Flow, Point, Step, Port
 
 # from flask import Flask
 from quart import Quart, websocket

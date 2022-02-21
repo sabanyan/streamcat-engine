@@ -1,9 +1,9 @@
 from setuptools import setup
 
 setup(
-    name='kskp.engine',
-    packages=['kskp.engine'],
-    version='3.0',
+    name='streamcat.engine',
+    packages=['streamcat.engine'],
+    version='3.1',
     description='Core Engine for Flow-base Data Processing',
     url='https://www.kskp.io',
     install_requires=[

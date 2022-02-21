@@ -1,4 +1,4 @@
-from kskp.core import Command
+from streamcat.core import Command
 
 class Step:
     """
@@ -43,7 +43,7 @@ class Step:
         コマンドを実行する
         (コマンドの実行で例外が送出されても、最後のコマンドまで実行する)
         """
-        from kskp.store import CommandException
+        from streamcat.store import CommandException
 
         def make_exception_outs(o_ports, cmd_ex):
             """

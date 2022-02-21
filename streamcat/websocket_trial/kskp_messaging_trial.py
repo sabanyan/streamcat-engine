@@ -82,7 +82,7 @@ async def ws():
 
 async def write_f(s):
     bigAmount_normal()
-    # with open(f'kskp/others/stderr{s}.txt', 'w') as f:
+    # with open(f'streamcat/others/stderr{s}.txt', 'w') as f:
     #     f.write(s + 'g4srxfd')
     while True:
         if event_handler.res is not None:
@@ -95,10 +95,10 @@ async def write_f(s):
 #     try:
 #         f = None
 #         # f <<= nm.mstdin()
-#         # f <<= nm.mcut(i='kskp/others/sample.csv', x=True, f='0,1,2,3,4', o='kskp/others/sample1.csv')
-#         f <<= nm.mcut(i='kskp/data/sample.csv', x=True, f='0,1,2,3,4')
+#         # f <<= nm.mcut(i='streamcat/others/sample.csv', x=True, f='0,1,2,3,4', o='streamcat/others/sample1.csv')
+#         f <<= nm.mcut(i='streamcat/data/sample.csv', x=True, f='0,1,2,3,4')
 #         f <<= nm.mstdout()
-#         with RedirectStdStreams(stderr=open('kskp/messages/stderr0.txt','w')):
+#         with RedirectStdStreams(stderr=open('streamcat/messages/stderr0.txt','w')):
 #             f.run(msg='on')
 #     except Exception as e:
 #         with open('/dev/stderr', 'w') as fpe:
@@ -108,10 +108,10 @@ async def write_f(s):
 #     try:
 #         f = None
 #         f <<= nm.mstdin()
-#         # f <<= nm.mcut(x=True, f='0,1,2,3', o='kskp/others/sample2.csv')
+#         # f <<= nm.mcut(x=True, f='0,1,2,3', o='streamcat/others/sample2.csv')
 #         f <<= nm.mcut(x=True, f='0,1,2,3')
 #         f <<= nm.mstdout()
-#         with RedirectStdStreams(stderr=open('kskp/messages/stderr1.txt','w')):
+#         with RedirectStdStreams(stderr=open('streamcat/messages/stderr1.txt','w')):
 #             f.run(msg='on')
 #     except Exception as e:
 #         with open('/dev/stderr', 'w') as fpe:
@@ -121,10 +121,10 @@ async def write_f(s):
 #     try:
 #         f = None
 #         f <<= nm.mstdin()
-#         # f <<= nm.mcut(x=True, f='0,1,2', o='kskp/others/sample3.csv')
+#         # f <<= nm.mcut(x=True, f='0,1,2', o='streamcat/others/sample3.csv')
 #         f <<= nm.mcut(x=True, f='0,1,2')
 #         f <<= nm.mstdout()
-#         with RedirectStdStreams(stderr=open('kskp/messages/stderr2.txt','w')):
+#         with RedirectStdStreams(stderr=open('streamcat/messages/stderr2.txt','w')):
 #             f.run(msg='on')
 #     except Exception as e:
 #         with open('/dev/stderr', 'w') as fpe:
@@ -134,10 +134,10 @@ async def write_f(s):
 #     try:
 #         f = None
 #         f <<= nm.mstdin()
-#         # f <<= nm.mcut(x=True, f='0,1', o='kskp/others/sample3.csv')
+#         # f <<= nm.mcut(x=True, f='0,1', o='streamcat/others/sample3.csv')
 #         f <<= nm.mcut(x=True, f='0,1')
 #         f <<= nm.mstdout()
-#         with RedirectStdStreams(stderr=open('kskp/messages/stderr3.txt','w')):
+#         with RedirectStdStreams(stderr=open('streamcat/messages/stderr3.txt','w')):
 #             f.run(msg='on')
 #     except Exception as e:
 #         with open('/dev/stderr', 'w') as fpe:
@@ -145,12 +145,12 @@ async def write_f(s):
 
 # def bigAmount():   
 #     try:
-#         # with RedirectStdStreams(stderr=open('kskp/messages/stderr.txt','w')):
+#         # with RedirectStdStreams(stderr=open('streamcat/messages/stderr.txt','w')):
 #         a = None
 #         a <<= nm.runfunc(bigAmount0)
 #         a <<= nm.runfunc(bigAmount1)
 #         a <<= nm.runfunc(bigAmount2)
-#         a <<= nm.runfunc(bigAmount3, o='kskp/data/end.csv')    
+#         a <<= nm.runfunc(bigAmount3, o='streamcat/data/end.csv')    
 #         a.run()
 #     except Exception as e:
 #         with open('/dev/stderr', 'w') as fpe:
@@ -166,22 +166,22 @@ def interrupt(a):
             tokens = line.strip().split(",")        
             print(",".join(tokens))
 
-    with open(f'kskp/messages/stderr{a}.txt','w') as f:
+    with open(f'streamcat/messages/stderr{a}.txt','w') as f:
         f.write(a)
 
     asyncio.get_event_loop().run_until_complete(websocket.send(a))
 
 def bigAmount_normal():
     f = None
-    f <<= nm.mcut(i='kskp/data/sample.csv', x=True, f='0,1,2,3,4')
+    f <<= nm.mcut(i='streamcat/data/sample.csv', x=True, f='0,1,2,3,4')
     f <<= nm.runfunc(interrupt, a='a')
     f <<= nm.mcut(x=True, f='0,1,2,3')
     f <<= nm.runfunc(interrupt, a='b')
     f <<= nm.mcut(x=True, f='0,1,2')
     f <<= nm.runfunc(interrupt, a='c')
-    f <<= nm.mcut(x=True, f='0,1', o='kskp/data/result.csv')
+    f <<= nm.mcut(x=True, f='0,1', o='streamcat/data/result.csv')
     # f <<= nm.runfunc(interrupt, a='d')
-    # with RedirectStdStreams(stderr=open('kskp/messages/stderr.txt','w')):
+    # with RedirectStdStreams(stderr=open('streamcat/messages/stderr.txt','w')):
     #     f.run(msg='on')
     f.run(msg='on')
 
@@ -205,13 +205,13 @@ import signal
 
 def watch():
     # pass
-    observer.schedule(event_handler, 'kskp/messages/')
+    observer.schedule(event_handler, 'streamcat/messages/')
     # observer.schedule(event_handler, '/dev')
     observer.start()
 
     # asyncio.get_event_loop().add_writer(open('/dev/stderr', 'w'), be_written)
 
-    # asyncio.get_event_loop().add_writer(open('kskp/messages/stderr.txt','w'), be_read)
+    # asyncio.get_event_loop().add_writer(open('streamcat/messages/stderr.txt','w'), be_read)
     # asyncio.get_event_loop().add_signal_handler(getattr(signal, 'SIGPIPE'), be_read)
     # asyncio.get_event_loop().add_signal_handler(getattr(signal, 'SIGINT'), be_read)
     # asyncio.get_event_loop().add_signal_handler(getattr(signal, 'SIGUSR1'), be_read)

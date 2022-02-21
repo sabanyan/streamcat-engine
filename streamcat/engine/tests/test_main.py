@@ -1,10 +1,10 @@
 import copy
 import unittest
 from pathlib import Path
-from kskp.store import FlowData, Matrix, CommandException
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
-from kskp.engine import execute, FlowCommand
+from streamcat.store import FlowData, Matrix, CommandException
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
+from streamcat.engine import execute, FlowCommand
 from .make_flow_json import get_flow_json_by_flow_id
 
 class MainTest(TestCaseBase):
@@ -4304,7 +4304,7 @@ class MainTest(TestCaseBase):
         """
         Windows形式ファイルもプレビューできる
         """
-        MY_TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
+        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
         frame = self.create_data2(Path(MY_TESTDATA_DIR) / '漢字読み.csv')
 
         flow_json = {
@@ -6383,7 +6383,7 @@ def convert_from_activity(outs):
     execute()の戻り値から
     pointのidとframeのDictに置き換える
     """
-    from kskp.store import Activity
+    from streamcat.store import Activity
     # Activityを取得して返り値とする
     for point_id, datum in outs.items():
         if isinstance(datum, Activity):
@@ -6394,7 +6394,7 @@ def convert_from_activity_vis(outs):
     execute()の戻り値から
     pointのidとvisのDictに置き換える
     """
-    from kskp.store import Activity
+    from streamcat.store import Activity
     for point_id, datum in outs.items():
         if isinstance(datum, Activity):
             return {point.id : vis.result['reader'] for point, vis in datum.outs}
@@ -6404,7 +6404,7 @@ def convert_from_activity_cache(outs):
     execute()の戻り値から
     pointのidとcacheのDictに置き換える
     """
-    from kskp.store import Activity
+    from streamcat.store import Activity
     # Activityを取得して返り値とする
     for point_id, datum in outs.items():
         if isinstance(datum, Activity):
@@ -6415,7 +6415,7 @@ def convert_from_activity_exs(outs):
     execute()の戻り値から
     pointのidとframeのDictに置き換える
     """
-    from kskp.store import Activity
+    from streamcat.store import Activity
     # Activityを取得して返り値とする
     for point_id, datum in outs.items():
         if isinstance(datum, Activity):

@@ -3,11 +3,11 @@ import pprint
 import shutil
 from pathlib import Path
 
-from kskp.core import Datum
-from kskp.store import FlowData, RemoteFolderConn
-from kskp.depo.std.commands.scmd.mcmd_error_info import MCMDError
-from kskp.store.tests.test_case_base import TestCaseBase
-from kskp.engine import execute, FlowCommand
+from streamcat.core import Datum
+from streamcat.store import FlowData, RemoteFolderConn
+from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
+from streamcat.store.tests.test_case_base import TestCaseBase
+from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_activity, convert_from_activity_exs
 from .make_flow_json import create_flow_by_flow_id
 
@@ -156,7 +156,7 @@ class RemoteFolderTest(TestCaseBase):
         rfolder = rfolder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
+        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
         shutil.copyfile(Path(MY_TESTDATA_DIR) / '漢字読み.csv', rfolder.path / 'testData.csv')
 
         # サブフロー(リモートフォルダデータソース)の作成
@@ -202,7 +202,7 @@ class RemoteFolderTest(TestCaseBase):
         rfolder = rfolder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = '../kskp-flow-engine/kskp/engine/tests/test_data/'
+        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
         shutil.copyfile(Path(MY_TESTDATA_DIR) / '漢字読み.csv', rfolder.path / 'testData.csv')
 
         # サブフロー(リモートフォルダデータソース)の作成

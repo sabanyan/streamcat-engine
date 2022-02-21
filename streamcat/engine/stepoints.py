@@ -153,7 +153,7 @@ class Stepoints():
             # どうやらf.redirect('u')したものをrunsに入れても実行できないみたい。
             # redirectしたものをm2teeなどのmコマンドと繋げるとrunsで実行できる。
             # なので、今の所ModuleStoreにはRunfuncCommandだけを入れるようにしている。
-            from kskp.depo.std.commands import RunfuncCommand
+            from streamcat.depo.std.commands import RunfuncCommand
             if isinstance(step.command, RunfuncCommand):
                 for value in results.values():
                     self.module_store.append(value.content)
