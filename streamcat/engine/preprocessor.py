@@ -31,7 +31,6 @@ class Preprocessor:
 
     def __init__(self, flow, datum_factory=None, lock_uuid=None):
         from .appenders import (
-            FolderDataDestAppender,
             CacheDataDestAppender,
             VisDataDestAppender,
             ActivityDataDestAppender,
@@ -44,7 +43,7 @@ class Preprocessor:
 
         # Context
         self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity_uuid)
-        
+
         # Appenders
         # self._folder_data_dest_appender = FolderDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
         self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
@@ -53,13 +52,15 @@ class Preprocessor:
         # flow_datumのLockのUUID
         self._lock_uuid = lock_uuid
 
-    def init(self):
+    def init(self, args:dict):
         """
         初期状態に戻す
         """
         from .appenders import RunsCommandAppender, ActivityDataDestAppender
         self._runs_command_appender = RunsCommandAppender()
-        self._activity_data_dest_appender = ActivityDataDestAppender(self._context.datum_factory, self._context.flow)
+        self._activity_data_dest_appender = ActivityDataDestAppender(self._context.datum_factory,
+                                                                     self._context.flow,
+                                                                     args)
         self._context = Preprocessor.Context(self._context.datum_factory,
                                              self._context.flow,
                                              self._activity_data_dest_appender.activity_uuid)

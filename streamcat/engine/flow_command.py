@@ -134,7 +134,7 @@ class FlowCommand(Command):
             # フローJSONを解釈する
             self._parse_nodes(vis_args, use_cache)
             # run()をリエントラント可能にするため、ここでpreprocessorとrelayed_o_portsを初期化する
-            self._preprocessor.init()
+            self._preprocessor.init(args)
             self.relayed_o_ports = Ports()
             # フローを前処理する
             self._preprocessor.execute(flow_cmd=self, vis_args=vis_args, use_cache=use_cache)

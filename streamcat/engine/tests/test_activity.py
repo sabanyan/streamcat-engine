@@ -99,7 +99,7 @@ class ActivityTest(TestCaseBase):
 
         # USER2は、フローを実行する
         readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
-        outs = execute(FlowCommand(readonly_flow))
+        outs = execute(FlowCommand(readonly_flow), args={'param1':1234})
         activity = self._get_activity(outs)
         results1 = convert_from_activity(outs)
 
@@ -126,6 +126,7 @@ class ActivityTest(TestCaseBase):
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
         self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertEqual(activity_json['args'], {'param1':1234})
         self.assertIsNotNone(activity_json['startAt'])
         self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumの値が正しいこと
@@ -266,6 +267,7 @@ class ActivityTest(TestCaseBase):
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
         self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertEqual(activity_json['args'], {'use_cache':True})
         self.assertIsNotNone(activity_json['startAt'])
         self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumは0件であること

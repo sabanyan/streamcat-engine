@@ -206,7 +206,7 @@ class VisDataDestAppender():
 
         vcmd_args = vis_arg['args']
         vcmd_id = vis_arg.get('command_id') or vcmd_args.get('visualizer')
-        
+
         if vcmd_id is None:
             raise Exception('command_id属性でvcmdのidを指定してください')
 
@@ -271,14 +271,14 @@ class RunsCommandAppender():
 
 
 class ActivityDataDestAppender():
-    def __init__(self, datum_factory, flow):
+    def __init__(self, datum_factory, flow, args:dict={}):
         self.flow_uuid = flow.uuid
         # アクティビティフォルダを取得する
         folder_store = datum_factory.load_activity_folder()
         # Activityコマンドを取得する
         activity_cmd = CommandLink('activity').resolve()
         # Activity Datumを作成する
-        activity = folder_store.create_activity(flow.label, flow)
+        activity = folder_store.create_activity(flow.label, flow, args)
         # Activity Stepへの引数を作成する
         activity_args = {'activity': activity, 'is_vis':False, 'points':{}}
         # Activity Stepを作成する
