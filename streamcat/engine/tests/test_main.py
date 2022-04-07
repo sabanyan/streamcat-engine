@@ -2945,7 +2945,7 @@ class MainTest(TestCaseBase):
     @unittest.skip('MCMDのmchkcsvに代わり、nysol_pythonのutil.mchkcsvに変更したので、このテストは失敗する')
     def test_simple_flow_execute_use_nmcmd(self):
         """
-        mコマンド２個のフロー実行
+        mコマンド2個のフロー実行
         確認したいことはnm.cmdの動作（mchkcsvを実行している）
         """
         add_cmd = {
@@ -4898,14 +4898,16 @@ class MainTest(TestCaseBase):
         self.assertIn('d', results)
         self.assertIn('d1', results)
         # 2つの出力ポイントから例外が出力されること
-        self.assertEqual(len(results['d']), 3)
-        self.assertEqual(len(results['d1']), 3)
+        self.assertEqual(len(results['d']), 4)
+        self.assertEqual(len(results['d1']), 4)
         self.assertIsInstance(results['d'][0], MCMDError)
         self.assertIsInstance(results['d'][1], MCMDError)
         self.assertIsInstance(results['d'][2], MCMDError)
+        self.assertIsInstance(results['d'][3], MCMDError)
         self.assertIsInstance(results['d1'][0], MCMDError)
         self.assertIsInstance(results['d1'][1], MCMDError)
         self.assertIsInstance(results['d1'][2], MCMDError)
+        self.assertIsInstance(results['d1'][3], MCMDError)
 
     def test_mcmd_error_with_two_outputs2(self):
         """
@@ -5029,8 +5031,8 @@ class MainTest(TestCaseBase):
         self.assertIn('d', results)
         self.assertIn('d1', results)
         # 2つの出力ポイントから例外が出力されること
-        self.assertEqual(len(results['d']), 1)
-        self.assertEqual(len(results['d1']), 1)
+        self.assertEqual(len(results['d']), 2)
+        self.assertEqual(len(results['d1']), 2)
         self.assertIsInstance(results['d'][0], MCMDError)
         self.assertIsInstance(results['d1'][0], MCMDError)
 
