@@ -12,7 +12,7 @@ class MainTest(TestCaseBase):
     実際のフロー実行のテスト
     """
 
-    # mコマンド１つのフロー
+    # mコマンド1つのフロー
     flow_json = {
       "label": "テストフロ",
       "params": [],
@@ -60,7 +60,7 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    # mコマンド１つのフロー（csvから読み取り）
+    # mコマンド1つのフロー（csvから読み取り）
     flow_json_use_by_csv = {
       "label": "テストフロ",
       "params": [],
@@ -104,7 +104,7 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    # mコマンド１つのフロー（csvから読み取り）
+    # mコマンド1つのフロー（csvから読み取り）
     # mchkcsv単体の実行テスト用
     flow_json_use_mchkcsv = {
       "label": "テストフロ",
@@ -296,7 +296,7 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    # outputが２つあるフロー
+    # outputが2つあるフロー
     flow_json_outputs = {
       "label": "テストフロ",
       "params": [],
@@ -352,7 +352,7 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    # outputが２つあるフロー（独自コマンド）
+    # outputが2つあるフロー（独自コマンド）
     flow_json_outputs_pcmd = {
       "label": "テストフロ",
       "params": [],
@@ -402,7 +402,7 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    # inputとoutputが２つあるフロー
+    # inputとoutputが2つあるフロー
     flow_json_outputs_and_inputs = {
       "label": "テストフロ",
       "params": [],
@@ -469,23 +469,15 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    @classmethod
-    def setUpClass(cls):
-        # 親クラスのsetUpClass()を実行する
-        TestCaseBase.setUpClass()
-        cls.root = cls.factory.data.load_root()
-        cls.TESTDATA_DIR = cls.root.path
-
-
-    @classmethod
-    def tearDownClass(cls):
-        # 親クラスのtearDownClass()を実行する
-        TestCaseBase.tearDownClass()
+    def setUp(self):
+        super().setUp()
+        self.root = self.factory.data.load_root()
+        self.TESTDATA_DIR = self.root.path
 
     # @unittest.skip
     def test_simple_flow_execute(self):
         """
-        mコマンド１個のフロー実行
+        mコマンド1個のフロー実行
         """
         flow_json = copy.deepcopy(self.flow_json)
         flow_json['nodes'].append(self.create_data_dst_node('d1'))
@@ -509,7 +501,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_two_commands_execute(self):
         """
-        mコマンド２個のフロー実行
+        mコマンド2個のフロー実行
         """
         add_cmd = {
           "type": "command",
@@ -560,7 +552,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_two_commands_vis(self):
         """
-        mコマンド２個のフロー実行
+        mコマンド1個のフロー実行
         真ん中のdatumでVisする
         """
         add_cmd = {
@@ -616,8 +608,8 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_three_commands_vis(self):
         """
-        mコマンド３個のフロー実行
-        ２個目のdatumでVisする
+        mコマンド3個のフロー実行
+        2個目のdatumでVisする
         """
         add_cmd_1 = {
           "type": "command",
@@ -699,7 +691,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_three_commands_execute(self):
         """
-        mコマンド３個のフロー実行（逆Y字の分岐）
+        mコマンド3個のフロー実行（逆Y字の分岐）
         """
         add_cmd_1 = {
           "type": "command",
@@ -782,7 +774,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_three_commands_vis_d2(self):
         """
-        mコマンド３個のフロー実行（逆Y字の分岐）
+        mコマンド3個のフロー実行（逆Y字の分岐）
         片方（d2）をVis
         """
         add_cmd_1 = {
@@ -865,7 +857,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_two_inputs(self):
         """
-        mコマンド１個（２つのinputを持つ）のフロー実行
+        mコマンド1個（2つのinputを持つ）のフロー実行
         """
         flow_json = copy.deepcopy(self.flow_json_inputs)
         flow_json['nodes'].append(self.create_data_dst_node('d1'))
@@ -894,7 +886,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_two_outputs(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフロー実行
+        mコマンド1個（2つのoutputを持つ）のフロー実行
         """
         flow_json = copy.deepcopy(self.flow_json_outputs)
         flow_json['nodes'].append(self.create_data_dst_node('d2'))
@@ -924,7 +916,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_two_outputs_one_side_o(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフロー実行
+        mコマンド1個（2つのoutputを持つ）のフロー実行
         oだけ設置
         """
         # 出力uを消す
@@ -955,7 +947,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_two_outputs_one_side_u(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフロー実行
+        mコマンド1個（2つのoutputを持つ）のフロー実行
         uだけ設置
         """
         # 出力oを消す
@@ -986,7 +978,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_vis_d2_two_outputs(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフローVis
+        mコマンド1個（2つのoutputを持つ）のフローVis
         oだけのテスト（d2）
         """
         # Vis Args
@@ -1013,7 +1005,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_vis_d3_two_outputs(self):
         """
-        mコマンド１個（２つのoutputを持つ）のフローVis
+        mコマンド1個（2つのoutputを持つ）のフローVis
         uだけのテスト（d3）
         """
 
@@ -1041,7 +1033,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_long_flow_execute_two_outputs(self):
         """
-        mコマンド2個（２つのoutputを持つ）のフロー実行
+        mコマンド2個（2つのoutputを持つ）のフロー実行
         """
 
         add_datum_1 = {
@@ -1108,7 +1100,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_long_flow_vis_d2_two_outputs(self):
         """
-        mコマンド2個（２つのoutputを持つ）のフローVis
+        mコマンド2個（2つのoutputを持つ）のフローVis
         oだけのテスト（d3）
         """
 
@@ -1175,7 +1167,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_long_flow_vis_d3_two_outputs(self):
         """
-        mコマンド2個（２つのoutputを持つ）のフローVis
+        mコマンド2個（2つのoutputを持つ）のフローVis
         uだけのテスト（d4）
         """
         add_datum_1 = {
@@ -1241,7 +1233,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_no_inputs_command(self):
         """
-        mコマンド１個（1つもinputを持たない）のフロー実行
+        mコマンド1個（1つもinputを持たない）のフロー実行
         mnewnumberの実行テスト
         """
 
@@ -1276,7 +1268,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_use_mnrcommon(self):
         """
-        mコマンド１個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
+        mコマンド1個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
         mnrcommonの実行テスト
         """
         flow_json = copy.deepcopy(self.flow_json_outputs_and_inputs)
@@ -1308,7 +1300,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_include_subflow(self):
         """
-        サブフローを１個をもつフローを実行する
+        サブフローを1個をもつフローを実行する
         """
 
         mainflow_json = {
@@ -1536,9 +1528,9 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_include_branch_output_subflows(self):
         """
-        outputが２つのサブフローをもつフローを実行する
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
         """
 
         mainflow_json = {
@@ -1612,9 +1604,9 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_vis_dd2_include_branch_output_subflows(self):
         """
-        outputが２つのサブフローをもつフローを実行する
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
 
         片方のdatum(dd2)をVisする
         """
@@ -1690,9 +1682,9 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_vis_dd3_include_branch_output_subflows(self):
         """
-        outputが２つのサブフローをもつフローを実行する
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
 
         片方のdatum(dd3)をVisする
         """
@@ -1768,9 +1760,9 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows(self):
         """
-        outputが２つのサブフローをもつフローを実行する
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
         さらにメインフローで結果をそれぞれmcutしている
         """
 
@@ -1913,9 +1905,9 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_complex_flow_vis_include_branch_output_subflowss(self):
         """
-        outputが２つのサブフローをもつフローを実行する
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
         さらにメインフローで結果をそれぞれmcutしている
         dd5をVis
         """
@@ -2047,10 +2039,10 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_complex_flow_two_vis_include_branch_output_subflowss(self):
         """
-        おまけ（Visを２つしてみた。）
-        outputが２つのサブフローをもつフローを実行する
+        おまけ（Visを2つしてみた。）
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
         さらにメインフローで結果をそれぞれmcutしている
         """
 
@@ -2188,7 +2180,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_generate_one_cache(self):
         """
-        mコマンド３個のフロー実行
+        mコマンド3個のフロー実行
         真ん中のdatumをキャッシュする
         """
 
@@ -2286,7 +2278,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_generate_last_cache(self):
         """
-        mコマンド３個のフロー実行
+        mコマンド3個のフロー実行
         最後のdatumをキャッシュする
         """
 
@@ -2383,9 +2375,9 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
         """
-        outputが２つのサブフローをもつフローを実行する
+        outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
-        mselstrで顧客がAのものを返している（dd2=一致出力、dd3＝不一致出力）
+        mselstrで顧客がAのものを返している（dd2=一致出力、dd3=不一致出力）
         さらにメインフローで結果をそれぞれmcutしている
 
         サブフローの出力するdd2と、結果をmcutしたdd5をキャッシュする
@@ -2538,7 +2530,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
-        サブフローが１つのフローを実行する
+        サブフローが1つのフローを実行する
         フローパラメータを使用する
         """
         mainflow_json = {
@@ -2614,7 +2606,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
         """
-        サブフローが１つのフローを実行する
+        サブフローが1つのフローを実行する
         1つの項目で2つのフローパラメータを使用する
         """
         mainflow_json = {
@@ -2729,7 +2721,7 @@ class MainTest(TestCaseBase):
     # @unittest.skip
     def test_simple_flow_execute_data_source_from_cache(self):
         """
-        mコマンド３個のフロー実行
+        mコマンド3個のフロー実行
         フローの途中（d2）のdatumのuuidが既に入っている
         """
         add_cmd_1 = {
@@ -2915,7 +2907,7 @@ class MainTest(TestCaseBase):
     @unittest.skip('もともとskip状態')
     def test_simple_flow_execute_use_mcat(self):
         """
-        mコマンド１個（２つのinputを持つ）のフロー実行
+        mコマンド1個（2つのinputを持つ）のフロー実行
         mcatの実行テスト
         ※結合順不定なので、失敗することもある。（きちんと結合されてはいる）
         """
@@ -3055,7 +3047,7 @@ class MainTest(TestCaseBase):
     @unittest.skip('selrow無くなったので、、')
     def test_simple_flow_execute_two_outputs_pcmd(self):
         """
-        独自コマンド１個（２つのoutputを持つ）のフロー実行
+        独自コマンド1個（2つのoutputを持つ）のフロー実行
         """
         data = [["顧客", "数量", "金額"],
                 ["A", 1, 10],
@@ -3101,7 +3093,7 @@ class MainTest(TestCaseBase):
     @unittest.skip('無効')
     def test_simple_flow_execute_two_outputs_pcmd_one_side_o(self):
         """
-        独自コマンド１個（２つのoutputを持つ）のフロー実行
+        独自コマンド1個（2つのoutputを持つ）のフロー実行
         oだけ設置
         """
         data = [["顧客", "数量", "金額"],
@@ -3147,7 +3139,7 @@ class MainTest(TestCaseBase):
     @unittest.skip('無効')
     def test_simple_flow_execute_two_outputs_pcmd_one_side_u(self):
         """
-        独自コマンド１個（２つのoutputを持つ）のフロー実行
+        独自コマンド1個（2つのoutputを持つ）のフロー実行
         uだけ設置
         """
         data = [["顧客", "数量", "金額"],

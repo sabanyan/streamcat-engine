@@ -92,6 +92,9 @@ class CacheTest(TestCaseBase):
         cache_folder = self.factory2.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
+        # 作成を確定する
+        self.factory2.end()
+
         # USER3は、更新権限の無いフローをプレビューしてもキャッシュは作成されないこと
         readonly_flow = self.factory3.data.find_by_uuid(flow.uuid)
         vis_args = {
@@ -407,6 +410,9 @@ class CacheTest(TestCaseBase):
 
         # フローの排他ロックを解除する
         lock_manager.unlock(lock1.uuid)
+
+        # キャッシュの作成を確定する
+        self.factory0.end()
 
         # visデータは1つ生成されているか
         self.assertEqual(len(results1), 1)
@@ -903,6 +909,9 @@ class CacheTest(TestCaseBase):
         lasts = execute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
         results = convert_from_activity_vis(lasts)
 
+        # 作成とキャッシュの作成を確定する
+        self.factory0.end()
+
         # 正しいVisが得られるか
         expect = {'d3': [['A','20180101','5200'],
                         ['B','20180101','2266.666667'],
@@ -1241,6 +1250,9 @@ class CacheTest(TestCaseBase):
         }
         lasts = execute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
         results1 = convert_from_activity_vis(lasts)
+
+        # 作成とキャッシュの作成を確定する
+        self.factory0.end()
 
         # 正しいVisが得られるか
         expect = {'d2': [['A', '20280101', '3201', '3201'],
