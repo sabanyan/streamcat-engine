@@ -37,7 +37,7 @@ class Stepoints():
 
             # 再度、実行準備が整ったstepのリストを取得しなおす
             invokable_steps = self._search_invokable_steps()
-            # print('invokable_steps3', invokable_steps, self.points, '\n')
+            # print('invokable_steps3', invokable_steps, self.points)
 
         # 実行すべきrunnableがもう残っていないなら、終了
         return self._make_outs()
@@ -69,40 +69,43 @@ class Stepoints():
         #     if p.point.datum is None:
         #         for src_tube in p.point.src_tubes:
         #             last_steps.add(src_tube.step)
-        last_steps = {src_tube.step for p in self.o_ports if p.point.datum is None for src_tube in p.point.src_tubes}
+        last_steps = {(src_tube.step, p.relayed) for p in self.o_ports if p.point.datum is None for src_tube in p.point.src_tubes}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
-        first_steps = union(self._search_first_steps_to_run(s) for s in last_steps)
+        first_steps = union(self._search_first_steps_to_run(last_step) for last_step in last_steps)
 
         return first_steps
 
-    def _search_first_steps_to_run(self, original_step:Step):
+    def _search_first_steps_to_run(self, original_step:tuple[Step, bool]):
         """
         与えられたstepからフロー構造を逆に辿って、
         実行準備が整ったstepを見つけ出す
         """
+        step = original_step[0]
+        from_relayed_port = original_step[1]
+
         # 該当stepの実行に必要なpointを取得する
         # prev_points = set()
         # for p in self.points:
-        #     if p.dst_tubes.have_step(original_step):
+        #     if p.dst_tubes.have_step(step):
         #         prev_points.add(p)
-        prev_points = {p for p in self.points if p.dst_tubes.have_step(original_step)}
+        prev_points = {p for p in self.points if p.dst_tubes.have_step(step)}
 
-        # Stepの入力にフローの出力Pointが含まれていたら、そこで試合終了ですよ
-        if not self.is_main and any(p.point in prev_points for p in self.o_ports):
-            return set()
+        # # Stepの入力にフローの出力Pointが含まれていたら、そこで試合終了ですよ
+        # if not self.is_main and any(p.point in prev_points for p in self.o_ports):
+        #     return set()
 
         # 全ての入力値が埋まっていれば、実行可能とみなして走査終了
         if all([p.datum is not None for p in prev_points]):
-            return {original_step}
+            return {step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self._search_first_steps_to_run(src_tube.step)
+        return union(self._search_first_steps_to_run(original_step=(src_tube.step, from_relayed_port))
                      for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
 
     def _run_invokable_steps(self, invokable_steps:List[Step], flow_args:dict):
         """
-        stepのうち、実行準備が整っている（＝引数が全て揃っている）ものを実行する
+        stepのうち、実行準備が整っている（=引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
         """
         from .job import Job
@@ -169,7 +172,7 @@ class Stepoints():
         return {p.label: p.point.datum for p in self.o_ports}
 
 
-def union(sets):
+def union(sets:list[set]):
     """
     ユーティリティ関数
     与えられた集合のiterableから、全体の和を作る

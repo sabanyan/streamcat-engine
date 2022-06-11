@@ -72,7 +72,7 @@ class FlowCommand(Command):
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
     def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True, preprocessor=None):
-        super().__init__()
+        super().__init__(flow.label)
 
         # 実行前にフローJSONの書式の検証をする
         flow.flow_data.valid_flow_json_or_raise()
@@ -87,7 +87,7 @@ class FlowCommand(Command):
         # メインフローであればTrue
         self.is_main = is_main
 
-        # FlowJsonLinkが中継した出力Portのリストを保持する
+        # Preprocessorが中継した出力Portのリストを保持する
         # (Port.labelの重複をさせないためPortsを用いる)
         self.relayed_o_ports = Ports()
 
@@ -225,8 +225,6 @@ class FlowCommand(Command):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
-        from .stepoints import Stepoints
-        from .point import Points
         from .step import Step
         from .tube import Tube
 

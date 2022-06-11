@@ -126,10 +126,13 @@ class Preprocessor:
 
             # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
             if isinstance(src_tube.step.command, SaverCommand):
-                o_port = FlowPort(point.id, 'mcmd', point)
-                flow_cmd.open_o_port(o_port)
-                # 中継済みのポートとして記録する
-                flow_cmd.relayed_o_ports.add(o_port)
+                # サブフローにおいては、フロー出力Point以降のSaverCommandは実行しない
+                if flow_cmd.is_main or not self._search_out_port_point(flow_cmd, src_tube.step):
+                    # フローの出力Pointに設定する
+                    o_port = FlowPort(point.id, 'mcmd', point, relayed=True)
+                    flow_cmd.open_o_port(o_port)
+                    # 中継済みのポートとして記録する
+                    flow_cmd.relayed_o_ports.add(o_port)
 
     def _relay_o_ports(self, flow_cmd:FlowCommand):
         """
@@ -143,10 +146,55 @@ class Preprocessor:
 
             # フローが中継ポートを持っている場合
             for port in step.command.relayed_o_ports:
-                # 中継する
-                new_port = self._relay_o_port(flow_cmd, step, port)
-                # 中継済みのポートとして記録する
-                flow_cmd.relayed_o_ports.add(new_port)
+                # サブフローにおいては、フロー出力Point以降のSaverCommandは実行しない
+                if flow_cmd.is_main or not self._search_out_port_point(flow_cmd, step):
+                    # 中継する
+                    new_port = self._relay_o_port(flow_cmd, step, port)
+                    # 中継済みのポートとして記録する
+                    flow_cmd.relayed_o_ports.add(new_port)
+
+    def _search_out_port_point(self, flow_cmd:FlowCommand, step):
+        """
+        指定されたStepの全ての入力Pointについて、経路を逆に辿るとフロー出力Pointに繋がる場合は、Trueを返す
+        ただし、辿る経路の途中にN入力コマンドがある場合は、そのN入力のうちフロー出力Pointに繋がる入力Pointを切断してFalseを返す
+        """
+        out_points:set[Point] = set()
+
+        # stepの入力Pointを取得する
+        prev_points = {p for p in flow_cmd.points if p.dst_tubes.have_step(step)}
+
+        # stepの全ての入力Pointについて、経路を逆に辿ってフロー出力Pointに繋がるか調べる
+        for p in prev_points:
+            if flow_cmd.is_i_port(p):
+                # stepの入力Pointがフロー入力Pointの場合は、その経路の探索を終える
+                pass
+            elif flow_cmd.is_o_port(p):
+                # stepの入力Pointがフロー出力Pointの場合は、そのstepの入力Pointを記録する
+                for dst_tube in p.dst_tubes.filter_by_step(step):
+                    # フロー出力Point
+                    out_points.add(p)
+            else:
+                # stepの入力Pointがフロー入出力Pointでない場合、その経路を逆に辿る
+                for src_tube in p.src_tubes:
+                    if src_tube.is_command_tube and self._search_out_port_point(flow_cmd, src_tube.step):
+                            # 経路を逆に辿ってフロー出力Pointに繋がる場合は、stepの入力Pointを記録する
+                            out_points.add(p)
+
+        # N入力コマンドにおいて、一部の入力Pointがフロー出力Pointに繋がる場合、N入力コマンドとその入力Pointを切断する
+        # 全ての入力Pointがフロー出力Pointに繋がる、または全て繋がらない場合は切断しない
+        if len(prev_points) > 1 and len(out_points) < len(prev_points):
+            for out_point in out_points:
+                # N入力コマンドとその入力Pointを切断する
+                for dst_tube in out_point.dst_tubes.filter_by_step(step):
+                    out_point.dst_tubes.remove(dst_tube)
+                # N入力コマンドがフローの場合は空のPointを繋げる
+                # (フローの入力Portに入力Pointが繋がれていなければエラーにしているため)
+                if step.is_flow:
+                    empty_point = Point(f'empty_{out_point.id}', dst_tube=dst_tube)
+                    flow_cmd.points.add(empty_point)
+
+        # stepの全ての入力Pointについて、経路を逆に辿るとフロー出力Pointに繋がる場合は、Trueを返す
+        return len(out_points) > 0 and len(out_points) == len(prev_points)
 
     def _relay_o_port(self, flow_cmd:FlowCommand, step, port):
         """
@@ -166,7 +214,7 @@ class Preprocessor:
             port_label = Datum._increment_file_name(port_label)
 
         # サブフローの出力を親フローに繋げる
-        o_port = FlowPort(port_label, 'mcmd', new_out_point)
+        o_port = FlowPort(port_label, 'mcmd', new_out_point, relayed=True)
         flow_cmd.open_o_port(o_port)
 
         # 作成した親フローの出力Portを返す
@@ -190,7 +238,7 @@ class Preprocessor:
                         # データデストの入力PointのlabelをSaverCommandに渡す
                         'src_point'    : src_point,
                         'datum_factory': self._context.datum_factory,
-                        'start_at'   : self._context.start_at,
+                        'start_at'     : self._context.start_at,
                         'activity_uuid': self._context.activity_uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(step.args)

@@ -104,7 +104,7 @@ class Tubes:
         """
         return self.find_flow_tube() or self._tubes[0]
 
-    def filter_by_step(self, step):
+    def filter_by_step(self, step:Step):
         """
         Stepに紐づくTubesを返す
         """
@@ -118,7 +118,7 @@ class Tubes:
         """
         return sorted(self._tubes)
 
-    def have_step(self, step):
+    def have_step(self, step:Step):
         return len(self.filter_by_step(step)) > 0
 
     def __repr__(self):
