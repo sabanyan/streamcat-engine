@@ -165,14 +165,14 @@ class Preprocessor:
 
         # stepの全ての入力Pointについて、経路を逆に辿ってフロー出力Pointに繋がるか調べる
         for p in prev_points:
-            if flow_cmd.is_i_port(p):
-                # stepの入力Pointがフロー入力Pointの場合は、その経路の探索を終える
-                pass
-            elif flow_cmd.is_o_port(p):
+            if flow_cmd.is_o_port(p):
                 # stepの入力Pointがフロー出力Pointの場合は、そのstepの入力Pointを記録する
                 for dst_tube in p.dst_tubes.filter_by_step(step):
                     # フロー出力Point
                     out_points.add(p)
+            elif flow_cmd.is_i_port(p):
+                # stepの入力Pointがフロー入力Pointの場合は、その経路の探索を終える
+                pass
             else:
                 # stepの入力Pointがフロー入出力Pointでない場合、その経路を逆に辿る
                 for src_tube in p.src_tubes:

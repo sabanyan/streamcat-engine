@@ -7125,3 +7125,423 @@ class DataSourceTest(TestCaseBase):
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
+
+    def test_subflow_has_inout_at_same_point(self):
+        """
+        サブフローにフロー入出力Pointの後にデータデストがある場合
+        サブフローのデータデストは実行されないこと
+        """
+        # ルートデータストアを取得する
+        root = self.factory2.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewnumber -> in/out -> data_dest
+        #                \  \_--> data_dest
+        #                 \_----> data_dest
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "n1", 
+                    "label": "n1", 
+                    "type": "note", 
+                    "title": "新しいメモ", 
+                    "content": "aa", 
+                    "color": "green", 
+                    "fontSize": 16
+                }, 
+                {
+                    "id": "c", 
+                    "label": "c", 
+                    "type": "command", 
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "I": "1", 
+                        "S": "1", 
+                        "a": "a", 
+                        "l": "1000"
+                    }, 
+                    "srcs": {}, 
+                    "dsts": {
+                        "o": "d"
+                    }, 
+                }, 
+                {
+                    "id": "d", 
+                    "label": "out-of-subflow", 
+                    "type": "frame",  
+                    "makeCache": True, 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "o", 
+                    "label": "ライブラリ", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "args": {}, 
+                    "flow": {
+                        "label": "ライブラリ", 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "d", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "s", 
+                                "label": "ライブラリ",
+                                "type": "store", 
+                                "uuid": project.uuid, 
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1", 
+                                "type": "command", 
+                                "commandId": "saver",
+                                "args": {}, 
+                                "srcs": {
+                                    "i": "d", 
+                                    "folder": "s"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }, 
+                            }, 
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "ports": [
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "i", 
+                                    "nodeId": "d"
+                                }
+                            ], 
+                            []
+                        ], 
+                        "params": [], 
+                        "creator": "ユーザー管理者", 
+                        "createdAt": "2022-06-12 23:32:42", 
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "dsts": {}, 
+                }, 
+                {
+                    "id": "o1", 
+                    "label": "ライブラリ",
+                    "type": "flow",  
+                    "classification": "data_dest",
+                    "args": {}, 
+                    "flow": {
+                        "label": "ライブラリ", 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "d", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "s", 
+                                "label": "ライブラリ",
+                                "type": "store", 
+                                "uuid": project.uuid, 
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1", 
+                                "type": "command", 
+                                "commandId": "saver",
+                                "args": {}, 
+                                "srcs": {
+                                    "i": "d", 
+                                    "folder": "s"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }, 
+                            }, 
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "ports": [
+                            [
+                                {
+                                "type": "frame", 
+                                "label": "i", 
+                                "nodeId": "d"
+                                }
+                            ], 
+                            []
+                        ], 
+                        "params": [], 
+                        "creator": "ユーザー管理者", 
+                        "createdAt": "2022-06-13 07:45:07", 
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "dsts": {}, 
+                }, 
+                {
+                    "id": "o2",
+                    "label": "ライブラリ", 
+                    "type": "flow",  
+                    "classification": "data_dest",
+                    "args": {}, 
+                    "flow": {
+                        "label": "ライブラリ", 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "d", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "s", 
+                                "label": "ライブラリ",
+                                "type": "store", 
+                                "uuid": project.uuid, 
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1", 
+                                "type": "command", 
+                                "commandId": "saver",
+                                "args": {}, 
+                                "srcs": {
+                                    "i": "d", 
+                                    "folder": "s"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }, 
+                            }, 
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "ports": [
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "i", 
+                                    "nodeId": "d"
+                                }
+                            ], 
+                            []
+                        ], 
+                        "params": [], 
+                        "creator": "ユーザー管理者", 
+                        "createdAt": "2022-06-13 07:45:07", 
+                    }, 
+                    "srcs": {
+                        "i": "d"
+                    }, 
+                    "dsts": {}, 
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "d", 
+                        "nodeId": "d"
+                    }
+                ]
+            ], 
+            "params": [
+                {
+                    "name": "new_param1", 
+                    "type": "string", 
+                    "label": "new_param1"
+                }
+            ], 
+        }
+
+        # data_source -> sub_flow -> data_dest
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "D", 
+                    "label": "testData", 
+                    "type": "frame", 
+                    "value": [["顧客","数量","金額"],
+                              ["x", 1, 10],
+                              ["x", 2, 20],
+                              ["y", 1, 30],
+                              ["y", 3, 40],
+                              ["z", 1, 50]],
+                    "makeCache" : True,
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "f1", 
+                    "label": "f1",
+                    "type": "flow", 
+                    "uuid": "97a8df8d-6b40-49d5-ab73-0ed1110386bf", 
+                    "args": {
+                        "new_param1": "999"
+                    }, 
+                    "srcs": {
+                        "d": "D"
+                    }, 
+                    "dsts": {
+                        "d": "D1"
+                    }, 
+                }, 
+                {
+                    "id": "D1", 
+                    "label": "out-of-flow", 
+                    "type": "frame", 
+                    "dataSource": "csv"
+                }, 
+                {
+                    "id": "o", 
+                    "label": "ライブラリ", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "args": {}, 
+                    "flow": {
+                        "label": "ライブラリ", 
+                        "nodes": [
+                            {
+                                "id": "d", 
+                                "label": "d", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }, 
+                            {
+                                "id": "s", 
+                                "label": "ライブラリ",
+                                "type": "store", 
+                                "uuid": project.uuid, 
+                            }, 
+                            {
+                                "id": "c1", 
+                                "label": "c1",
+                                "type": "command", 
+                                "commandId": "saver",
+                                "args": {}, 
+                                "srcs": {
+                                    "i": "d", 
+                                    "folder": "s"
+                                }, 
+                                "dsts": {
+                                    "o": "d1"
+                                }, 
+                            }, 
+                            {
+                                "id": "d1", 
+                                "label": "d1", 
+                                "type": "frame", 
+                                "dataSource": "csv"
+                            }
+                        ], 
+                        "ports": [
+                            [
+                                {
+                                    "type": "frame", 
+                                    "label": "i", 
+                                    "nodeId": "d"
+                                }
+                            ], 
+                            []
+                        ], 
+                        "params": [], 
+                        "creator": "ユーザー管理者", 
+                        "createdAt": "2022-06-13 07:49:26", 
+                    }, 
+                    "srcs": {
+                        "i": "D1"
+                    }, 
+                    "dsts": {}, 
+                }
+            ], 
+            "ports": [
+                [
+                    {
+                        "type": "frame", 
+                        "label": "o", 
+                        "nodeId": "D"
+                    }
+                ], 
+                [
+                    {
+                        "type": "frame", 
+                        "label": "i", 
+                        "nodeId": "D"
+                    }
+                ]
+            ]
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '97a8df8d-6b40-49d5-ab73-0ed1110386bf'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('main', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        # フローを実行して、キャッシュを作成する
+        # (サブフロー内ではキャッシュは作成しない)
+        flow_cmd = FlowCommand(flow)
+        outs = execute(flow_cmd, {'use_cache':True}, {})
+        outs = convert_from_activity(outs)
+
+        # ライブラリに結果データが出力されていること
+        self.assertEqual(len(outs), 1)
+        # out-of-flow
+        self.assertIsNotNone(outs['D1'])
+        self.assertEqual(outs['D1'].type, 'frame')
+        self.assertGreater(outs['D1'].file_size, 0)
+
+        # 再度、フローを実行する
+        # (入力にはキャッシュが使用される)
+        flow_cmd = FlowCommand(flow)
+        outs = execute(flow_cmd, {'use_cache':True}, {})
+        outs = convert_from_activity(outs)
+
+        # ライブラリに結果データが出力されていること
+        self.assertEqual(len(outs), 1)
+        # out-of-flow
+        self.assertIsNotNone(outs['D1'])
+        self.assertEqual(outs['D1'].type, 'frame')
+        self.assertGreater(outs['D1'].file_size, 0)
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
