@@ -7542,6 +7542,9 @@ class DataSourceTest(TestCaseBase):
         # プロジェクトをほかす
         project.throw_away()
 
+        # 作成と変更を確定する
+        self.factory2.end()
+
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
