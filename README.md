@@ -30,7 +30,7 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
     cd streamcat
 
     # 3. StreamCatサーバを起動する (最新のStreamCatイメージがダウンロードされ、StreamCatサーバが起動する)
-    docker-compose up -d
+    docker compose up -d
     ```
 
 ### 2. 起動確認
@@ -59,7 +59,7 @@ Webブラウザ(ChromeまたはFirefoxを推奨)で[`http://localhost:5000`](htt
 以下のコマンドを上から順に実行して下さい
 ```sh
 # 1. Dockerコンテナの停止と削除
-docker-compose down
+docker compose down
 
 # 2. Dockerイメージの削除
 docker rmi sabanyan/streamcat:latest
