@@ -122,7 +122,7 @@ class VisDataDestAppender():
     def __init__(self):
         pass
 
-    def do_append(self, flow_cmd:FlowCommand, point:Point, vis_args):
+    def do_append(self, flow_cmd:FlowCommand, point:Point, vis_args:dict):
         """
         テーブル又はグラフ表示のための前処理を繋げる
         """
@@ -138,16 +138,41 @@ class VisDataDestAppender():
         # テーブル表示の場合はTrue
         vcmd_is_table = vcmd_id == 'csvtohtmltable'
 
+        if 'beam' in point.src_tubes[0].port.types:
+            # 接続先Pointの入力Portの型が'beam'の場合は、Beam用の前処理Stepを繋げる
+            return self._append_beams(flow_cmd, point, vcmd_args, vcmd_is_table)
+        else:
+            # 'mcmd'の場合は、nysol_python用の前処理Stepを繋げる
+            return self._append_mcmds(flow_cmd, point, vcmd_args, vcmd_is_table)
+
+    def _append_beams(self, flow_cmd:FlowCommand, point:Point, vcmd_args:dict, vcmd_is_table:bool):   
+        # ToList Stepを作成する 
+        tolist_cmd = CommandLink('beam_tolist').resolve()
+        tolist_step = Step(tolist_cmd.label, tolist_cmd, vcmd_args)
+
+        # ToListの出力Pointを作成する
+        point_id = point.id + '_tolist_o'
+        tolist_point_o = Point(point_id, Tube(Port('o', 'beam'), tolist_step))
+
+        # pointにToList Stepを繋げる
+        point.add_dst_tube(Tube(Port('i', 'beam'), tolist_step))
+
+        # 作成したPointとStepをフローコマンドに登録する
+        flow_cmd.substeps.append(tolist_step)
+        flow_cmd.points.add(tolist_point_o)
+
+        return tolist_point_o, None
+
+    def _append_mcmds(self, flow_cmd:FlowCommand, point:Point, vcmd_args:dict, vcmd_is_table:bool):
+
         # UTF-8への変換コマンドを作成する
         # (S_JISをwritelistコマンドに入力するとDockerが終了するので)
         convtoutf8 = CommandLink('convtoutf8').resolve()
         convtoutf8_step = Step(convtoutf8.label, convtoutf8, {'target_encoding':'utf-8','target_newline':'\n'})
 
-        # RowRange Stepへの引数を作成する
-        rowrange_args = vis_args[point.id]['args']
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
-        rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
+        rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, vcmd_args)
 
         # Align Stepを作成する
         align_cmd = CommandLink('align').resolve()
@@ -230,45 +255,62 @@ class VisDataDestAppender():
 
 
 class RunsCommandAppender():
+    class Appender():
+        def __init__(self, runs_command_id:str, in_port_type:str):
+            # Runsコマンドへの入力Portの型
+            self._in_port_type = in_port_type
+            # Runsコマンドを取得する
+            runs_cmd = CommandLink(runs_command_id).resolve()
+            # Runsステップのo_portsへはdo_append()を呼び出す度に出力Portを1つ追加する
+            self.runs_o_ports = []
+            # Runsステップを作成する
+            # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
+            self.runs_step = Step('runs', runs_cmd, o_ports=self.runs_o_ports, ex_acceptable=True)
+            # ポート名は0番から順に採番する
+            self._next_port_no = 0
+            # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
+            self._already_step_added = False
+
+        def do_append(self, flow_cmd:FlowCommand, point1:Point, point2:Point=None):
+            if point2 is None:
+                return self._do_append_one(flow_cmd, point1), None
+            else:
+                return self._do_append_one(flow_cmd, point1), self._do_append_one(flow_cmd, point2)
+
+        def _do_append_one(self, flow_cmd:FlowCommand, point:Point):
+            # RunsCommandに繋げるPointを作成する
+            port_label = str(self._next_port_no)
+            self._next_port_no += 1
+
+            point_id = point.id + '_runs'
+            runs_point = Point(point_id, Tube(Port(port_label, 'out'), self.runs_step))
+
+            # Stepのportsに追加する
+            self.runs_o_ports.append(Port(port_label, 'out'))
+
+            # ここでRunsCommandを繋げる
+            point.add_dst_tube(Tube(Port(port_label, self._in_port_type), self.runs_step))
+
+            if not self._already_step_added:
+                flow_cmd.substeps.append(self.runs_step)
+                self._already_step_added = True
+
+            flow_cmd.points.add(runs_point)
+            return runs_point
+
     def __init__(self):
-        # Runsコマンドを取得する
-        runs_cmd = CommandLink('runs').resolve()
-        # Runsステップのo_portsへはdo_append()を呼び出す度に出力Portを1つ追加する
-        self.runs_o_ports = []
-        # Runsステップを作成する
-        # (CommandExceptionが入力された場合の処理をRunsCommand内で行うためex_acceptable=Trueとする)
-        self.runs_step = Step('runs', runs_cmd, o_ports=self.runs_o_ports, ex_acceptable=True)
-        # ポート名は0番から順に採番する
-        self._next_port_no = 0
-        # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
-        self._already_step_added = False
+        # Apache Beam
+        self._beam_runs_cmd_appender = RunsCommandAppender.Appender('beam_run', 'beam')
+        # nysol_python
+        self._mcmd_runs_cmd_appender = RunsCommandAppender.Appender('runs', 'mcmd')
 
     def do_append(self, flow_cmd:FlowCommand, point1:Point, point2:Point=None):
-        if point2 is None:
-            return self._do_append_one(flow_cmd, point1), None
+        if 'beam' in point1.src_tubes[0].port.types:
+            # 接続先Pointの入力Portの型が'beam'の場合は、BeamのRunStepを繋げる
+            return self._beam_runs_cmd_appender.do_append(flow_cmd, point1, point2)
         else:
-            return self._do_append_one(flow_cmd, point1), self._do_append_one(flow_cmd, point2)
-
-    def _do_append_one(self, flow_cmd:FlowCommand, point:Point):
-        # RunsCommandに繋げるPointを作成する
-        port_label = str(self._next_port_no)
-        self._next_port_no += 1
-
-        point_id = point.id + '_runs'
-        runs_point = Point(point_id, Tube(Port(port_label, 'out'), self.runs_step))
-
-        # Stepのportsに追加する
-        self.runs_o_ports.append(Port(port_label, 'out'))
-
-        # ここでRunsCommandを繋げる
-        point.add_dst_tube(Tube(Port(port_label, 'mcmd'), self.runs_step))
-
-        if not self._already_step_added:
-            flow_cmd.substeps.append(self.runs_step)
-            self._already_step_added = True
-
-        flow_cmd.points.add(runs_point)
-        return runs_point
+            # 'mcmd'の場合は、nysol_pythonのRunsStepを繋げる
+            return self._mcmd_runs_cmd_appender.do_append(flow_cmd, point1, point2)
 
 
 class ActivityDataDestAppender():
