@@ -103,9 +103,10 @@ class FlowCommand(Command):
 
         # データソースを追加する
         from streamcat.store.factory import DatumFactory
-        from .appenders import FolderDataSourcePrepender
+        from .appenders import FolderDataSourcePrepender, BeamToNysolInserter
         self._datum_factory = DatumFactory(flow._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
+        self._beam_to_nysol_inserter = BeamToNysolInserter()
 
         # Activity期間中は同じPreprocessorインスタンスを使う
         from .preprocessor import Preprocessor
@@ -295,7 +296,9 @@ class FlowCommand(Command):
                     raise Exception(f'指定しているport名({s_port_label})が"{node}"の定義しているポート群({i_ports})に存在しません')
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step))
+                insert_steps, insert_points = self._connect_with_tube(points, id=s_node_id, dst_tube=Tube(src_port, step))
+                substeps.extend(insert_steps)
+                points.update(insert_points)
 
             for d_port_label, d_node_id in dsts.items():
                 if d_node_id is None:
@@ -307,12 +310,14 @@ class FlowCommand(Command):
                     raise Exception(f'指定しているport名({d_port_label})が"{node}"の定義しているポート群({step.command.o_ports})に存在しません')
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step))
+                insert_steps, insert_points = self._connect_with_tube(points, id=d_node_id, src_tube=Tube(dst_port, step))
+                substeps.extend(insert_steps)
+                points.update(insert_points)
 
                 from streamcat.depo.std.commands import AssertCommand
                 if isinstance(cmd, AssertCommand):
                     # 出力情報に、AssertCommandの出力ポイントのidを含めるため
-                    args['asserted_point'] = dst_point.id
+                    args['asserted_point'] = d_node_id
                     # AssertCommandで例外を検証対象とするため、例外の入力を許可する
                     step.ex_acceptable = True
 
@@ -406,21 +411,27 @@ class FlowCommand(Command):
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
-    def _upsert_point(self, points, id, src_tube=None, dst_tube=None):
+    def _connect_with_tube(self, points, id, src_tube=None, dst_tube=None):
         """
-        指定したpoint_idのpointを作成する
-        既に同じpoint_idが存在していればそのpointを更新する
+        PointにTubeを接続する
         """
         point = points.get(id)
-        if point is None:
-            point = Point(id, src_tube, None, dst_tube)
-            points.add(point)
-        else:
-            # 既存のpointを更新する
-            src_tube is None or point.add_src_tube(src_tube)
-            dst_tube is None or point.add_dst_tube(dst_tube)
-        return point
 
+        if point is None:
+            return ([], [Point(id, src_tube=src_tube, dst_tube=dst_tube)])
+
+        # Pointにsrc_tubeを接続する
+        src_tube is None or point.add_src_tube(src_tube)
+
+        if dst_tube is None:
+            return ([],[])
+        elif len(point.src_tubes)==1 and 'beam' in point.src_tubes[0].port.types and 'mcmd' in dst_tube.port.types:
+            # beam型の出力Portからmcmd型の入力Portに接続する場合は、変換コマンドを挿入する
+            return self._beam_to_nysol_inserter.add_dst_tube(point, dst_tube)
+        else:
+            point.add_dst_tube(dst_tube)
+            return ([],[])
+    
     @property
     def points(self):
         return self._stepoints.points

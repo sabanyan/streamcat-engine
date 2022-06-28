@@ -6,6 +6,55 @@ from .point import Point
 from .step import Step
 from .tube import Tubes, Tube
 
+class BeamToNysolInserter():
+
+    def __init__(self):
+        beamrun_cmd = CommandLink('beam_run').resolve()
+        outtonysol_cmd = CommandLink('outtonysol').resolve()
+        self._tolist_cmd = CommandLink('beam_tolist').resolve()
+
+        self._beamrun_step = Step('beamrun', beamrun_cmd)
+        self._outtonysol_step = Step('outtonysol', outtonysol_cmd)
+
+        self._first = True
+
+        # ポート名は0番から順に採番する
+        self._next_port_no = 0
+
+    def add_dst_tube(self, point:Point, dst_tube:Tube):
+
+        port_label = str(self._next_port_no)
+        self._next_port_no += 1
+
+        # pointをBeamToListコマンドに繋げる
+        tolist_step = Step('beam_tolist', self._tolist_cmd)
+        point.add_dst_tube(Tube(Port(dst_tube.port.label, 'beam'), tolist_step))
+
+        # BeamToListコマンドの出力Pointを作成する
+        beamtolist_id = f'{point.id}_{port_label}_beamtolist'
+        beamtolist_point = Point(beamtolist_id,
+                            src_tube=Tube(Port('o', 'beam'), tolist_step),
+                            dst_tube=Tube(Port(port_label, 'beam'), self._beamrun_step))
+
+        # BeamRunコマンドの出力Pointを作成する
+        beamrun_point_id = f'{point.id}_{port_label}_beamrun'
+        beamrun_point = Point(beamrun_point_id,
+                            src_tube=Tube(Port(port_label, 'out'), self._beamrun_step),
+                            dst_tube=Tube(Port(port_label, 'out'), self._outtonysol_step))
+        # OutToNysolコマンドの出力Pointを作成する
+        outtonysol_point_id = f'{point.id}_{port_label}_outtonysol'
+        outtonysol_point = Point(outtonysol_point_id,
+                            src_tube=Tube(Port(port_label, 'mcmd'), self._outtonysol_step),
+                            dst_tube=Tube(Port(dst_tube.port.label, 'mcmd'), dst_tube.step))
+
+        if self._first:
+            self._first = False
+            return ([tolist_step,self._beamrun_step,self._outtonysol_step], [beamtolist_point,beamrun_point,outtonysol_point])
+        else:
+            return ([tolist_step], [beamtolist_point,beamrun_point,outtonysol_point])
+
+ 
+
 class FolderDataSourcePrepender():
     def __init__(self, datum_factory):
         # core.pyで定義されているFlowはf

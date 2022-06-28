@@ -57,13 +57,13 @@ class Tubes:
         else:
             self._tubes = list(tubes)
 
-    def add(self, tube):
+    def add(self, tube:Tube):
         """
         Tubeを追加する
         """
         self._tubes.append(tube)
 
-    def remove(self, tube):
+    def remove(self, tube:Tube):
         """
         Tubeを削除する
         """
