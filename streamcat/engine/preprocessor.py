@@ -1,4 +1,3 @@
-from typing import List
 from .flow_command import FlowCommand
 from .flow_port import FlowPort
 from .point import Points, Point
@@ -219,7 +218,7 @@ class Preprocessor:
         # 作成した親フローの出力Portを返す
         return o_port
 
-    def _set_scmds_args(self, steps:List, src_point:Point):
+    def _set_scmds_args(self, steps:list, src_point:Point):
         """
         SCommandに共通の引数を設定する
         """
@@ -243,7 +242,7 @@ class Preprocessor:
                 args.update(step.args)
                 step.args = args
 
-    def _terminate_for_vizs(self, flow_cmd:FlowCommand, vis_args:dict, vis_ids:List[str]):
+    def _terminate_for_vizs(self, flow_cmd:FlowCommand, vis_args:dict, vis_ids:list[str]):
         """
         Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
         """

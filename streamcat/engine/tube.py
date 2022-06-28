@@ -1,4 +1,4 @@
-from typing import Iterator
+from collections import Iterator
 from streamcat.core import Port
 from .step import Step
 

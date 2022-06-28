@@ -1,11 +1,10 @@
-from typing import List
 from .flow_port import FlowPort
 from .point import Points
 from .step import Step
 
 class Stepoints():
 
-    def __init__(self, steps:List[Step], points:Points, i_ports:List[FlowPort], o_ports:List[FlowPort], is_main:bool):
+    def __init__(self, steps:list[Step], points:Points, i_ports:list[FlowPort], o_ports:list[FlowPort], is_main:bool):
         self.substeps = steps
         self.points = points
         self.i_ports = i_ports
@@ -103,7 +102,7 @@ class Stepoints():
         return union(self._search_first_steps_to_run(original_step=(src_tube.step, from_relayed_port))
                      for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
 
-    def _run_invokable_steps(self, invokable_steps:List[Step], flow_args:dict):
+    def _run_invokable_steps(self, invokable_steps:list[Step], flow_args:dict):
         """
         stepのうち、実行準備が整っている（=引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
