@@ -194,20 +194,30 @@ class VisDataDestAppender():
             # 'mcmd'の場合は、nysol_python用の前処理Stepを繋げる
             return self._append_mcmds(flow_cmd, point, vcmd_args, vcmd_is_table)
 
-    def _append_beams(self, flow_cmd:FlowCommand, point:Point, vcmd_args:dict, vcmd_is_table:bool):   
+    def _append_beams(self, flow_cmd:FlowCommand, point:Point, vcmd_args:dict, vcmd_is_table:bool):
+
+        # RowRange Stepを作成する
+        rowrange_cmd = CommandLink('beam_rowrange').resolve()
+        rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, vcmd_args)
+
         # ToList Stepを作成する 
         tolist_cmd = CommandLink('beam_tolist').resolve()
         tolist_step = Step(tolist_cmd.label, tolist_cmd, vcmd_args)
 
+        # RowRangeの出力Pointを作成する
+        point_id = point.id + '_rowrange'
+        rowrange_point = Point(point_id, Tube(Port('o', 'beam'), rowrange_step), None, Tube(Port('i', 'beam'), tolist_step))
         # ToListの出力Pointを作成する
         point_id = point.id + '_tolist_o'
         tolist_point_o = Point(point_id, Tube(Port('o', 'beam'), tolist_step))
 
-        # pointにToList Stepを繋げる
-        point.add_dst_tube(Tube(Port('i', 'beam'), tolist_step))
+        # pointにRowRangeを繋げる
+        point.add_dst_tube(Tube(Port('i', 'beam'), rowrange_step))
 
         # 作成したPointとStepをフローコマンドに登録する
+        flow_cmd.substeps.append(rowrange_step)
         flow_cmd.substeps.append(tolist_step)
+        flow_cmd.points.add(rowrange_point)
         flow_cmd.points.add(tolist_point_o)
 
         return tolist_point_o, None
