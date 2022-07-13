@@ -122,7 +122,7 @@ class VisDataDestAppender():
     def __init__(self):
         pass
 
-    def do_append(self, flow_cmd:FlowCommand, point:Point, vis_args):
+    def do_append(self, flow_cmd:FlowCommand, point:Point, vis_args:dict):
         """
         テーブル又はグラフ表示のための前処理を繋げる
         """
@@ -143,11 +143,9 @@ class VisDataDestAppender():
         convtoutf8 = CommandLink('convtoutf8').resolve()
         convtoutf8_step = Step(convtoutf8.label, convtoutf8, {'target_encoding':'utf-8','target_newline':'\n'})
 
-        # RowRange Stepへの引数を作成する
-        rowrange_args = vis_args[point.id]['args']
         # RowRange Stepを作成する
         rowrange_cmd = CommandLink('rowrange').resolve()
-        rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, rowrange_args)
+        rowrange_step = Step(rowrange_cmd.label, rowrange_cmd, vcmd_args)
 
         # Align Stepを作成する
         align_cmd = CommandLink('align').resolve()

@@ -295,7 +295,7 @@ class FlowCommand(Command):
                     raise Exception(f'指定しているport名({s_port_label})が"{node}"の定義しているポート群({i_ports})に存在しません')
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                self._upsert_point(points, id=s_node_id, dst_tube=Tube(src_port, step))
+                self._connect_with_tube(points, id=s_node_id, dst_tube=Tube(src_port, step))
 
             for d_port_label, d_node_id in dsts.items():
                 if d_node_id is None:
@@ -307,7 +307,7 @@ class FlowCommand(Command):
                     raise Exception(f'指定しているport名({d_port_label})が"{node}"の定義しているポート群({step.command.o_ports})に存在しません')
 
                 # pointを作成する（作成対象がすでにあれば更新する）
-                dst_point = self._upsert_point(points, id=d_node_id, src_tube=Tube(dst_port, step))
+                dst_point = self._connect_with_tube(points, id=d_node_id, src_tube=Tube(dst_port, step))
 
                 from streamcat.depo.std.commands import AssertCommand
                 if isinstance(cmd, AssertCommand):
@@ -406,13 +406,13 @@ class FlowCommand(Command):
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
-    def _upsert_point(self, points, id, src_tube=None, dst_tube=None):
+    def _connect_with_tube(self, points, id, src_tube=None, dst_tube=None):
         """
-        指定したpoint_idのpointを作成する
-        既に同じpoint_idが存在していればそのpointを更新する
+        PointにTubeを接続する
         """
         point = points.get(id)
         if point is None:
+            # 指定したidのPointが無ければ、新たにPointを生成する
             point = Point(id, src_tube, None, dst_tube)
             points.add(point)
         else:
