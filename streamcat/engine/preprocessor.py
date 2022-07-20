@@ -265,7 +265,7 @@ class Preprocessor:
             # Activity Stepを付加する
             out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
             # Activity_pointを出力Pointに設定する
-            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
 
     def _terminate_for_exec(self, flow_cmd:FlowCommand):
         """
@@ -281,12 +281,12 @@ class Preprocessor:
             out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
             # 出力Point設定を元のPointからActivity_pointに変更する
             flow_cmd.close_o_port_by_point(original_out_point)
-            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
 
         # SaverCommandとそのサブクラスのコマンドが存在しない場合でも、Activity Stepを付加する
         if len(flow_cmd.o_ports) == 0:
             out_point = self._activity_data_dest_appender.make_activity_point(flow_cmd, 'activity_0')
-            flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+            flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
 
     def _append_cache_saver_cmds(self, flow_cmd:FlowCommand):
         """
@@ -305,7 +305,7 @@ class Preprocessor:
             # # Activity Stepを付加する
             # out_point = self._activity_data_dest_appender.do_append(flow_cmd, frame_point, cache_point)
             # # Activity_pointを出力Pointに設定する
-            # out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'frame', out_point))
+            # out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
 
     def _get_src_point_of_data_dst(self, flow_points:Points, dst_point_of_data_dst:Point) -> Point:
         """
