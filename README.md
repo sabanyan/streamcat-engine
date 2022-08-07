@@ -11,14 +11,14 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
 |Windows|[Docker Desktop](https://www.docker.com/get-started)|
 |:-:|:-|
 |**macOS**|[**Docker Desktop**](https://www.docker.com/get-started)|
-|**Linux**| **Docker Engine**, **Docker Compose** |
+|**Linux**|[**Docker Engine**](https://docs.docker.com/engine/), [**Docker Compose**](https://docs.docker.com/compose/)|
 
 
 ## 3. インストール
 
 ### 1. Dockerコンテナの取得と起動
 
-1. [`streamcat.zip`](https://github.com/sabanyan/community/files/8103504/streamcat.zip)をダウンロードする
+1. [`streamcat.zip`](https://github.com/sabanyan/community/files/9276150/streamcat.zip)をダウンロードする
 
 2. 以下のコマンドを上から順に実行する
 
