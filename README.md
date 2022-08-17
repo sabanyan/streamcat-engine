@@ -11,14 +11,14 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
 |Windows|[Docker Desktop](https://www.docker.com/get-started)|
 |:-:|:-|
 |**macOS**|[**Docker Desktop**](https://www.docker.com/get-started)|
-|**Linux**| **Docker Engine**, **Docker Compose** |
+|**Linux**|[**Docker Engine**](https://docs.docker.com/engine/), [**Docker Compose**](https://docs.docker.com/compose/)|
 
 
 ## 3. インストール
 
 ### 1. Dockerコンテナの取得と起動
 
-1. [`streamcat.zip`](https://github.com/sabanyan/community/files/8103504/streamcat.zip)をダウンロードする
+1. [`streamcat.zip`](https://github.com/sabanyan/community/files/9276150/streamcat.zip)をダウンロードする
 
 2. 以下のコマンドを上から順に実行する
 
@@ -30,7 +30,7 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
     cd streamcat
 
     # 3. StreamCatサーバを起動する (最新のStreamCatイメージがダウンロードされ、StreamCatサーバが起動する)
-    docker-compose up -d
+    docker compose up -d
     ```
 
 ### 2. 起動確認
@@ -59,7 +59,7 @@ Webブラウザ(ChromeまたはFirefoxを推奨)で[`http://localhost:5000`](htt
 以下のコマンドを上から順に実行して下さい
 ```sh
 # 1. Dockerコンテナの停止と削除
-docker-compose down
+docker compose down
 
 # 2. Dockerイメージの削除
 docker rmi sabanyan/streamcat:latest

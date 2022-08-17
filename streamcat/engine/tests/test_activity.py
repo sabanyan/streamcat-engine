@@ -13,6 +13,8 @@ class ActivityTest(TestCaseBase):
     def setUp(self):
         import copy
 
+        super().setUp()
+
         # 乱数をデータソースとするフロー
         self.flow_json0 = {
             "label": "rand", 
@@ -99,7 +101,7 @@ class ActivityTest(TestCaseBase):
 
         # USER2は、フローを実行する
         readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
-        outs = execute(FlowCommand(readonly_flow))
+        outs = execute(FlowCommand(readonly_flow), args={'param1':1234})
         activity = self._get_activity(outs)
         results1 = convert_from_activity(outs)
 
@@ -126,6 +128,7 @@ class ActivityTest(TestCaseBase):
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
         self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertEqual(activity_json['args'], {'param1':1234})
         self.assertIsNotNone(activity_json['startAt'])
         self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumの値が正しいこと
@@ -144,7 +147,7 @@ class ActivityTest(TestCaseBase):
 
         # プロジェクトをほかして、ゴミ箱を空にする
         project.throw_away()
-        self.factory.data.find_trashcan().trash_all()
+        self.factory2.data.find_trashcan().trash_all()
 
     def test_save_activity_if_error(self):
         """
@@ -167,6 +170,9 @@ class ActivityTest(TestCaseBase):
         flow = project.create_flow('かようなところに上様が来られるはずがない！', FlowData(self.flow_json))
         flow.save()
         flow = flow.reload()
+
+        # 変更を確定する
+        self.factory2.end()
 
         # USER3は、フローを実行する
         # USER3は、プロジェクトの閲覧者メンバなので、実行結果の出力で例外が送出される
@@ -266,6 +272,7 @@ class ActivityTest(TestCaseBase):
         self.assertIsNotNone(activity_json['createdAt'])
         # アクティビティの保持する値が正しいこと
         self.assertEqual(activity_json['flowUuid'], flow.uuid)
+        self.assertEqual(activity_json['args'], {'use_cache':True})
         self.assertIsNotNone(activity_json['startAt'])
         self.assertIsNotNone(activity_json['endAt'])
         # 結果Datumは0件であること
