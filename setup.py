@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='streamcat.engine',
     packages=['streamcat.engine'],
-    version='3.1',
+    version='3.2',
     description='Core Engine for Flow-base Data Processing',
     url='https://www.kskp.io',
     install_requires=[
