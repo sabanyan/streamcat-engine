@@ -271,6 +271,9 @@ class Preprocessor:
         """
         フロー出力PointにRunsコマンドとActivityコマンドを付加する
         """
+        # 実行結果情報をライブラリに保存する
+        self._activity_data_dest_appender.save_activity()
+
         # SaverCommandとそのサブクラスのコマンドの出力Pointに、Runs StepとActivity Stepを付加する
         for original_out_point in [p.point for p in flow_cmd.relayed_o_ports]:
             # データデストの入力Pointを取得する、取得できない場合はSaverCommandの出力Pointを用いる

@@ -291,6 +291,11 @@ class ActivityDataDestAppender():
     def set_is_vis(self):
         self.activity_step.args['is_vis'] = True
 
+    def save_activity(self):
+        # プレビュー実行以外の場合はActivityをライブラリに保存する
+        self.activity.save()
+        self.activity.reload()
+
     def do_append(self, flow_cmd:FlowCommand, point:Point, src_point_of_data_dst):
         # Activity Stepのargsにpointを追加する
         port_label = str(self._next_port_no)
