@@ -3,7 +3,7 @@ from streamcat.store.lock import lock_manager
 from streamcat.store.auth import NotAuthorizedException
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
-from .test_main import convert_from_activity_vis, convert_from_activity_cache
+from .test_main import convert_from_job_vis, convert_from_job_cache
 
 class CacheTest(TestCaseBase):
     """
@@ -107,7 +107,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
-        results1 = convert_from_activity_vis(lasts)
+        results1 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
         self.assertEqual(len(results1), 1)
@@ -120,7 +120,7 @@ class CacheTest(TestCaseBase):
 
         # USER3は、同じフローを再度プレビューする
         lasts = execute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
-        results2 = convert_from_activity_vis(lasts)
+        results2 = convert_from_job_vis(lasts)
 
         # キャッシュが作成されていないので、再度プレビューすると異なる値が得られること
         self.assertNotEqual(results2['d1'][0][1], results1['d1'][0][1])
@@ -274,7 +274,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
-        results1 = convert_from_activity_vis(lasts)
+        results1 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
         self.assertEqual(len(results1), 2)
@@ -405,8 +405,8 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow, lock1.uuid), {'vis':vis_args,'use_cache':True})
-        results1 = convert_from_activity_vis(lasts)
-        caches1 = convert_from_activity_cache(lasts)
+        results1 = convert_from_job_vis(lasts)
+        caches1 = convert_from_job_cache(lasts)
 
         # フローの排他ロックを解除する
         lock_manager.unlock(lock1.uuid)
@@ -428,7 +428,7 @@ class CacheTest(TestCaseBase):
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
-        results2 = convert_from_activity_vis(lasts)
+        results2 = convert_from_job_vis(lasts)
 
         # キャッシュが参照されていれば値が一致する
         self.assertEqual(len(results2), 1)
@@ -660,7 +660,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow, lock1.uuid), {'vis':vis_args,'use_cache':True})
-        results = convert_from_activity_vis(lasts)
+        results = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
         self.assertEqual(len(results), 2)
@@ -907,7 +907,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
-        results = convert_from_activity_vis(lasts)
+        results = convert_from_job_vis(lasts)
 
         # 作成とキャッシュの作成を確定する
         self.factory0.end()
@@ -943,7 +943,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
-        results2 = convert_from_activity_vis(lasts)
+        results2 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
         self.assertEqual(len(results2), 1)
@@ -951,7 +951,7 @@ class CacheTest(TestCaseBase):
 
         # もう一度、メインフローをプレビューする
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
-        results3 = convert_from_activity_vis(lasts)
+        results3 = convert_from_job_vis(lasts)
 
         # 乱数をデータソースとするメインフローをプレビューしても
         # サブフロー内のキャッシュが参照されるので、同じ結果が得られること
@@ -1249,7 +1249,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
-        results1 = convert_from_activity_vis(lasts)
+        results1 = convert_from_job_vis(lasts)
 
         # 作成とキャッシュの作成を確定する
         self.factory0.end()
@@ -1288,7 +1288,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':False})
-        results2 = convert_from_activity_vis(lasts)
+        results2 = convert_from_job_vis(lasts)
 
         # サブフローのキャッシュが参照されないこと
         expect = {'d5': [['A', '20180101', '5200', '5200', '5200'],
@@ -1415,7 +1415,7 @@ class CacheTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
-        results1 = convert_from_activity_vis(lasts)
+        results1 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
         self.assertEqual(len(results1), 1)
@@ -1434,7 +1434,7 @@ class CacheTest(TestCaseBase):
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
-        results2 = convert_from_activity_vis(lasts)
+        results2 = convert_from_job_vis(lasts)
 
         # キャッシュが参照できないので、再度プレビューすると異なる値が得られること
         self.assertNotEqual(results2['d1'][0][1], results1['d1'][0][1])
@@ -1526,7 +1526,8 @@ class CacheTest(TestCaseBase):
           }
         }
         with self.assertRaises(NotAuthorizedException):
-            lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+            job = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+            convert_from_job_vis(job)
 
         # フローを削除する
         flow.delete()

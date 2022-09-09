@@ -38,16 +38,9 @@ def execute(command, args={}, inputs={}, job_complete_handler=None):
         job = Job(step, inputs)
 
         # jobを開始する
-        outs = job.start()
+        job.start()
 
-        # 後始末をする
-        job.dtor()
-
-        # 結果を返却する
-        # job.step.command.cachesでキャッシュの結果も取れる
-        # resultとしてlastsを返すということはlastsが必ず正しい結果を返すものだという前提
-        return outs
-
+        return job
     except Exception as e:
         raise
         # exs.append(exception_manager(e))

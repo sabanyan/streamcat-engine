@@ -499,6 +499,10 @@ class FlowCommand(Command):
     def close_all_o_ports(self):
         self.o_ports.clear()
 
+    @property
+    def activity(self):
+        return self._preprocessor._context.activity
+
     def dtor(self, args={}):
         """
         終了処理

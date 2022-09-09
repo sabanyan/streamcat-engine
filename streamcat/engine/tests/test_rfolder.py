@@ -8,7 +8,7 @@ from streamcat.store import FlowData, RemoteFolderConn
 from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
-from .test_main import convert_from_activity, convert_from_activity_exs
+from .test_main import convert_from_job, convert_from_job_exs
 from .make_flow_json import create_flow_by_flow_id
 
 class RemoteFolderTest(TestCaseBase):
@@ -171,7 +171,7 @@ class RemoteFolderTest(TestCaseBase):
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
@@ -217,7 +217,7 @@ class RemoteFolderTest(TestCaseBase):
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
@@ -306,15 +306,12 @@ class RemoteFolderTest(TestCaseBase):
         lasts = execute(flow_link, {'vis':vis_args}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
-        results = convert_from_activity(lasts)
-        # 1つの出力ポイントが返されること
-        self.assertEqual(len(results), 1)
-        self.assertIn('d', results)
+        results = convert_from_job(lasts)
         # frameデータは作成されていないこと
-        self.assertIsNone(results['d'])
+        self.assertEqual(len(results), 0)
 
         # 出力ポイントとこれに対応する例外を取得する
-        results = convert_from_activity_exs(lasts)
+        results = convert_from_job_exs(lasts)
         # 1つの出力ポイントが返されること
         self.assertEqual(len(results), 1)
         self.assertIn('d', results)

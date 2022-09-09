@@ -131,11 +131,8 @@ class Stepoints():
             # 実行したい処理の中にどのステップなのかを渡す
             step.command.context['step_id'] = step.id
 
-            # jobを作る
-            job = Job(step, inputs)
-
-            # 実行開始
-            results = job.start()
+            # 実行する
+            results = step.run(inputs)
 
             # 結果をそれぞれのpointに入れる
             # まず、outputのpointを取得する
@@ -160,8 +157,8 @@ class Stepoints():
                 for value in results.values():
                     self.module_store.append(value.content)
 
-            # jobの終了処理
-            job.dtor()
+            # stepの終了処理
+            step.dtor()
 
     def _make_outs(self):
         """

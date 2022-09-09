@@ -41,7 +41,7 @@ class Ports():
             raise Exception(f'PortsにPort({port.label})は存在しません')
         else:
             return port
-        
+
     def __len__(self):
         return len(self._ports)
 

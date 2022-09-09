@@ -8,7 +8,7 @@ from streamcat.core import Datum
 from streamcat.store import DatabaseConn, FlowData, NysolModule, CommandException
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
-from .test_main import convert_from_activity, convert_from_activity_exs, convert_from_activity_vis
+from .test_main import convert_from_job, convert_from_job_exs, convert_from_job_vis
 from .make_flow_json import create_flow_by_flow_id
 
 class DataSourceTest(TestCaseBase):
@@ -212,7 +212,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -407,7 +407,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは3つ生成されているか
         self.assertEqual(3, len(lasts))
@@ -637,7 +637,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -867,7 +867,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -969,7 +969,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは3つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -1164,7 +1164,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -1380,7 +1380,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -1580,7 +1580,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -1736,7 +1736,7 @@ class DataSourceTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         args = {'vis':vis_args, 'flow_args': {'frame_uuid':in_frame.uuid}}
         lasts = execute(flow_link, args, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(len(lasts), 1)
@@ -1878,7 +1878,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
@@ -1999,7 +1999,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
@@ -2154,7 +2154,7 @@ class DataSourceTest(TestCaseBase):
         flow_link = FlowCommand(sub_flow)
         args = {'flow_args': {'frame_uuid':in_frame.uuid}}
         lasts = execute(flow_link, args, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
@@ -2167,7 +2167,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, args, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
@@ -2360,7 +2360,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
@@ -2557,7 +2557,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
@@ -2658,7 +2658,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
@@ -2765,7 +2765,7 @@ class DataSourceTest(TestCaseBase):
         lasts = execute(flow_link, {}, {})
 
         # 出力結果は0件であること
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されないこと
         self.assertEqual(len(lasts), 0)
@@ -3367,7 +3367,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         outs = execute(flow_link, {}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(outs), 2)
@@ -3399,7 +3399,7 @@ class DataSourceTest(TestCaseBase):
         # 
         datasource = root.create_datasource('tmp_source1', d3_frame.find_parent(), LoaderCommand(), {'uuid':d3_frame.uuid})
         outs = execute(FlowCommand(datasource), args=vis_args)
-        outs = convert_from_activity_vis(outs)
+        outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(outs))
@@ -3412,7 +3412,7 @@ class DataSourceTest(TestCaseBase):
         # 
         datasource = root.create_datasource('tmp_source2', d6_frame.find_parent(), LoaderCommand(), {'uuid':d6_frame.uuid})
         outs = execute(FlowCommand(datasource), args=vis_args)
-        outs = convert_from_activity_vis(outs)
+        outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(outs))
@@ -4071,7 +4071,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         outs = execute(flow_link, {}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(outs), 2)
@@ -4103,7 +4103,7 @@ class DataSourceTest(TestCaseBase):
         # 
         datasource = root.create_datasource('tmp_source1', d3_frame.find_parent(), LoaderCommand(), {'uuid':d3_frame.uuid})
         outs = execute(FlowCommand(datasource), args=vis_args)
-        outs = convert_from_activity_vis(outs)
+        outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(outs))
@@ -4136,7 +4136,7 @@ class DataSourceTest(TestCaseBase):
         # 
         datasource = root.create_datasource('tmp_source2', d6_frame.find_parent(), LoaderCommand(), {'uuid':d6_frame.uuid})
         outs = execute(FlowCommand(datasource), args=vis_args)
-        outs = convert_from_activity_vis(outs)
+        outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(outs))
@@ -4327,7 +4327,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_cmd = FlowCommand(flow)
         outs = execute(flow_cmd, {}, {})
-        outs = convert_from_activity_exs(outs)
+        outs = convert_from_job_exs(outs)
 
         # 例外が出力されること
         self.assertEqual(len(outs), 1)
@@ -4542,7 +4542,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_cmd = FlowCommand(flow)
         outs = execute(flow_cmd, {}, {})
-        outs = convert_from_activity_exs(outs)
+        outs = convert_from_job_exs(outs)
 
         # 例外が出力されること
         self.assertEqual(len(outs), 1)
@@ -4618,14 +4618,19 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_cmd = FlowCommand(flow)
-        lasts = flow_cmd.run()
-        lasts = convert_from_activity(lasts)
+        outs = flow_cmd.run()
 
-        # ライブラリにデータソースが出力されていること
-        self.assertEqual(len(lasts), 1)
-        # 
-        self.assertIsNotNone(lasts['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
-        out_frame1 = lasts['d1']
+        # FlowCommandはoutsを出力すること
+        # d1とo0_d1_runs_activity_0(データデストが開いたPort)の2つ
+        self.assertEqual(len(outs), 2)
+        self.assertIsNotNone(outs['d1'], 'FlowCommandは結果(d1)を出力しませんでした')
+        self.assertIsNotNone(outs['o0_d1_runs_activity_0'], 'FlowCommandは結果(o0_d1_runs_activity_0)を出力しませんでした')
+        # apparentOutsはapparentOutを一つ持っていること
+        apparentOuts = outs['o0_d1_runs_activity_0']
+        self.assertEqual(len(apparentOuts.outs), 1)
+        self.assertEqual(apparentOuts.outs[0].out_point.id, 'd1')
+        # apparentOutは出力frameを持っていること
+        out_frame1 = apparentOuts.outs[0].datum
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
@@ -4770,7 +4775,7 @@ class DataSourceTest(TestCaseBase):
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4873,7 +4878,7 @@ class DataSourceTest(TestCaseBase):
 
         print(lasts)
 
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -5364,7 +5369,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは2つ生成されているか
         self.assertEqual(len(lasts), 2)
@@ -5734,7 +5739,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 2)
@@ -5933,12 +5938,12 @@ class DataSourceTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        results = convert_from_activity_vis(lasts)
+        results = convert_from_job_vis(lasts)
         self.assertIsNone(results)
 
         # 実行しても結果は得られない
         lasts = execute(FlowCommand(flow), {}, {})
-        results = convert_from_activity(lasts)
+        results = convert_from_job(lasts)
         self.assertIsNone(results)
 
         # ほかす
@@ -6086,7 +6091,7 @@ class DataSourceTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        results = convert_from_activity_vis(lasts)
+        results = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(len(results), 1)
@@ -6101,7 +6106,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         lasts = execute(FlowCommand(flow), {}, {})
-        results = convert_from_activity(lasts)
+        results = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(results), 1)
@@ -6251,7 +6256,7 @@ class DataSourceTest(TestCaseBase):
           }
         }
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        results = convert_from_activity_vis(lasts)
+        results = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(len(results), 1)
@@ -6266,7 +6271,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         lasts = execute(FlowCommand(flow), {}, {})
-        results = convert_from_activity(lasts)
+        results = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(results), 1)
@@ -6383,27 +6388,39 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_cmd = FlowCommand(flow)
-        lasts1 = flow_cmd.run()
-        lasts1 = convert_from_activity(lasts1)
+        outs1 = flow_cmd.run()
 
-        # ライブラリに出力結果が出力されていること
-        self.assertEqual(len(lasts1), 1)
-        self.assertIsNotNone(lasts1['d'], 'SaverCommandは結果(d)を出力しませんでした')
-        out_frame1 = lasts1['d']
+        # FlowCommandはoutsを出力すること
+        # dとo_d1_runs_activity_0(データデストが開いたPort)の2つ
+        self.assertEqual(len(outs1), 2)
+        self.assertIsNotNone(outs1['d'], 'FlowCommandは結果(d)を出力しませんでした')
+        self.assertIsNotNone(outs1['o_d1_runs_activity_0'], 'FlowCommandは結果(o_d1_runs_activity_0)を出力しませんでした')
+        # apparentOutsはapparentOutを一つ持っていること
+        apparentOuts = outs1['o_d1_runs_activity_0']
+        self.assertEqual(len(apparentOuts.outs), 1)
+        self.assertEqual(apparentOuts.outs[0].out_point.id, 'd')
+        # apparentOutは出力frameを持っていること
+        out_frame1 = apparentOuts.outs[0].datum
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
         # 同じFlowCommandオブジェクトを用いて
         # 再度フローを実行する
-        lasts2 = flow_cmd.run()
-        lasts2 = convert_from_activity(lasts2)
+        outs2 = flow_cmd.run()
 
-        # ライブラリに出力結果が出力されていること
-        self.assertEqual(len(lasts2), 1)
-        self.assertIsNotNone(lasts2['d'], 'SaverCommandは結果(d)を出力しませんでした!')
-        out_frame2 = lasts2['d']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
-        self.assertTrue(out_frame2.file_exists)
+        # FlowCommandはoutsを出力すること
+        # dとo_d1_runs_activity_0(データデストが開いたPort)の2つ
+        self.assertEqual(len(outs2), 2)
+        self.assertIsNotNone(outs2['d'], 'FlowCommandは結果(d)を出力しませんでした')
+        self.assertIsNotNone(outs2['o_d1_runs_activity_0'], 'FlowCommandは結果(o_d1_runs_activity_0)を出力しませんでした')
+        # apparentOutsはapparentOutを一つ持っていること
+        apparentOuts = outs2['o_d1_runs_activity_0']
+        self.assertEqual(len(apparentOuts.outs), 1)
+        self.assertEqual(apparentOuts.outs[0].out_point.id, 'd')
+        # apparentOutは出力frameを持っていること
+        out_frame2 = apparentOuts.outs[0].datum
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(out_frame1.file_exists)
 
         # 初回と再実行はそれぞれ異なる出力結果を出力すること
         self.assertNotEqual(out_frame1.uuid, out_frame2.uuid)
@@ -6503,7 +6520,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         outs = execute(flow_link, {}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # 結果は出力されないこと
         self.assertIsNone(outs)
@@ -6679,7 +6696,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         outs = execute(flow_link, {}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # 結果は出力されないこと
         self.assertIsNone(outs)
@@ -7106,7 +7123,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         outs = execute(flow_link, {}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # ライブラリに結果データが出力されていること
         self.assertEqual(len(outs), 2)
@@ -7517,7 +7534,7 @@ class DataSourceTest(TestCaseBase):
         # (サブフロー内ではキャッシュは作成しない)
         flow_cmd = FlowCommand(flow)
         outs = execute(flow_cmd, {'use_cache':True}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # ライブラリに結果データが出力されていること
         self.assertEqual(len(outs), 1)
@@ -7530,7 +7547,7 @@ class DataSourceTest(TestCaseBase):
         # (入力にはキャッシュが使用される)
         flow_cmd = FlowCommand(flow)
         outs = execute(flow_cmd, {'use_cache':True}, {})
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # ライブラリに結果データが出力されていること
         self.assertEqual(len(outs), 1)

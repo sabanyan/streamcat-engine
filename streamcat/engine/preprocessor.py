@@ -11,7 +11,7 @@ class Preprocessor:
         """
         Preprocessorを再帰的に下降して呼び出すときに参照する共通の格納場所
         """
-        def __init__(self, datum_factory, flow, activity_uuid):
+        def __init__(self, datum_factory, flow, activity):
             self.datum_factory = datum_factory
 
             self.flow = flow
@@ -19,7 +19,7 @@ class Preprocessor:
             self.flow_label = flow.label
 
             # 処理のAcitivityのUUID
-            self.activity_uuid = activity_uuid
+            self.activity = activity
 
             # 処理の開始時刻を取得する
             from datetime import datetime, timezone
@@ -41,7 +41,7 @@ class Preprocessor:
         self._activity_data_dest_appender = ActivityDataDestAppender(datum_factory, flow)
 
         # Context
-        self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity_uuid)
+        self._context = Preprocessor.Context(datum_factory, flow, self._activity_data_dest_appender.activity)
 
         # Appenders
         self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_factory, lock_uuid, self._context.start_at)
@@ -61,7 +61,7 @@ class Preprocessor:
                                                                      args)
         self._context = Preprocessor.Context(self._context.datum_factory,
                                              self._context.flow,
-                                             self._activity_data_dest_appender.activity_uuid)
+                                             self._activity_data_dest_appender.activity)
 
     def execute(self, flow_cmd:FlowCommand, vis_args:dict, use_cache:bool=False, src_point:Point=None):
         # 
@@ -237,7 +237,7 @@ class Preprocessor:
                         'src_point'    : src_point,
                         'datum_factory': self._context.datum_factory,
                         'start_at'     : self._context.start_at,
-                        'activity_uuid': self._context.activity_uuid}
+                        'activity_uuid': self._context.activity.uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(step.args)
                 step.args = args
@@ -265,7 +265,7 @@ class Preprocessor:
             # Activity Stepを付加する
             out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, original_out_point)
             # Activity_pointを出力Pointに設定する
-            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
+            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'outs', out_point))
 
     def _terminate_for_exec(self, flow_cmd:FlowCommand):
         """
@@ -281,12 +281,12 @@ class Preprocessor:
             out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
             # 出力Point設定を元のPointからActivity_pointに変更する
             flow_cmd.close_o_port_by_point(original_out_point)
-            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
+            out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'outs', out_point))
 
         # SaverCommandとそのサブクラスのコマンドが存在しない場合でも、Activity Stepを付加する
         if len(flow_cmd.o_ports) == 0:
             out_point = self._activity_data_dest_appender.make_activity_point(flow_cmd, 'activity_0')
-            flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
+            flow_cmd.open_o_port(FlowPort(out_point.id, 'outs', out_point))
 
     def _append_cache_saver_cmds(self, flow_cmd:FlowCommand):
         """
@@ -305,7 +305,7 @@ class Preprocessor:
             # # Activity Stepを付加する
             # out_point = self._activity_data_dest_appender.do_append(flow_cmd, frame_point, cache_point)
             # # Activity_pointを出力Pointに設定する
-            # out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'activity', out_point))
+            # out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'outs', out_point))
 
     def _get_src_point_of_data_dst(self, flow_points:Points, dst_point_of_data_dst:Point) -> Point:
         """

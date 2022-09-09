@@ -1,6 +1,7 @@
 from streamcat.core import Port
 from streamcat.store import Flow
 from streamcat.depo.std.commands import CommandLink
+from streamcat.store.apparent_out import ApparentOuts
 from .flow_command import FlowCommand
 from .point import Point
 from .step import Step
@@ -277,12 +278,11 @@ class ActivityDataDestAppender():
         # Activityコマンドを取得する
         activity_cmd = CommandLink('activity').resolve()
         # Activity Datumを作成する
-        activity = folder_store.create_activity(flow.label, flow, args)
+        self.activity = folder_store.create_activity(flow.label, flow, args)
         # Activity Stepへの引数を作成する
-        activity_args = {'activity': activity, 'is_vis':False, 'points':{}}
+        activity_args = {'activity': self.activity, 'outs':ApparentOuts(), 'is_vis':False, 'points':{}}
         # Activity Stepを作成する
         self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
-        self.activity_uuid = activity.uuid
         # ポート名は0番から順に採番する
         self._next_port_no = 0
         # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
@@ -313,7 +313,7 @@ class ActivityDataDestAppender():
         """
         Activity Pointを作成する
         """
-        activity_point = Point(point_id, Tube(Port('o', 'activity'), self.activity_step))
+        activity_point = Point(point_id, Tube(Port('o', 'outs'), self.activity_step))
         flow_cmd.substeps.append(self.activity_step)
         flow_cmd.points.add(activity_point)
         self._already_step_added = True
