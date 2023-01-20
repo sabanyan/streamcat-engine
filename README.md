@@ -63,7 +63,7 @@ docker compose down
 
 # 2. Dockerイメージの削除
 docker rmi sabanyan/streamcat:latest
-docker rmi postgres:14-alpine
+docker rmi postgres:15-alpine
 
 # 3. Dokcer Volumeの削除
 docker volume rm streamcat_files streamcat_meta
