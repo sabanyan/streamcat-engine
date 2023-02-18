@@ -198,7 +198,7 @@ class Preprocessor:
         """
         フローの出力ポートを親フローに中継する
         """
-        from streamcat.core import Datum, Port
+        from streamcat.core import SavableDatum, Port
         from .tube import Tube
 
         # サブフローから中継された出力Portに紐づくPointを新規作成する
@@ -209,7 +209,7 @@ class Preprocessor:
         # 親フロー内で出力Portのlabelが重複する場合は、末尾に数字を付加する
         port_label = port.label
         while flow_cmd.has_o_port(port_label):
-            port_label = Datum._increment_file_name(port_label)
+            port_label = SavableDatum._increment_file_name(port_label)
 
         # サブフローの出力を親フローに繋げる
         o_port = FlowPort(port_label, 'mcmd', new_out_point, relayed=True)

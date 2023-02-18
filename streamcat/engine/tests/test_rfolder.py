@@ -3,7 +3,7 @@ import pprint
 import shutil
 from pathlib import Path
 
-from streamcat.core import Datum
+from streamcat.core import SavableDatum
 from streamcat.store import FlowData, RemoteFolderConn
 from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from streamcat.store.tests.test_case_base import TestCaseBase
@@ -177,7 +177,7 @@ class RemoteFolderTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1_d2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=SavableDatum.FLOW_TYPE))
         self.assertTrue(datasource_f1.label.startswith('(=^ェ^=)'))
 
         # 後片付け
@@ -225,8 +225,8 @@ class RemoteFolderTest(TestCaseBase):
         self.assertIsNotNone(lasts['f2_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1_d2']
         datasource_f2 = lasts['f2_d2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=Datum.FLOW_TYPE))
-        self.assertTrue(self.factory.data.exists(datasource_f2.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(datasource_f2.uuid, type=SavableDatum.FLOW_TYPE))
         self.assertTrue(datasource_f1.label.startswith('(=^x^=)'))
         self.assertTrue(datasource_f1.label.startswith('(=^x^=)'))
 

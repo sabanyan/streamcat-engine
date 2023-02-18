@@ -1,5 +1,5 @@
 from sqlalchemy.orm.exc import NoResultFound
-from streamcat.core.datum import Datum
+from streamcat.core import SavableDatum
 from streamcat.store import ProjectFolder, FlowData
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
@@ -118,10 +118,10 @@ class ActivityTest(TestCaseBase):
 
         # Datumのメタ情報が正しいこと
         self.assertIsNotNone(activity_json['uuid'])
-        self.assertEqual(activity_json['type'], Datum.ACTIVITY_TYPE)
+        self.assertEqual(activity_json['type'], SavableDatum.ACTIVITY_TYPE)
         self.assertEqual(activity_json['label'], flow.label)
         self.assertIsNone(activity_json['folderPath'])
-        self.assertEqual(activity_json['folderUuid'], Datum.ACTIVITY_FOLDER_UUID)
+        self.assertEqual(activity_json['folderUuid'], SavableDatum.ACTIVITY_FOLDER_UUID)
         self.assertIsNone(activity_json['prevFolderPath'])
         self.assertEqual(activity_json['creator'], self.USER2.name)
         self.assertIsNotNone(activity_json['createdAt'])
@@ -193,10 +193,10 @@ class ActivityTest(TestCaseBase):
 
         # Datumのメタ情報が正しいこと
         self.assertIsNotNone(activity_json['uuid'])
-        self.assertEqual(activity_json['type'], Datum.ACTIVITY_TYPE)
+        self.assertEqual(activity_json['type'], SavableDatum.ACTIVITY_TYPE)
         self.assertEqual(activity_json['label'], flow.label)
         self.assertIsNone(activity_json['folderPath'])
-        self.assertEqual(activity_json['folderUuid'], Datum.ACTIVITY_FOLDER_UUID)
+        self.assertEqual(activity_json['folderUuid'], SavableDatum.ACTIVITY_FOLDER_UUID)
         self.assertIsNone(activity_json['prevFolderPath'])
         self.assertEqual(activity_json['creator'], self.USER3.name)
         self.assertIsNotNone(activity_json['createdAt'])
@@ -260,10 +260,10 @@ class ActivityTest(TestCaseBase):
 
         # Datumのメタ情報が正しいこと
         self.assertIsNotNone(activity_json['uuid'])
-        self.assertEqual(activity_json['type'], Datum.ACTIVITY_TYPE)
+        self.assertEqual(activity_json['type'], SavableDatum.ACTIVITY_TYPE)
         self.assertEqual(activity_json['label'], flow.label)
         self.assertIsNone(activity_json['folderPath'])
-        self.assertEqual(activity_json['folderUuid'], Datum.ACTIVITY_FOLDER_UUID)
+        self.assertEqual(activity_json['folderUuid'], SavableDatum.ACTIVITY_FOLDER_UUID)
         self.assertIsNone(activity_json['prevFolderPath'])
         self.assertEqual(activity_json['creator'], self.USER2.name)
         self.assertIsNotNone(activity_json['createdAt'])

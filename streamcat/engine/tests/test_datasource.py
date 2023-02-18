@@ -4,7 +4,7 @@ import unittest
 import shutil
 from pathlib import Path
 
-from streamcat.core import Datum
+from streamcat.core import SavableDatum
 from streamcat.store import DatabaseConn, FlowData, NysolModule, CommandException
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
@@ -1884,7 +1884,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('この世界で君に会えた日から輝き始めてる'))
         self.assertTrue(out_frame.file_exists)
 
@@ -2007,12 +2007,12 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f0_d3'], 'SaverCommandは結果(f0_d3)を出力しませんでした')
         # 一つ目の出力結果が出力されていること
         out_frame1 = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.label.startswith('ひとつひとつ叶えて行けるかな　そばにいて'))
         self.assertTrue(out_frame1.file_exists)
         # 二つ目の出力結果が出力されていること
         out_frame2 = lasts['f0_d3']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.label.startswith('ひとつひとつ叶えて行けるかな　そばにいて'))
         self.assertTrue(out_frame2.file_exists)
 
@@ -2160,7 +2160,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(f1_d2)を出力しませんでした')
         out_frame = lasts['f1_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('どこにいても見えない　未来なんてもっと退屈な光'))
         self.assertTrue(out_frame.file_exists)
 
@@ -2173,7 +2173,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('どこにいても見えない　未来なんてもっと退屈な光'))
         self.assertTrue(out_frame.file_exists)
 
@@ -2367,13 +2367,13 @@ class DataSourceTest(TestCaseBase):
         # 
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame1 = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.label.startswith('とっておきの場所で一緒に隠れた　陽射し揺れて'))
         self.assertTrue(out_frame1.file_exists)
         # 
         self.assertIsNotNone(lasts['D1'], 'SaverCommandは結果(D1)を出力しませんでした')
         out_frame2 = lasts['D1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.label.startswith('D1'))
         self.assertTrue(out_frame2.file_exists)
 
@@ -2564,7 +2564,7 @@ class DataSourceTest(TestCaseBase):
         # 
         self.assertIsNotNone(lasts['D1'], 'SaverCommandは結果(D1)を出力しませんでした')
         out_frame2 = lasts['D1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.label.startswith('D1'))
         self.assertTrue(out_frame2.file_exists)
 
@@ -2664,7 +2664,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('いつだってもどかしいよ　離れないで'))
         self.assertTrue(out_frame.file_exists)
 
@@ -4631,7 +4631,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(apparentOuts.outs[0].out_point.id, 'd1')
         # apparentOutは出力frameを持っていること
         out_frame1 = apparentOuts.outs[0].datum
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
     def test_run_cmd(self):
@@ -5747,8 +5747,8 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(lasts['f1_d2_1'], 'SaverCommandは結果(f1_d2_1)を出力しませんでした')
         out_frame1 = lasts['f1_d2']
         out_frame2 = lasts['f1_d2_1']
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FLOW_TYPE))
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FLOW_TYPE))
         print(out_frame1.label)
         self.assertTrue(out_frame1.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
         self.assertTrue(out_frame2.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
@@ -6112,7 +6112,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(results), 1)
         self.assertIsNotNone(results['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
         out_frame2 = results['d1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
 
     def test_inner_subflow_has_makecache(self):
@@ -6277,7 +6277,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(len(results), 1)
         self.assertIsNotNone(results['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
         out_frame2 = results['d1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
 
     def test_run_flow_cmd_reentrant(self):
@@ -6401,7 +6401,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(apparentOuts.outs[0].out_point.id, 'd')
         # apparentOutは出力frameを持っていること
         out_frame1 = apparentOuts.outs[0].datum
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
         # 同じFlowCommandオブジェクトを用いて
@@ -6419,7 +6419,7 @@ class DataSourceTest(TestCaseBase):
         self.assertEqual(apparentOuts.outs[0].out_point.id, 'd')
         # apparentOutは出力frameを持っていること
         out_frame2 = apparentOuts.outs[0].datum
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=Datum.FRAME_TYPE))
+        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
         # 初回と再実行はそれぞれ異なる出力結果を出力すること
