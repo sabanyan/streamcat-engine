@@ -485,7 +485,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         # テスト
@@ -536,7 +536,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量'], ['A', '1'], ['A', '2']]}
 
         # テスト
@@ -598,7 +598,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -681,7 +681,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
         # テスト
@@ -754,7 +754,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -847,7 +847,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
         # テスト
@@ -865,7 +865,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d1': [['顧客%0', '数量', '金額', '年齢'],
                           ['A', '1', '10', '21'],
                           ['A', '2', '20', '21'],
@@ -895,7 +895,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量', '金額'], ['A', '1', '10'], ['A', '2', '20']],
                    'd3': [['顧客', '数量', '金額'], ['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -931,7 +931,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量', '金額'], ['A', '1', '10'], ['A', '2', '20']]}
 
         # テスト
@@ -962,7 +962,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量', '金額'], ['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
@@ -995,7 +995,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
         # テスト
@@ -1023,7 +1023,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
@@ -1080,7 +1080,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -1157,7 +1157,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']]}
 
         # テスト
@@ -1223,7 +1223,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -1243,7 +1243,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d1': [['No.'],
                           ['0'],
                           ['1'],
@@ -1278,7 +1278,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['日付%0', '金額'], ['20080203', '10'], ['20080203', '45']],
                    'd3': [['日付%0', '金額'], ['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
 
@@ -1355,7 +1355,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd3': [['65536']]}
 
         # テスト
@@ -1427,7 +1427,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd3': [['4294967296']]}
 
         # テスト
@@ -1515,7 +1515,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'dd2': [['256']]}
 
         # テスト
@@ -1583,7 +1583,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -1669,7 +1669,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
         # テスト
@@ -1747,7 +1747,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -1884,7 +1884,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowCommand(flow), {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd4': [['顧客'], ['A'], ['A']], 'dd5': [['数量'], ['1'], ['3'], ['1']]}
 
         # テスト
@@ -2026,7 +2026,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
@@ -2167,7 +2167,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
         # テスト
@@ -2250,7 +2250,7 @@ class MainTest(TestCaseBase):
         # 単純な実行結果のテスト
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
         # テスト
@@ -2348,7 +2348,7 @@ class MainTest(TestCaseBase):
         # 単純な実行結果のテスト
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
         # テスト
@@ -2497,7 +2497,7 @@ class MainTest(TestCaseBase):
         # 単純なlastsのテスト
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd4': [['顧客'], ['A'], ['A']], 'dd5': [['数量'], ['1'], ['3'], ['1']]}
 
         # テスト
@@ -2586,7 +2586,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2663,7 +2663,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
         lasts = execute(FlowCommand(flow), {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2705,7 +2705,7 @@ class MainTest(TestCaseBase):
         flow= self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2794,7 +2794,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
         # テスト
@@ -2836,7 +2836,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, inputs)
         print(lasts)
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2887,7 +2887,7 @@ class MainTest(TestCaseBase):
         }
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, args, inputs)
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -2915,7 +2915,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json_inputs_mcat['label'], flow_data)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d1': Matrix([['A', '1', '10'],
                               ['A', '2', '20'],
                               ['B', '1', '30'],
@@ -2970,7 +2970,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2':[['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
         # テスト
@@ -3010,8 +3010,8 @@ class MainTest(TestCaseBase):
 
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        caches = convert_from_activity_cache(lasts)
-        results = convert_from_activity(lasts)
+        caches = convert_from_job_cache(lasts)
+        results = convert_from_job(lasts)
 
         correct = {'d1':[['顧客', '数量', '金額'],['A', '1', '10'],['A', '2', '20'],['B', '1', '30'],['B', '3', '40'],['B', '1', '50']]}
 
@@ -3067,7 +3067,7 @@ class MainTest(TestCaseBase):
         flow_link = FlowCommand(flow)
 
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
                    'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -3118,7 +3118,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
         # テスト
@@ -3164,7 +3164,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
         # テスト
@@ -3262,7 +3262,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -3374,7 +3374,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -3498,7 +3498,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
         self.assertEqual(2, len(lasts))
@@ -3597,7 +3597,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -3695,7 +3695,7 @@ class MainTest(TestCaseBase):
         flow = self.save_flow(self.flow_json['label'], flow_json)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
         self.assertEqual(2, len(lasts))
@@ -3807,7 +3807,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {}, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -3937,7 +3937,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは2つ生成されているか
         self.assertEqual(2, len(lasts))
@@ -4024,7 +4024,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4111,7 +4111,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4197,7 +4197,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4283,7 +4283,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4361,7 +4361,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4447,7 +4447,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4541,7 +4541,7 @@ class MainTest(TestCaseBase):
         flow =self.save_flow(self.flow_json['label'], flow_json)
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4642,7 +4642,7 @@ class MainTest(TestCaseBase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         args = {'flow_args': {"new_param1":"B", "new_param2":"C"}}
         lasts = execute(FlowCommand(flow), args, {})
-        lasts = convert_from_activity(lasts)
+        lasts = convert_from_job(lasts)
 
         # frameデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -4751,7 +4751,7 @@ class MainTest(TestCaseBase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         outs = execute(FlowCommand(flow))
-        outs = convert_from_activity(outs)
+        outs = convert_from_job(outs)
 
         # frameデータは1つ生成されているか
         self.assertEqual(1, len(outs))
@@ -4868,23 +4868,18 @@ class MainTest(TestCaseBase):
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
-        results = convert_from_activity(lasts)
-        # 2つの出力ポイントが返されること
-        self.assertEqual(len(results), 2)
-        self.assertIn('d', results)
-        self.assertIn('d1', results)
+        results = convert_from_job(lasts)
         # frameデータは作成されていないこと
-        self.assertIsNone(results['d'])
-        self.assertIsNone(results['d1'])
+        self.assertEqual(len(results), 0)
 
         # 出力ポイントとこれに対応するcacheデータを取得する
-        caches = convert_from_activity_cache(lasts)
+        caches = convert_from_job_cache(lasts)
         # キャッシュが作成されていないこと
         # (frameと異なり出力ポイントの要素も返さない)
         self.assertEqual(len(caches), 0)
 
         # 出力ポイントとこれに対応する例外を取得する
-        results = convert_from_activity_exs(lasts)
+        results = convert_from_job_exs(lasts)
         # 2つの出力ポイントが返されること
         self.assertEqual(len(results), 2)
         self.assertIn('d', results)
@@ -5000,24 +4995,19 @@ class MainTest(TestCaseBase):
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
-        results = convert_from_activity(lasts)
-        # 2つの出力ポイントが返されること
-        self.assertEqual(len(results), 2)
-        self.assertIn('d', results)
-        self.assertIn('d1', results)
+        results = convert_from_job(lasts)
         # frameデータは作成されていないこと
         # (1コマンドでもエラーが発生すれば全ての出力はない)
-        self.assertIsNone(results['d'])
-        self.assertIsNone(results['d1'])
+        self.assertEqual(len(results), 0)
 
         # 出力ポイントとこれに対応するcacheデータを取得する
-        caches = convert_from_activity_cache(lasts)
+        caches = convert_from_job_cache(lasts)
         # キャッシュが作成されていないこと
         # (frameと異なり出力ポイントの要素も返さない)
         self.assertEqual(len(caches), 0)
 
         # 出力ポイントとこれに対応する例外を取得する
-        results = convert_from_activity_exs(lasts)
+        results = convert_from_job_exs(lasts)
         # 2つの出力ポイントが返されること
         self.assertEqual(len(results), 2)
         self.assertIn('d', results)
@@ -5081,15 +5071,12 @@ class MainTest(TestCaseBase):
         lasts = execute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
-        results = convert_from_activity(lasts)
-        # 2つの出力ポイントが返されること
-        self.assertEqual(len(results), 1)
-        self.assertIn('dd2', results)
+        results = convert_from_job(lasts)
         # frameデータは作成されていないこと
-        self.assertIsNone(results['dd2'])
+        self.assertEqual(len(results), 0)
 
         # 出力ポイントとこれに対応する例外を取得する
-        results = convert_from_activity_exs(lasts)
+        results = convert_from_job_exs(lasts)
         # 2つの出力ポイントが返されること
         self.assertEqual(len(results), 1)
         self.assertIn('dd2', results)
@@ -5158,15 +5145,11 @@ class MainTest(TestCaseBase):
 
         # 出力ポイントとこれに対応するvisデータを取得する
         # (対応するvisデータはNoneなので、convert_from_activity_visは使わない)
-        results = convert_from_activity(lasts)
-        # 2つの出力ポイントが返されること
-        self.assertEqual(len(results), 1)
-        self.assertIn('dd2', results)
+        results = convert_from_job(lasts)
         # visデータは作成されていないこと
-        self.assertIsNone(results['dd2'])
 
         # 出力ポイントとこれに対応する例外を取得する
-        results = convert_from_activity_exs(lasts)
+        results = convert_from_job_exs(lasts)
         # 2つの出力ポイントが返されること
         self.assertEqual(len(results), 1)
         self.assertIn('dd2', results)
@@ -5307,7 +5290,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -5449,7 +5432,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -5597,7 +5580,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -5713,7 +5696,7 @@ class MainTest(TestCaseBase):
 
         # 出力ポイントとこれに対応するvisデータを取得する
         # (対応するvisデータはNoneなので、convert_from_activity_visは使わない)
-        results = convert_from_activity(lasts)
+        results = convert_from_job(lasts)
         # 2つの出力ポイントが返されること
         self.assertEqual(len(results), 1)
         self.assertIn('d2', results)
@@ -5721,7 +5704,7 @@ class MainTest(TestCaseBase):
         self.assertIsNone(results['d2'])
 
         # 出力ポイントとこれに対応する例外を取得する
-        results = convert_from_activity_exs(lasts)
+        results = convert_from_job_exs(lasts)
         # 2つの出力ポイントが返されること
         self.assertEqual(len(results), 1)
         self.assertIn('d2', results)
@@ -5906,7 +5889,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -6095,7 +6078,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -6264,7 +6247,7 @@ class MainTest(TestCaseBase):
         # フローを実行する
         flow_link = FlowCommand(flow)
         lasts = execute(flow_link, {'vis':vis_args}, {})
-        lasts = convert_from_activity_vis(lasts)
+        lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
@@ -6372,45 +6355,45 @@ def update_flow_node_uuid(flow_json, node_id, uuid):
             return True
     return False
 
-def convert_from_activity(outs):
+def convert_from_job(job):
     """
     execute()の戻り値から
     pointのidとframeのDictに置き換える
     """
-    from streamcat.store import Activity
+    from streamcat.store import ApparentOuts
     # Activityを取得して返り値とする
-    for point_id, datum in outs.items():
-        if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.outs}
+    for point_id, datum in job.join().items():
+        if isinstance(datum, ApparentOuts):
+            return {out.out_point.id : out.datum for out in datum.outs}
 
-def convert_from_activity_vis(outs):
+def convert_from_job_vis(job):
     """
     execute()の戻り値から
     pointのidとvisのDictに置き換える
     """
-    from streamcat.store import Activity
-    for point_id, datum in outs.items():
-        if isinstance(datum, Activity):
-            return {point.id : vis.result['reader'] for point, vis in datum.outs}
+    from streamcat.store import ApparentOuts
+    for point_id, datum in job.join().items():
+        if isinstance(datum, ApparentOuts):
+            return {out.out_point.id : out.datum.result['reader'] for out in datum.outs}
 
-def convert_from_activity_cache(outs):
+def convert_from_job_cache(job):
     """
     execute()の戻り値から
     pointのidとcacheのDictに置き換える
     """
-    from streamcat.store import Activity
+    from streamcat.store import ApparentOuts
     # Activityを取得して返り値とする
-    for point_id, datum in outs.items():
-        if isinstance(datum, Activity):
-            return {point.id : frame for point, frame in datum.caches}
+    for point_id, datum in job.join().items():
+        if isinstance(datum, ApparentOuts):
+            return {cache.out_point.id : cache.datum for cache in datum.caches}
 
-def convert_from_activity_exs(outs):
+def convert_from_job_exs(job):
     """
     execute()の戻り値から
     pointのidとframeのDictに置き換える
     """
-    from streamcat.store import Activity
+    from streamcat.store import ApparentOuts
     # Activityを取得して返り値とする
-    for point_id, datum in outs.items():
-        if isinstance(datum, Activity):
-            return {point.id : exs for point, exs in datum.exs}
+    for point_id, datum in job.join().items():
+        if isinstance(datum, ApparentOuts):
+            return {ex.out_point.id : ex.exs for ex in datum.exs}

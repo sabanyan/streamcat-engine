@@ -1,9 +1,9 @@
 from sqlalchemy.orm.exc import NoResultFound
-from streamcat.core.datum import Datum
+from streamcat.core import SavableDatum
 from streamcat.store import ProjectFolder, FlowData
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
-from .test_main import convert_from_activity, convert_from_activity_vis
+from .test_main import convert_from_job, convert_from_job_exs, convert_from_job_vis
 
 class ActivityTest(TestCaseBase):
     """
@@ -101,9 +101,8 @@ class ActivityTest(TestCaseBase):
 
         # USER2は、フローを実行する
         readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
-        outs = execute(FlowCommand(readonly_flow), args={'param1':1234})
-        activity = self._get_activity(outs)
-        results1 = convert_from_activity(outs)
+        job = execute(FlowCommand(readonly_flow), args={'param1':1234})
+        results1 = convert_from_job(job)
 
         # 正しい結果が得られるか
         self.assertEqual(len(results1), 2)
@@ -112,17 +111,17 @@ class ActivityTest(TestCaseBase):
 
         # アクティビティフォルダにアクティビティが作成されていること
         activity_folder = self.factory2.data.load_activity_folder()
-        activity_folder.find_child_by_uuid(activity.uuid)
+        activity = activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # アクティビティの保持する値を取得する
         activity_json = activity.to_json()
 
         # Datumのメタ情報が正しいこと
         self.assertIsNotNone(activity_json['uuid'])
-        self.assertEqual(activity_json['type'], Datum.ACTIVITY_TYPE)
+        self.assertEqual(activity_json['type'], SavableDatum.ACTIVITY_TYPE)
         self.assertEqual(activity_json['label'], flow.label)
         self.assertIsNone(activity_json['folderPath'])
-        self.assertEqual(activity_json['folderUuid'], Datum.ACTIVITY_FOLDER_UUID)
+        self.assertEqual(activity_json['folderUuid'], SavableDatum.ACTIVITY_FOLDER_UUID)
         self.assertIsNone(activity_json['prevFolderPath'])
         self.assertEqual(activity_json['creator'], self.USER2.name)
         self.assertIsNotNone(activity_json['createdAt'])
@@ -177,9 +176,8 @@ class ActivityTest(TestCaseBase):
         # USER3は、フローを実行する
         # USER3は、プロジェクトの閲覧者メンバなので、実行結果の出力で例外が送出される
         readonly_flow = self.factory3.data.find_by_uuid(flow.uuid)
-        outs = execute(FlowCommand(readonly_flow))
-        activity = self._get_activity(outs)
-        results1 = convert_from_activity(outs)
+        job = execute(FlowCommand(readonly_flow))
+        results1 = convert_from_job_exs(job)
 
         # 正しい結果が得られるか
         self.assertEqual(len(results1), 2)
@@ -188,17 +186,17 @@ class ActivityTest(TestCaseBase):
 
         # アクティビティフォルダにアクティビティが作成されていること
         activity_folder = self.factory3.data.load_activity_folder()
-        activity_folder.find_child_by_uuid(activity.uuid)
+        activity = activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # アクティビティの保持する値を取得する
         activity_json = activity.to_json()
 
         # Datumのメタ情報が正しいこと
         self.assertIsNotNone(activity_json['uuid'])
-        self.assertEqual(activity_json['type'], Datum.ACTIVITY_TYPE)
+        self.assertEqual(activity_json['type'], SavableDatum.ACTIVITY_TYPE)
         self.assertEqual(activity_json['label'], flow.label)
         self.assertIsNone(activity_json['folderPath'])
-        self.assertEqual(activity_json['folderUuid'], Datum.ACTIVITY_FOLDER_UUID)
+        self.assertEqual(activity_json['folderUuid'], SavableDatum.ACTIVITY_FOLDER_UUID)
         self.assertIsNone(activity_json['prevFolderPath'])
         self.assertEqual(activity_json['creator'], self.USER3.name)
         self.assertIsNotNone(activity_json['createdAt'])
@@ -247,26 +245,25 @@ class ActivityTest(TestCaseBase):
 
         # USER2は、フローを実行する
         readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
-        outs = execute(FlowCommand(readonly_flow), {'use_cache':True})
-        activity = self._get_activity(outs)
-        results1 = convert_from_activity(outs)
+        job = execute(FlowCommand(readonly_flow), {'use_cache':True})
+        results1 = convert_from_job(job)
 
         # 結果は出力されないこと
         self.assertEqual(len(results1), 0)
 
         # アクティビティフォルダにアクティビティが作成されていること
         activity_folder = self.factory2.data.load_activity_folder()
-        activity_folder.find_child_by_uuid(activity.uuid)
+        activity = activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # アクティビティの保持する値を取得する
         activity_json = activity.to_json()
 
         # Datumのメタ情報が正しいこと
         self.assertIsNotNone(activity_json['uuid'])
-        self.assertEqual(activity_json['type'], Datum.ACTIVITY_TYPE)
+        self.assertEqual(activity_json['type'], SavableDatum.ACTIVITY_TYPE)
         self.assertEqual(activity_json['label'], flow.label)
         self.assertIsNone(activity_json['folderPath'])
-        self.assertEqual(activity_json['folderUuid'], Datum.ACTIVITY_FOLDER_UUID)
+        self.assertEqual(activity_json['folderUuid'], SavableDatum.ACTIVITY_FOLDER_UUID)
         self.assertIsNone(activity_json['prevFolderPath'])
         self.assertEqual(activity_json['creator'], self.USER2.name)
         self.assertIsNotNone(activity_json['createdAt'])
@@ -320,9 +317,8 @@ class ActivityTest(TestCaseBase):
             }
           }
         }
-        outs = execute(FlowCommand(readonly_flow), {'vis':vis_args})
-        activity = self._get_activity(outs)
-        results1 = convert_from_activity_vis(outs)
+        job = execute(FlowCommand(readonly_flow), {'vis':vis_args})
+        results1 = convert_from_job_vis(job)
 
         # 正しいVisが得られるか
         self.assertEqual(len(results1), 1)
@@ -331,20 +327,8 @@ class ActivityTest(TestCaseBase):
         # アクティビティフォルダにアクティビティが作成されないこと
         activity_folder = self.factory2.data.load_activity_folder()
         with self.assertRaises(NoResultFound):
-            activity_folder.find_child_by_uuid(activity.uuid)
+            activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # プロジェクトをほかして、ゴミ箱を空にする
         project.throw_away()
         self.factory.data.find_trashcan().trash_all()
-
-    def _get_activity(self, outs:dict):
-        """
-        execute()の戻り値から
-        pointのidとframeのDictに置き換える
-        """
-        from streamcat.store import Activity
-        # Activityを取得して返り値とする
-        for point_id, datum in outs.items():
-            if isinstance(datum, Activity):
-                return datum
-        return 
