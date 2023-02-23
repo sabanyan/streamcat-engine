@@ -156,7 +156,7 @@ class RemoteFolderTest(TestCaseBase):
         rfolder = rfolder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
+        MY_TESTDATA_DIR = './streamcat-engine/streamcat/engine/tests/test_data/'
         shutil.copyfile(Path(MY_TESTDATA_DIR) / '漢字読み.csv', rfolder.path / 'testData.csv')
 
         # サブフロー(リモートフォルダデータソース)の作成
@@ -202,7 +202,7 @@ class RemoteFolderTest(TestCaseBase):
         rfolder = rfolder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
+        MY_TESTDATA_DIR = './streamcat-engine/streamcat/engine/tests/test_data/'
         shutil.copyfile(Path(MY_TESTDATA_DIR) / '漢字読み.csv', rfolder.path / 'testData.csv')
 
         # サブフロー(リモートフォルダデータソース)の作成

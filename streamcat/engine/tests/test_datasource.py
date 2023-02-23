@@ -1699,7 +1699,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -2120,7 +2120,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -2791,7 +2791,7 @@ class DataSourceTest(TestCaseBase):
         project = project.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = project.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -3442,7 +3442,7 @@ class DataSourceTest(TestCaseBase):
         project = project.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = project.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -5754,12 +5754,15 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(out_frame2.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
 
         # ほかす
+        out_frame1.throw_away()
+        out_frame2.throw_away()
         sub_flow1.throw_away()
         sub_flow2.throw_away()
         sub_flow3.throw_away()
         sub_flow4.throw_away()
         postgre_src.throw_away()
         postgre_dst.throw_away()
+        db.throw_away()
 
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()

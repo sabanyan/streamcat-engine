@@ -4296,7 +4296,7 @@ class MainTest(TestCaseBase):
         """
         Windows形式ファイルもプレビューできる
         """
-        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
+        MY_TESTDATA_DIR = './streamcat-engine/streamcat/engine/tests/test_data/'
         frame = self.create_data2(Path(MY_TESTDATA_DIR) / '漢字読み.csv')
 
         flow_json = {
