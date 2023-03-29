@@ -1,6 +1,7 @@
 from streamcat.core import Command, Port
 from streamcat.store import Flow, FlowData
 from .stepoints import Stepoints
+from .step import Steps
 from .point import Point, Points
 from .flow_port import FlowPort
 from .ports import Ports
@@ -142,9 +143,12 @@ class FlowCommand(Command):
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
 
+        # どのフロー出力Portの実行結果を取得したいのかを指定する
+        o_ports = args.get('o_ports', self.o_ports)
+
         # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
-        return self._stepoints.run(flow_args, inputs)
+        return self._stepoints.run(flow_args, inputs, o_ports)
 
     def _make_complete_flow_args(self, args:dict) -> dict:
         """
@@ -179,7 +183,7 @@ class FlowCommand(Command):
             # (Portを作成した後に処理する)
             self._update_flow_by_other_than_runnable(nodes_json, use_cache)
         else:
-            self._stepoints = Stepoints(steps=[], points=Points(), i_ports=self.i_ports, o_ports=self.o_ports, is_main=self.is_main)
+            self._stepoints = Stepoints(steps=Steps(), points=Points(), i_ports=self.i_ports, o_ports=self.o_ports, is_main=self.is_main)
 
     def _parse_flow_ports(self, ports_json):
         """
@@ -228,7 +232,7 @@ class FlowCommand(Command):
         from .step import Step
         from .tube import Tube
 
-        substeps = []
+        substeps = Steps()
         points = Points()
 
         # Commandに繋がらない孤立したデータノードからもPointを生成する為
@@ -281,7 +285,7 @@ class FlowCommand(Command):
             # runnableのインスタンス化を行う
             step = Step(node.id, cmd, args, o_ports=o_ports, classification=node.get('classification'))
             # Stepを集める
-            substeps.append(step)
+            substeps.add(step)
 
             # srcとdstからpointを作る
             for s_port_label, s_node_id in srcs.items():
@@ -498,6 +502,9 @@ class FlowCommand(Command):
 
     def close_all_o_ports(self):
         self.o_ports.clear()
+
+    def search_up_i_ports(self, o_ports:set[FlowPort]):
+        return self._stepoints._search_up_i_ports(o_ports)
 
     @property
     def activity(self):

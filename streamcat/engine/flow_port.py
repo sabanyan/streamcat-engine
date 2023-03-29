@@ -14,3 +14,6 @@ class FlowPort(Port):
 
         # Preprocessorの中継Portとして開いた場合はTrue
         self.relayed = relayed
+
+    def __repr__(self):
+        return f'<Port({self.label}: {self.point.label})>'

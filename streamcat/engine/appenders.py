@@ -24,15 +24,13 @@ class FolderDataSourcePrepender():
         LoaderStepとStorePointをくっつける
         Loaderは指定したstoreからデータを取ってくる
         """
-        loader_cmd = CommandLink('loader').resolve()
-        loader_step = Step('loader', loader_cmd, {'uuid':frame_uuid})
+        loader_step = Step(f'loader_{target_point.id}', CommandLink('loader').resolve(), {'uuid':frame_uuid})
         point_id = target_point.id + '_loader'
         store_point = Point(point_id, None, store, Tube(Port('folder', 'store'), loader_step))
         target_point.src_tubes = Tubes()
         target_point.add_src_tube(Tube(Port('o', 'mcmd'), loader_step))
         flow_cmd.points.add(store_point)
-        flow_cmd.substeps.append(loader_step)
-
+        flow_cmd.substeps.add(loader_step, avoid_id_collision=True)
 
 class FolderDataDestAppender():
     def __init__(self, flow:Flow, datum_factory, lock_uuid, start_at):
@@ -79,14 +77,14 @@ class FolderDataDestAppender():
         args['start_at'] = self._start_at
 
         # saverコマンドのstepを作成する
-        saver_step = Step(saver.label, saver, args)
+        saver_step = Step(f'{saver.label}_{point.id}', saver, args)
         saver_point = Point(f'{point.id}_{command_id}', Tube(Port('o', 'mcmd'), saver_step))
 
         # pointにsaverコマンドを付加する
         # (pointが終端でない場合は、二股の出力Portになる)
         point.add_dst_tube(Tube(Port('i', 'mcmd'), saver_step))
 
-        flow_cmd.substeps.append(saver_step)
+        flow_cmd.substeps.add(saver_step, avoid_id_collision=True)
         flow_cmd.points.add(saver_point)
 
         return saver_point
@@ -181,10 +179,10 @@ class VisDataDestAppender():
         # pointにConvToUtf8 Stepを繋げる
         point.add_dst_tube(Tube(Port('i', ['mcmd','matrix']), convtoutf8_step))
 
-        flow_cmd.substeps.append(convtoutf8_step)
-        flow_cmd.substeps.append(rowrange_step)
-        flow_cmd.substeps.append(align_step)
-        flow_cmd.substeps.append(tolist_step)
+        flow_cmd.substeps.add(convtoutf8_step, avoid_id_collision=True)
+        flow_cmd.substeps.add(rowrange_step, avoid_id_collision=True)
+        flow_cmd.substeps.add(align_step, avoid_id_collision=True)
+        flow_cmd.substeps.add(tolist_step, avoid_id_collision=True)
         flow_cmd.points.add(convtoutf8_point)
         flow_cmd.points.add(rowrange_point)
         flow_cmd.points.add(align_point)
@@ -222,7 +220,7 @@ class VisDataDestAppender():
         if u_point is not None:
             u_point.add_dst_tube(Tube(Port('m', 'out'), vcmd_step))
 
-        flow_cmd.substeps.append(vcmd_step)
+        flow_cmd.substeps.add(vcmd_step, avoid_id_collision=True)
         flow_cmd.points.add(vcmd_point)
 
         return vcmd_point
@@ -263,7 +261,7 @@ class RunsCommandAppender():
         point.add_dst_tube(Tube(Port(port_label, 'mcmd'), self.runs_step))
 
         if not self._already_step_added:
-            flow_cmd.substeps.append(self.runs_step)
+            flow_cmd.substeps.add(self.runs_step)
             self._already_step_added = True
 
         flow_cmd.points.add(runs_point)
@@ -319,7 +317,7 @@ class ActivityDataDestAppender():
         Activity Pointを作成する
         """
         activity_point = Point(point_id, Tube(Port('o', 'outs'), self.activity_step))
-        flow_cmd.substeps.append(self.activity_step)
+        flow_cmd.substeps.add(self.activity_step)
         flow_cmd.points.add(activity_point)
         self._already_step_added = True
         return activity_point

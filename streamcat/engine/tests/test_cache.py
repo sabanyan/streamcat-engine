@@ -324,8 +324,8 @@ class CacheTest(TestCaseBase):
                     "dataSource": "csv"
                 },
                 {
-                    "id": "c1", 
-                    "label": "c1", 
+                    "id": "c2", 
+                    "label": "c2", 
                     "args": {
                         "a": "avg", 
                         "c": "avg(#{amount},${amount})", 
@@ -348,8 +348,8 @@ class CacheTest(TestCaseBase):
                     "dataSource": "csv"
                 }, 
                 {
-                    "id": "c2", 
-                    "label": "c2", 
+                    "id": "c3", 
+                    "label": "c3", 
                     "args": {
                         "a": "a", 
                         "c": "'a'", 

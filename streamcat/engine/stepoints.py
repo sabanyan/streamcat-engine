@@ -1,44 +1,45 @@
 from .flow_port import FlowPort
-from .point import Points
-from .step import Step
+from .step import Step, Steps
+from .point import Point, Points
+from .tube import Tube
 
 class Stepoints():
 
-    def __init__(self, steps:list[Step], points:Points, i_ports:list[FlowPort], o_ports:list[FlowPort], is_main:bool):
+    def __init__(self, steps:Steps, points:Points, i_ports:list[FlowPort], o_ports:list[FlowPort], is_main:bool):
         self.substeps = steps
         self.points = points
         self.i_ports = i_ports
         self.o_ports = o_ports
         self.is_main = is_main
 
-    def run(self, flow_args:dict, inputs:dict):
+    def run(self, flow_args:dict, inputs:dict, o_ports:list):
         """
-        pointではなくstepを基軸にして書き直し
+        フローを実行する
         """
         # inputsを必要な部分に配置する
         self._prepare_inputs(inputs)
 
-        # 実行準備が整ったstepのリストを取得する
+        # 実行準備が整った全てのStepを取得する
         prev_invokable_steps = set()
-        invokable_steps = self._search_invokable_steps()
+        invokable_steps = self._search_up_all_invokable_steps(o_ports)
         # print('invokable_steps1', invokable_steps)
 
         # 実行前後のrunnableのSetに変化が無ければ終了する(無限Loop対策)
         # while len(invokable_steps) > 0:
         while invokable_steps != prev_invokable_steps:
 
-            # 実行前のrunnableのSet
+            # 実行準備が整った全てのStep
             prev_invokable_steps = invokable_steps
 
-            # stepのうち、実行準備が整ったものを実行する
+            # 実行準備が整った全てのStepを実行する
             self._run_invokable_steps(invokable_steps, flow_args)
             # print('invokable_steps2')
 
-            # 再度、実行準備が整ったstepのリストを取得しなおす
-            invokable_steps = self._search_invokable_steps()
+            # 再度、実行準備が整った全てのStepを取得する
+            invokable_steps = self._search_up_all_invokable_steps(o_ports)
             # print('invokable_steps3', invokable_steps, self.points)
 
-        # 実行すべきrunnableがもう残っていないなら、終了
+        # 実行すべきStepがもう残っていないなら終了する
         return self._make_outs()
 
     def _prepare_inputs(self, inputs:dict):
@@ -55,9 +56,9 @@ class Stepoints():
                 # TODO: ポイントもポートもエラーメッセージにはlabel名を表示したい
                 raise Exception(f'入力ポート({i_port.label})にデータが入力されませんでした')
 
-    def _search_invokable_steps(self):
+    def _search_up_all_invokable_steps(self, o_ports:set[FlowPort]):
         """
-        stepのうち、実行準備が整ったものを探して返す
+        指定されたo_portsからフロー構造を逆に辿って、実行準備が整ったstepを見つけ出す
         """
         # まず、グラフ構造を解析する必要がある
 
@@ -68,47 +69,89 @@ class Stepoints():
         #     if p.point.datum is None:
         #         for src_tube in p.point.src_tubes:
         #             last_steps.add(src_tube.step)
-        last_steps = {(src_tube.step, p.relayed) for p in self.o_ports if p.point.datum is None for src_tube in p.point.src_tubes}
+        last_tubes = {src_tube for p in o_ports if not self._is_start_point(p.point) for src_tube in p.point.src_tubes}
 
         # それぞれについて、実行を開始するstepを探しに、巻き戻ってグラフ構造を辿る
-        first_steps = union(self._search_first_steps_to_run(last_step) for last_step in last_steps)
+        start_steps = union(self._search_up_invokable_steps(last_tube) for last_tube in last_tubes)
 
-        return first_steps
+        return start_steps
 
-    def _search_first_steps_to_run(self, original_step:tuple[Step, bool]):
+    def _search_up_invokable_steps(self, last_tube:Tube):
         """
-        与えられたstepからフロー構造を逆に辿って、
-        実行準備が整ったstepを見つけ出す
+        指定された最後のTubeからフロー構造を逆に辿って、実行準備が整ったstepを見つけ出す
         """
-        step = original_step[0]
-        from_relayed_port = original_step[1]
+        step = last_tube.step
+        o_port = last_tube.port
 
         # 該当stepの実行に必要なpointを取得する
         # prev_points = set()
         # for p in self.points:
         #     if p.dst_tubes.have_step(step):
         #         prev_points.add(p)
-        prev_points = {p for p in self.points if p.dst_tubes.have_step(step)}
+
+        if step.is_flow:
+            # サブフローCommand
+            subflow = step.command
+
+            # 指定するフロー出力PortをFlowPort型で取得する
+            o_ports = {p for p in subflow.o_ports if p == o_port}
+
+            # サブフローの出力Portからサブフローの開始Stepと入力Portを取得する
+            start_steps, i_ports = subflow.search_up_i_ports(o_ports)
+
+            # そのサブフローの入力Portに紐づく入力Pointを取得する
+            prev_points = {p for i_port in i_ports for p in self.points if p.dst_tubes.have_tube(i_port, step)}
+
+            # サブフローの実行に必要な出力PortだけをStepに設定する
+            if 'o_ports' not in step.args:
+                step.args['o_ports'] = set()
+            step.args['o_ports'].update(o_ports)
+
+        else:
+            prev_points = {p for p in self.points if p.dst_tubes.have_step(step)}
 
         # # Stepの入力にフローの出力Pointが含まれていたら、そこで試合終了ですよ
         # if not self.is_main and any(p.point in prev_points for p in self.o_ports):
         #     return set()
 
         # 全ての入力値が埋まっていれば、実行可能とみなして走査終了
-        if all([p.datum is not None for p in prev_points]):
+        if all([self._is_start_point(p) for p in prev_points]):
             return {step}
 
         # 埋まっていないpointがあれば、それを逆に辿る
-        return union(self._search_first_steps_to_run(original_step=(src_tube.step, from_relayed_port))
-                     for p in prev_points if p.datum is None for src_tube in p.src_tubes if src_tube.step is not None)
+        return union(self._search_up_invokable_steps(last_tube=src_tube)
+                     for p in prev_points if not self._is_start_point(p) for src_tube in p.src_tubes if src_tube.step is not None)
+
+    def _search_up_i_ports(self, o_ports:set[FlowPort]):
+        """
+        指定するフロー出力Portからフロー構造を逆に辿って、実行可能Stepとフロー入力Portを返す
+        """
+        # 指定するフロー出力Portから実行可能Stepを取得する
+        invokable_steps = self._search_up_all_invokable_steps(o_ports)
+
+        # 指定するフロー出力Portに紐づく開始Pointを取得する
+        in_points = {p.point for p in o_ports if self._is_start_point(p.point)}
+
+        # 実行可能Stepの入力Pointを取得する
+        in_points.update({p for s in invokable_steps for p in self.points if p.dst_tubes.have_step(s)})
+
+        # 開始Pointに紐づくフローの入力Portを取得する
+        filtered_i_ports = {i_port for in_point in in_points for i_port in self.i_ports if i_port.point == in_point}
+
+        # 実行可能Stepとフロー入力Portを返す
+        return invokable_steps, filtered_i_ports
+
+    def _is_start_point(self, p:Point):
+        """
+        入力値が埋まっている、または、サブフローかつフロー入力Pointの場合はTrueを返す
+        """
+        return p.datum is not None or (not self.is_main and p in {i_port.point for i_port in self.i_ports})
 
     def _run_invokable_steps(self, invokable_steps:list[Step], flow_args:dict):
         """
         stepのうち、実行準備が整っている（=引数が全て揃っている）ものを実行する
         実行後、結果をpointに格納する
         """
-        from .job import Job
-
         for step in invokable_steps:
 
             # flow変数を使ってargsを書き換える

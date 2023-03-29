@@ -1,5 +1,6 @@
 from .flow_command import FlowCommand
 from .flow_port import FlowPort
+from .step import Steps
 from .point import Points, Point
 
 class Preprocessor:
@@ -218,7 +219,7 @@ class Preprocessor:
         # 作成した親フローの出力Portを返す
         return o_port
 
-    def _set_scmds_args(self, steps:list, src_point:Point):
+    def _set_scmds_args(self, steps:Steps, src_point:Point):
         """
         SCommandに共通の引数を設定する
         """

@@ -16,6 +16,9 @@ class Tube:
         else:
             return f'({self.step}.{self.port.label})'
 
+    def __hash__(self):
+        return hash(self.port.label + self.step.id)
+
     def __eq__(self, other):
         return self.port == other.port and self.step == other.step
 
@@ -56,6 +59,18 @@ class Tubes:
             self._tubes = []
         else:
             self._tubes = list(tubes)
+
+    def __repr__(self):
+        return self._tubes.__repr__()
+
+    def __iter__(self) -> Iterator[Tube]:
+        yield from self._tubes
+
+    def __getitem__(self, index) -> Tube:
+        return self._tubes[index]
+
+    def __len__(self):
+        return len(self._tubes)
 
     def add(self, tube:Tube):
         """
@@ -121,14 +136,7 @@ class Tubes:
     def have_step(self, step:Step):
         return len(self.filter_by_step(step)) > 0
 
-    def __repr__(self):
-        return self._tubes.__repr__()
-
-    def __iter__(self) -> Iterator[Tube]:
-        yield from self._tubes
-
-    def __getitem__(self, index) -> Tube:
-        return self._tubes[index]
-
-    def __len__(self):
-        return len(self._tubes)
+    def have_tube(self, port:Port, step:Step):
+        rets = Tubes()
+        rets = self.filter_by_step(step)
+        return len([t for t in rets if t.port == port]) > 0
