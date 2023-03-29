@@ -109,8 +109,15 @@ class FlowCommand(Command):
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         # Activity期間中は同じPreprocessorインスタンスを使う
+        from .appender import Appender
         from .preprocessor import Preprocessor
-        self._preprocessor = preprocessor or Preprocessor(flow, self._datum_factory, lock_uuid)
+        if preprocessor is None:
+            self._appender = Appender(self, flow, self._datum_factory, lock_uuid)
+            self._preprocessor = Preprocessor(flow, self._datum_factory, self._appender.activity)
+        else:
+            # Appenderはメインフローでしか使わないので、preprocessorが指定された場合は使わない
+            self._appender = None
+            self._preprocessor = preprocessor
 
         # 
         # データデストか否かの判定をする
@@ -134,11 +141,14 @@ class FlowCommand(Command):
                 use_cache = True
             # フローJSONを解釈する
             self._parse_nodes(vis_args, use_cache)
-            # run()をリエントラント可能にするため、ここでpreprocessorとrelayed_o_portsを初期化する
-            self._preprocessor.init(args)
+            # run()をリエントラント可能にするため、ここでappenderとrelayed_o_portsを初期化する
+            self._appender.init(args)
+            self._preprocessor.set_activity(self._appender.activity)
             self.relayed_o_ports = Ports()
             # フローを前処理する
-            self._preprocessor.execute(flow_cmd=self, vis_args=vis_args, use_cache=use_cache)
+            self._preprocessor.execute(flow_cmd=self)
+            # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
+            self._appender.append(vis_args, use_cache)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
@@ -406,7 +416,7 @@ class FlowCommand(Command):
             # サブフローのフローJSONからStepointを生成する
             flow_cmd._parse_nodes(vis_args, use_cache, src_point)
             # サブフローを前処理する
-            return self._preprocessor.execute(flow_cmd=flow_cmd, vis_args=vis_args, src_point=src_point)
+            return self._preprocessor.execute(flow_cmd=flow_cmd, src_point=src_point)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
