@@ -13,12 +13,12 @@ class FolderDataSourcePrepender():
         # flow.pyで定義されているFlowはflowと表記する
         self._datum_factory = datum_factory
 
-    def do_prepend(self, flow_cmd:FlowCommand, point:Point, frame_uuid):
+    def do_prepend(self, points, substeps, point:Point, frame_uuid):
         frame = self._datum_factory.find_by_uuid(frame_uuid)
         folder_store = frame.find_parent()
-        self._put_loader(flow_cmd, point, folder_store, frame_uuid)
+        self._put_loader(points, substeps, point, folder_store, frame_uuid)
 
-    def _put_loader(self, flow_cmd:FlowCommand, target_point:Point, store, frame_uuid):
+    def _put_loader(self, points, substeps, target_point:Point, store, frame_uuid):
         """
         target_point(uuidが既にあるdatumのpoint)の前に
         LoaderStepとStorePointをくっつける
@@ -29,8 +29,8 @@ class FolderDataSourcePrepender():
         store_point = Point(point_id, None, store, Tube(Port('folder', 'store'), loader_step))
         target_point.src_tubes = Tubes()
         target_point.add_src_tube(Tube(Port('o', 'mcmd'), loader_step))
-        flow_cmd.points.add(store_point)
-        flow_cmd.substeps.add(loader_step, avoid_id_collision=True)
+        points.add(store_point)
+        substeps.add(loader_step, avoid_id_collision=True)
 
 class FolderDataDestAppender():
     def __init__(self, flow:Flow, datum_factory, lock_uuid, start_at):
