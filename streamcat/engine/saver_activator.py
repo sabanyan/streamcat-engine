@@ -3,7 +3,7 @@ from .flow_port import FlowPort
 from .step import Steps
 from .point import Points, Point
 
-class Preprocessor:
+class SaverActivator:
     """
     実行可能フローの前処理
     """
@@ -30,10 +30,10 @@ class Preprocessor:
 
     def __init__(self, flow, datum_factory=None, activity=None):
         # Context
-        self._context = Preprocessor.Context(datum_factory, flow, activity)
+        self._context = SaverActivator.Context(datum_factory, flow, activity)
 
     def set_activity(self, activity):
-        self._context = Preprocessor.Context(self._context.datum_factory,
+        self._context = SaverActivator.Context(self._context.datum_factory,
                                              self._context.flow,
                                              activity)
 

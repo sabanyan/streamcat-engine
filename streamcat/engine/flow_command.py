@@ -72,7 +72,7 @@ class FlowCommand(Command):
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True, preprocessor=None):
+    def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True, saver_activator=None):
         super().__init__(flow.label)
 
         # 実行前にフローJSONの書式の検証をする
@@ -88,7 +88,7 @@ class FlowCommand(Command):
         # メインフローであればTrue
         self.is_main = is_main
 
-        # Preprocessorが中継した出力Portのリストを保持する
+        # SaverActivatorが中継した出力Portのリストを保持する
         # (Port.labelの重複をさせないためPortsを用いる)
         self.relayed_o_ports = Ports()
 
@@ -108,16 +108,16 @@ class FlowCommand(Command):
         self._datum_factory = DatumFactory(flow._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
-        # Activity期間中は同じPreprocessorインスタンスを使う
+        # Activity期間中は同じSaverActivatorインスタンスを使う
         from .appender import Appender
-        from .preprocessor import Preprocessor
-        if preprocessor is None:
+        from .saver_activator import SaverActivator
+        if saver_activator is None:
             self._appender = Appender(self, flow, self._datum_factory, lock_uuid)
-            self._preprocessor = Preprocessor(flow, self._datum_factory, self._appender.activity)
+            self._saver_activator = SaverActivator(flow, self._datum_factory, self._appender.activity)
         else:
-            # Appenderはメインフローでしか使わないので、preprocessorが指定された場合は使わない
+            # saver_activatorが指定された場合はサブフローなので、Appenderは使わない
             self._appender = None
-            self._preprocessor = preprocessor
+            self._saver_activator = saver_activator
 
         # 
         # データデストか否かの判定をする
@@ -143,10 +143,10 @@ class FlowCommand(Command):
             self._parse_nodes(vis_args, use_cache)
             # run()をリエントラント可能にするため、ここでappenderとrelayed_o_portsを初期化する
             self._appender.init(args)
-            self._preprocessor.set_activity(self._appender.activity)
+            self._saver_activator.set_activity(self._appender.activity)
             self.relayed_o_ports = Ports()
             # フローを前処理する
-            self._preprocessor.execute(flow_cmd=self)
+            self._saver_activator.execute(flow_cmd=self)
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
             self._appender.append(vis_args, use_cache)
 
@@ -412,11 +412,11 @@ class FlowCommand(Command):
             else:
                 raise Exception(f'共有フロー({node})のUUIDまたはリテラルが指定されていません')
             # サブフローのFlowCommandを生成する
-            flow_cmd = FlowCommand(sub_flow, is_main=False, preprocessor=self._preprocessor)
+            flow_cmd = FlowCommand(sub_flow, is_main=False, saver_activator=self._saver_activator)
             # サブフローのフローJSONからStepointを生成する
             flow_cmd._parse_nodes(vis_args, use_cache, src_point)
             # サブフローを前処理する
-            return self._preprocessor.execute(flow_cmd=flow_cmd, src_point=src_point)
+            return self._saver_activator.execute(flow_cmd=flow_cmd, src_point=src_point)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 
@@ -518,7 +518,7 @@ class FlowCommand(Command):
 
     @property
     def activity(self):
-        return self._preprocessor._context.activity
+        return self._saver_activator._context.activity
 
     def dtor(self, args={}):
         """

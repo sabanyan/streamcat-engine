@@ -12,7 +12,7 @@ class FlowPort(Port):
         # Portに対応するフロー内のPoint
         self.point = point
 
-        # Preprocessorの中継Portとして開いた場合はTrue
+        # SaverActivatorの中継Portとして開いた場合はTrue
         self.relayed = relayed
 
     def __repr__(self):
