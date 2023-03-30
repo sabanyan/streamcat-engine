@@ -146,9 +146,9 @@ class FlowCommand(Command):
             self._saver_activator.set_activity(self._outs_terminator.activity)
             self.relayed_o_ports = Ports()
             # フローを前処理する
-            self._saver_activator.execute(flow_cmd=self)
+            self._saver_activator.traverse(flow_cmd=self)
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
-            self._outs_terminator.append(vis_args, use_cache)
+            self._outs_terminator.terminate(vis_args, use_cache)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
@@ -416,7 +416,7 @@ class FlowCommand(Command):
             # サブフローのフローJSONからStepointを生成する
             flow_cmd._parse_nodes(vis_args, use_cache, src_point)
             # サブフローを前処理する
-            return self._saver_activator.execute(flow_cmd=flow_cmd, src_point=src_point)
+            return self._saver_activator.traverse(flow_cmd=flow_cmd, src_point=src_point)
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 

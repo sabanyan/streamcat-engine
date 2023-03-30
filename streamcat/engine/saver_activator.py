@@ -37,7 +37,7 @@ class SaverActivator:
                                              self._context.flow,
                                              activity)
 
-    def execute(self, flow_cmd:FlowCommand, src_point:Point=None):
+    def traverse(self, flow_cmd:FlowCommand, src_point:Point=None):
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない
         # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する

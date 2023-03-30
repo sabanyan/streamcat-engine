@@ -45,7 +45,7 @@ class OutsTerminator:
     def activity(self):
         return self._activity_data_dest_appender.activity
     
-    def append(self, vis_args:dict, use_cache:bool=False):
+    def terminate(self, vis_args:dict, use_cache:bool=False):
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
         # また、キャッシュの出力処理もしない
         if self._flow_cmd.is_main:
