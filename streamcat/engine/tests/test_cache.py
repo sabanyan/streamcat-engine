@@ -1431,6 +1431,10 @@ class CacheTest(TestCaseBase):
         everyone_role = self.factory.role.load_everyone_role()
         everyone_role.clear_authz(cache_folder.id)
 
+        # Sessionにあるself._permissionsを期限切れ状態にしてDBからリロードされるようにする
+        # FIXME: SQLAlchemyのexecution_options(populate_existing=True)を使うとここのテストはパスできる
+        self.factory._session._session.expire(cache_folder, ['_permissions'])
+
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)
         lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
