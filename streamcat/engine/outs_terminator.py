@@ -1,9 +1,8 @@
-
 from .flow_port import FlowPort
 from .point import Point, Points
 from .flow_command import FlowCommand
 
-class Appender:
+class OutsTerminator:
     """
     コマンドやデータデストを付加する
     """

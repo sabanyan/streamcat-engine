@@ -109,14 +109,14 @@ class FlowCommand(Command):
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         # Activity期間中は同じSaverActivatorインスタンスを使う
-        from .appender import Appender
+        from .outs_terminator import OutsTerminator
         from .saver_activator import SaverActivator
         if saver_activator is None:
-            self._appender = Appender(self, flow, self._datum_factory, lock_uuid)
-            self._saver_activator = SaverActivator(flow, self._datum_factory, self._appender.activity)
+            self._outs_terminator = OutsTerminator(self, flow, self._datum_factory, lock_uuid)
+            self._saver_activator = SaverActivator(flow, self._datum_factory, self._outs_terminator.activity)
         else:
-            # saver_activatorが指定された場合はサブフローなので、Appenderは使わない
-            self._appender = None
+            # saver_activatorが指定された場合はサブフローなので、OutsTerminatorは使わない
+            self._outs_terminator = None
             self._saver_activator = saver_activator
 
         # 
@@ -142,13 +142,13 @@ class FlowCommand(Command):
             # フローJSONを解釈する
             self._parse_nodes(vis_args, use_cache)
             # run()をリエントラント可能にするため、ここでappenderとrelayed_o_portsを初期化する
-            self._appender.init(args)
-            self._saver_activator.set_activity(self._appender.activity)
+            self._outs_terminator.init(args)
+            self._saver_activator.set_activity(self._outs_terminator.activity)
             self.relayed_o_ports = Ports()
             # フローを前処理する
             self._saver_activator.execute(flow_cmd=self)
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
-            self._appender.append(vis_args, use_cache)
+            self._outs_terminator.append(vis_args, use_cache)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
