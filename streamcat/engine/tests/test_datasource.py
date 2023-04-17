@@ -8412,13 +8412,11 @@ class DataSourceTest(TestCaseBase):
                 {
                     "id": "C",
                     "label": "C",
-                    "commandId": "mnewnumber",
+                    "commandId": "raise",
                     "type": "command",
+                    "commandId": "raise",
                     "args": {
-                        "I": "1",
-                        "S": "1",
-                        "a": "num0",
-                        "l": "10"
+                        "immediately": True
                     },
                     "srcs": {},
                     "dsts": {

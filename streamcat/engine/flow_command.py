@@ -149,6 +149,9 @@ class FlowCommand(Command):
             self._saver_activator.traverse(flow_cmd=self)
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
             self._outs_terminator.terminate(vis_args, use_cache)
+            # フローを縦型探索して不要な接続を刈る
+            from .pruner import Pruner
+            Pruner(self.points, self.i_ports, self.is_main).search_up_i_ports(self.o_ports)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
@@ -158,7 +161,9 @@ class FlowCommand(Command):
 
         # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
-        return self._stepoints.run(flow_args, inputs, o_ports)
+        # return self._stepoints.run(flow_args, inputs, o_ports)
+        from .invoker import Invoker
+        return Invoker(self.points, self.i_ports, self.o_ports, self.is_main).run(flow_args, inputs, o_ports)
 
     def _make_complete_flow_args(self, args:dict) -> dict:
         """
