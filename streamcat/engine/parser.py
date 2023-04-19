@@ -99,7 +99,7 @@ class Parser:
             # Stepointsを返す
             return stepoints
         else:
-            return Stepoints(steps=Steps(), points=Points(), i_ports=[], o_ports=[], is_main=self.is_main)
+            return Stepoints(steps=Steps(), points=Points(), i_ports=[], o_ports=[])
 
     def _parse_flow_ports(self, ports_json, points:Points):
         """
@@ -237,7 +237,7 @@ class Parser:
                     step.ex_acceptable = True
 
         # 作成したStep及びPointのリストを返す
-        return Stepoints(substeps, points, i_ports=[], o_ports=[], is_main=self.is_main)
+        return Stepoints(substeps, points, i_ports=[], o_ports=[])
 
     def _update_flow_by_other_than_runnable(self, nodes_json, stepoints:Stepoints, use_cache:bool):
         """

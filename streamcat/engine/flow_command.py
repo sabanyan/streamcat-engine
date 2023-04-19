@@ -1,7 +1,5 @@
-from streamcat.core import Command, Port
-from streamcat.store import Flow, FlowData
-from .stepoints import Stepoints
-from .step import Steps
+from streamcat.core import Command
+from streamcat.store import Flow
 from .point import Point, Points
 from .flow_port import FlowPort
 from .ports import Ports
@@ -286,7 +284,7 @@ class FlowCommand(Command):
         """
         終了処理
         - self.substepsの各Stepは
-          Stepoints._run_invokable_steps()においてdtor()される
+          Invokder._run_invokable_steps()においてdtor()される
         """
         # TmpファイルはNYSOL-Pythonコマンドの入力に使用するので
         # Nysol-Python(Runsコマンド)の実行が終了した後に削除する
