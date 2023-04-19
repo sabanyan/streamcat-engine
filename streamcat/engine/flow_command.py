@@ -156,14 +156,10 @@ class FlowCommand(Command):
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
 
-        # どのフロー出力Portの実行結果を取得したいのかを指定する
-        o_ports = args.get('o_ports', self.o_ports)
-
         # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
-        # return self._stepoints.run(flow_args, inputs, o_ports)
         from .invoker import Invoker
-        return Invoker(self.points, self.i_ports, self.o_ports, self.is_main).run(flow_args, inputs, o_ports)
+        return Invoker(self.points, self.i_ports, self.o_ports, self.is_main).run(flow_args, inputs, self.o_ports)
 
     def _make_complete_flow_args(self, args:dict) -> dict:
         """
@@ -259,6 +255,13 @@ class FlowCommand(Command):
         for port in self.i_ports:
             if port.label == port_label:
                 self.i_ports.remove(port)
+                return
+        return Exception(f'指定されたPort({port_label})はFlow({self})に存在しません')
+
+    def close_o_port(self, port_label:str):
+        for port in self.o_ports:
+            if port.label == port_label:
+                self.o_ports.remove(port)
                 return
         return Exception(f'指定されたPort({port_label})はFlow({self})に存在しません')
 
