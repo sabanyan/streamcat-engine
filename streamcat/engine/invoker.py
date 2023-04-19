@@ -1,6 +1,6 @@
-from .flow_port import FlowPort
 from .step import Step
 from .point import Points
+from .flow_port import FlowPort
 from .upstreamer import Upstreamer
 
 class Invoker(Upstreamer):

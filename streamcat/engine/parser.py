@@ -320,7 +320,7 @@ class Parser:
             # サブフローのFlowCommandを生成する
             flow_cmd = FlowCommand(sub_flow, is_main=False, saver_activator=self._saver_activator)
             # サブフローのフローJSONからStepointを生成する
-            flow_cmd._stepoints = flow_cmd.parse(vis_args, use_cache, src_point)
+            flow_cmd._stepoints = flow_cmd._parse(vis_args, use_cache, src_point)
             # サブフローを前処理する
             return self._saver_activator.traverse(flow_cmd=flow_cmd, src_point=src_point)
         else:

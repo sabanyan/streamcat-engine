@@ -102,7 +102,6 @@ class OutsTerminator:
         self._activity_data_dest_appender.save_activity()
 
         # SaverCommandとそのサブクラスのコマンドの出力Pointに、Runs StepとActivity Stepを付加する
-        # flow_cmd.relayed_o_portsではなくflow_cmd.o_portsでも良いのでは？
         for original_out_point in [p.point for p in flow_cmd.relayed_o_ports]:
             # データデストの入力Pointを取得する、取得できない場合はSaverCommandの出力Pointを用いる
             src_point_of_data_dst = self._get_src_point_of_data_dst(flow_cmd.points, original_out_point) or original_out_point

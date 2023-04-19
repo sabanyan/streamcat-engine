@@ -1,7 +1,6 @@
 from streamcat.core import Port
-from streamcat.store import Flow
+from streamcat.store import Flow, ApparentOuts
 from streamcat.depo.std.commands import CommandLink
-from streamcat.store.apparent_out import ApparentOuts
 from .flow_command import FlowCommand
 from .point import Point
 from .step import Step

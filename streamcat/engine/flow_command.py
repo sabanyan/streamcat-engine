@@ -138,7 +138,7 @@ class FlowCommand(Command):
             if use_cache is None:
                 use_cache = True
             # フローJSONを解釈する
-            self._stepoints = self.parse(vis_args, use_cache)
+            self._stepoints = self._parse(vis_args, use_cache)
             # run()をリエントラント可能にするため、ここでappenderとrelayed_o_portsを初期化する
             self._outs_terminator.init(args)
             self._saver_activator.set_activity(self._outs_terminator.activity)
@@ -176,7 +176,7 @@ class FlowCommand(Command):
 
         return complete_flow_args
 
-    def parse(self, vis_args, use_cache:bool, src_point:Point=None):
+    def _parse(self, vis_args, use_cache:bool, src_point:Point=None):
         # フローJSONを解釈する
         from .parser import Parser
         return Parser(self, self._flow_data, self._datum_factory, self._saver_activator, self.is_main).parse(vis_args, use_cache, src_point)
@@ -272,9 +272,6 @@ class FlowCommand(Command):
 
     def close_all_o_ports(self):
         self.o_ports.clear()
-
-    def search_up_i_ports(self, o_ports:set[FlowPort]):
-        return self._stepoints._search_up_i_ports(o_ports)
 
     @property
     def activity(self):

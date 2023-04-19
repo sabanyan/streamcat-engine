@@ -1,7 +1,7 @@
 from .flow_command import FlowCommand
 from .flow_port import FlowPort
 from .step import Steps
-from .point import Points, Point
+from .point import Point
 
 class SaverActivator:
     """

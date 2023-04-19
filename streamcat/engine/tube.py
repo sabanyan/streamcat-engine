@@ -42,13 +42,6 @@ class Tube:
         """
         return self.port is not None and self.step is not None
 
-    @property
-    def is_flow_tube(self):
-        """
-        親フローに繋がるTubeの場合はTrueを返す
-        """
-        return self.port is not None and self.step is None
-
 
 class Tubes:
 
@@ -118,23 +111,6 @@ class Tubes:
             if tube.is_command_tube:
                 return tube
         return None 
-
-    def find_flow_tube(self) -> Tube:
-        """
-        親フローに繋がるTubeを返す
-        """
-        for tube in self._tubes:
-            if tube.is_flow_tube:
-                # 1つのPointに、フローに繋がるTubeが複数存在することはない
-                return tube
-        # フローに繋がるTubeが無ければNoneを返す
-        return None
-
-    def select_flow_tube(self):
-        """
-        親フローに繋がるTubeを返す、無ければ他のTubeを返す
-        """
-        return self.find_flow_tube() or self._tubes[0]
 
     def filter_by_step(self, step:Step):
         """
