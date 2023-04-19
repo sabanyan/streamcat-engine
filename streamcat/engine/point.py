@@ -17,12 +17,12 @@ class Point:
         if src_tube is None:
             self.src_tubes = Tubes()
         else:
-            self.src_tubes = Tubes(src_tube)
+            self.src_tubes = Tubes({src_tube})
         self.datum = datum
         if dst_tube is None:
             self.dst_tubes = Tubes()
         else:
-            self.dst_tubes = Tubes(dst_tube)
+            self.dst_tubes = Tubes({dst_tube})
 
         # 入力ポートと出力ポートの型が不一致ならば例外を送出する
         self._validate_port_type(src_tube)

@@ -1,7 +1,7 @@
-
+from .step import Steps
 from .flow_command import FlowCommand
 from .point import Points, Point
-from .tube import Tube
+from .tube import Tube, Tubes
 from .flow_port import FlowPort
 from .upstreamer import Upstreamer
 
@@ -9,10 +9,16 @@ class Pruner(Upstreamer):
     """
     フローを縦型探索して不要な接続を刈る
     """
-    def __init__(self, points:Points, i_ports:list[FlowPort], is_main:bool) -> None:
+    def __init__(self, steps:Steps, points:Points, i_ports:list[FlowPort], is_main:bool=False) -> None:
         super().__init__(points)
         self._i_ports = i_ports
         self._is_main = is_main
+
+        # 全てのサブフローStepに対して、その入力Portへ繋がり、実行時に使用されるTube
+        self._using_flow_dst_tubes = Tubes()
+
+        # 全てのサブフローStepに対して、一つのPrunerオブジェクトを用意する
+        self._subflow_pruners = {s : Pruner(s.command.substeps, s.command.points, s.command.i_ports) for s in steps if s.is_flow}
 
     def search_up_i_ports(self, o_ports:set[FlowPort]):
         """
@@ -30,19 +36,40 @@ class Pruner(Upstreamer):
         # 開始Pointに紐づくフローの入力Portを取得する
         filtered_i_ports = {i_port for in_point in in_points for i_port in self._i_ports if i_port.point == in_point}
 
+        # 全てのサブフローの探索を終えた後に不要な接続を刈る
+        if self._is_main:
+            self._cut_unusing_tubes()
+
         # 実行可能Stepとフロー入力Portを返す
         return invokable_steps, filtered_i_ports
+    
+    def _cut_unusing_tubes(self):
+        """
+        実行時に使用されないTubeを切断する
+        """
+        # サブフローを再起的に探索して使用されないTubeを切断する
+        for subflow_pruner in self._subflow_pruners.values():
+            subflow_pruner._cut_unusing_tubes()
+
+        # 全てのサブフローStepへの入力Tubeを集める
+        all_flow_dst_tubes = Tubes({t for p in self._points for t in p.dst_tubes.filter_with_subflow()})
+
+        # 使用されないサブフローStepへの入力Tubeを集める
+        prune_flow_tubes = all_flow_dst_tubes - self._using_flow_dst_tubes
+
+        for p in self._points:
+            for prune_flow_tube in prune_flow_tubes:
+                # 使用されないサブフローStepへの入力Tubeを切断する
+                p.dst_tubes.remove(prune_flow_tube)
+                # Invoker._prepare_inputs()での例外送出を防ぐため使用されない入力Portも閉じる
+                prune_flow_tube.step.command.close_i_port(prune_flow_tube.port.label)
 
     def _get_prev_points(self, last_tube:Tube):
-        
+        """
+        コマンドからの出力Tubeから入力Pointを取得する
+        """
         step = last_tube.step
         o_port = last_tube.port
-
-        # 該当stepの実行に必要なpointを取得する
-        # prev_points = set()
-        # for p in self.points:
-        #     if p.dst_tubes.have_step(step):
-        #         prev_points.add(p)
 
         if step.is_flow:
             # サブフローCommand
@@ -52,7 +79,7 @@ class Pruner(Upstreamer):
             o_ports = {p for p in subflow.o_ports if p == o_port}
 
             # サブフローの出力Portからサブフローの開始Stepと入力Portを取得する
-            subflow_pruner = Pruner(subflow.points, subflow.i_ports, subflow.is_main)
+            subflow_pruner = self._subflow_pruners[step]
             start_steps, i_ports = subflow_pruner.search_up_i_ports(o_ports)
 
             # そのサブフローの入力Portに紐づく入力Pointを取得する
@@ -63,10 +90,9 @@ class Pruner(Upstreamer):
                 step.args['o_ports'] = set()
             step.args['o_ports'].update(o_ports)
 
-            # サブフローの実行に必要な入力PointだけをStepに設定する
-            if 'prev_points' not in step.args:
-                step.args['prev_points'] = set()
-            step.args['prev_points'].update(prev_points)
+            # サブフローの実行に必要な入力Tubeを記録する
+            using_flow_dst_tubes = Tubes({Tube(i_port, step) for i_port in i_ports})
+            self._using_flow_dst_tubes.update(using_flow_dst_tubes)
 
         else:
             prev_points = {p for p in self._points if p.dst_tubes.have_step(step)}

@@ -1,4 +1,3 @@
-
 from .point import Points, Point
 from .tube import Tube
 from .flow_port import FlowPort
@@ -17,7 +16,6 @@ class Upstreamer:
     """
     フロー構造を逆に辿る
     """
-
     def __init__(self, points:Points) -> None:
         self._points = points
 
@@ -62,15 +60,11 @@ class Upstreamer:
                      for p in prev_points if not self._is_start_point(p) for src_tube in p.src_tubes if src_tube.step is not None)
 
     def _get_prev_points(self, last_tube:Tube):
-        
+        """
+        コマンドからの出力Tubeから入力Pointを取得する
+        """
         step = last_tube.step
-
-        if 'prev_points' in step.args:
-            prev_points = step.args['prev_points']
-        else:
-            prev_points = {p for p in self._points if p.dst_tubes.have_step(step)}
-
-        return prev_points
+        return {p for p in self._points if p.dst_tubes.have_step(step)}
 
     def _is_start_point(self, p:Point):
         return p.datum is not None

@@ -151,7 +151,7 @@ class FlowCommand(Command):
             self._outs_terminator.terminate(vis_args, use_cache)
             # フローを縦型探索して不要な接続を刈る
             from .pruner import Pruner
-            Pruner(self.points, self.i_ports, self.is_main).search_up_i_ports(self.o_ports)
+            Pruner(self.substeps, self.points, self.i_ports, self.is_main).search_up_i_ports(self.o_ports)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
@@ -239,7 +239,7 @@ class FlowCommand(Command):
     def is_o_port(self, point:Point):
         return any(p.point==point for p in self.o_ports)
 
-    def has_o_port(self, port_label):
+    def has_o_port(self, port_label:str):
         return any(p.label==port_label for p in self.o_ports)
 
     def open_o_port(self, new_o_port:FlowPort):
@@ -254,6 +254,13 @@ class FlowCommand(Command):
             raise Exception(f'指定されたPoint({point.id})がFlow({self})にありませんでした')
 
         self.o_ports.append(new_o_port)
+
+    def close_i_port(self, port_label:str):
+        for port in self.i_ports:
+            if port.label == port_label:
+                self.i_ports.remove(port)
+                return
+        return Exception(f'指定されたPort({port_label})はFlow({self})に存在しません')
 
     def close_o_port_by_point(self, point):
         for port in self.o_ports:

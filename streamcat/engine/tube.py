@@ -51,14 +51,11 @@ class Tube:
 
 
 class Tubes:
-    """
-    Tubeのリスト
-    """
-    def __init__(self, *tubes) -> None:
-        if len(tubes)==0:
-            self._tubes = []
-        else:
-            self._tubes = list(tubes)
+
+    def __init__(self, tubes:set[Tube]=set()):
+        # tubesはset型なのでTubeの重複は無い
+        # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
+        self._tubes = list(tubes)
 
     def __repr__(self):
         return self._tubes.__repr__()
@@ -66,17 +63,37 @@ class Tubes:
     def __iter__(self) -> Iterator[Tube]:
         yield from self._tubes
 
+    def __contains__(self, tube:Tube):
+        return tube in self._tubes
+
     def __getitem__(self, index) -> Tube:
         return self._tubes[index]
 
     def __len__(self):
         return len(self._tubes)
+    
+    def __sub__(self, other):
+        return Tubes(set(self._tubes) - set(other._tubes))
 
     def add(self, tube:Tube):
         """
         Tubeを追加する
         """
+        if tube in self._tubes:
+            raise Exception(f'同じTube({tube})が既に存在します')
         self._tubes.append(tube)
+
+    def update(self, tubes):
+        """
+        Tubeを全て追加する
+        重複する場合は引数で追加したTubeで上書きする
+        """
+        for tube in tubes:
+            if tube in self._tubes:
+                i = self._tubes.index(tube)
+                self._tubes[i] = tube
+            else:
+                self._tubes.append(tube)
 
     def remove(self, tube:Tube):
         """
@@ -125,6 +142,14 @@ class Tubes:
         """
         rets = Tubes()
         rets._tubes = [tube for tube in self._tubes if tube.step==step]
+        return rets
+
+    def filter_with_subflow(self):
+        """
+        Flow Stepに紐づくTubesを返す
+        """
+        rets = Tubes()
+        rets._tubes = [tube for tube in self._tubes if tube.step.is_flow]
         return rets
 
     def sort(self):

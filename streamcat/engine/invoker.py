@@ -64,9 +64,6 @@ class Invoker(Upstreamer):
         """
         for step in invokable_steps:
 
-            if step.id == 'f1':
-                print('>>> ', step.args)
-
             # flow変数を使ってargsを書き換える
             if len(flow_args) > 0:
                 step.replace_args(flow_args)
