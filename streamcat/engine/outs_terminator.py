@@ -1,6 +1,6 @@
-from .flow_port import FlowPort
-from .point import Point, Points
 from .flow_command import FlowCommand
+from .point import Point, Points
+from .flow_port import FlowPort
 
 class OutsTerminator:
     """
@@ -73,7 +73,7 @@ class OutsTerminator:
         """
         Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
         """
-        # プレビューの結果を得るのに不要なコマンドをStepointsでrun()させない為
+        # プレビューの結果を得るのに不要なコマンドをInvokerでrun()させない為
         # メインフローの全ての出力Portを閉じる
         # (_search_invokable_steps()では出力Portを起点に実行すべきコマンドを探す)
         flow_cmd.close_all_o_ports()

@@ -1,9 +1,9 @@
-from .step import Steps
-from .flow_command import FlowCommand
-from .point import Points, Point
-from .tube import Tube, Tubes
-from .flow_port import FlowPort
 from .upstreamer import Upstreamer
+from .flow_command import FlowCommand
+from .step import Steps
+from .point import Points, Point
+from .flow_port import FlowPort
+from .tube import Tube, Tubes
 
 class Pruner(Upstreamer):
     """

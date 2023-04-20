@@ -1,7 +1,7 @@
 from .flow_command import FlowCommand
-from .flow_port import FlowPort
 from .step import Steps
 from .point import Point
+from .flow_port import FlowPort
 
 class SaverActivator:
     """
@@ -12,7 +12,7 @@ class SaverActivator:
         """
         Preprocessorを再帰的に下降して呼び出すときに参照する共通の格納場所
         """
-        def __init__(self, datum_factory, flow, activity):
+        def __init__(self, flow, datum_factory, activity):
             self.datum_factory = datum_factory
 
             self.flow = flow
@@ -30,12 +30,12 @@ class SaverActivator:
 
     def __init__(self, flow, datum_factory=None, activity=None):
         # Context
-        self._context = SaverActivator.Context(datum_factory, flow, activity)
+        self._context = SaverActivator.Context(flow, datum_factory, activity)
 
     def set_activity(self, activity):
-        self._context = SaverActivator.Context(self._context.datum_factory,
-                                             self._context.flow,
-                                             activity)
+        self._context = SaverActivator.Context(self._context.flow,
+                                               self._context.datum_factory,
+                                               activity)
 
     def traverse(self, flow_cmd:FlowCommand, src_point:Point=None):
         # 

@@ -1,8 +1,8 @@
-from .flow_port import FlowPort
 from .step import Steps
 from .point import Points
+from .flow_port import FlowPort
 
-class Stepoints():
+class FlowElements():
     """
     フローが含むStep、Point、フロー入出力Portを保持する
     """

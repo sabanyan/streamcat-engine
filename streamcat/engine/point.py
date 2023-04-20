@@ -147,6 +147,25 @@ class Points:
         # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
         self._points = list(points)
 
+    def __repr__(self):
+        return self._points.__repr__()
+
+    def __iter__(self) -> Iterator[Point]:
+        yield from self._points
+
+    def __contains__(self, point:Point):
+        return point in self._points
+
+    def __getitem__(self, point_id:str):
+        point = self.get(point_id)
+        if point is None:
+            raise Exception(f'PointsにPoint({point_id})は存在しません')
+        else:
+            return point
+        
+    def __len__(self):
+        return len(self._points)
+
     def add(self, point:Point):
         """
         Pointを追加する
@@ -172,22 +191,3 @@ class Points:
             if point.id == point_id:
                 return point
         return None
-
-    def __repr__(self):
-        return self._points.__repr__()
-
-    def __iter__(self) -> Iterator[Point]:
-        yield from self._points
-
-    def __contains__(self, point:Point):
-        return point in self._points
-
-    def __getitem__(self, point_id:str):
-        point = self.get(point_id)
-        if point is None:
-            raise Exception(f'PointsにPoint({point_id})は存在しません')
-        else:
-            return point
-        
-    def __len__(self):
-        return len(self._points)

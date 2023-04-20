@@ -156,6 +156,25 @@ class Steps:
         # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
         self._steps = list(steps)
 
+    def __repr__(self):
+        return self._steps.__repr__()
+
+    def __iter__(self) -> Iterator[Step]:
+        yield from self._steps
+
+    def __contains__(self, step:Step):
+        return step in self._steps
+
+    def __getitem__(self, step_id:str):
+        step = self.get(step_id)
+        if step is None:
+            raise Exception(f'StepsにStep({step_id})は存在しません')
+        else:
+            return step
+        
+    def __len__(self):
+        return len(self._steps)
+
     def add(self, step:Step, avoid_id_collision=False):
         """
         Stepを追加する
@@ -197,22 +216,3 @@ class Steps:
             step_id_cnt = step_id + '_' + str(cnt)
             cnt += 1
         return step_id_cnt
-
-    def __repr__(self):
-        return self._steps.__repr__()
-
-    def __iter__(self) -> Iterator[Step]:
-        yield from self._steps
-
-    def __contains__(self, step:Step):
-        return step in self._steps
-
-    def __getitem__(self, step_id:str):
-        step = self.get(step_id)
-        if step is None:
-            raise Exception(f'StepsにStep({step_id})は存在しません')
-        else:
-            return step
-        
-    def __len__(self):
-        return len(self._steps)

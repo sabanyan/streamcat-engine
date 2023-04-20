@@ -12,20 +12,6 @@ class Ports():
         # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
         self._ports = list(ports)
 
-    def add(self, port:Port):
-        """
-        Portを追加する
-        """
-        if port in self._ports:
-            raise Exception(f'同じid({port.label})のPortが既に存在します')
-        self._ports.append(port)
-
-    def get(self, port_label:str) -> Port:
-        for port in self._ports:
-            if port.label == port_label:
-                return port
-        return None
-
     def __repr__(self):
         return self._ports.__repr__()
 
@@ -45,3 +31,16 @@ class Ports():
     def __len__(self):
         return len(self._ports)
 
+    def add(self, port:Port):
+        """
+        Portを追加する
+        """
+        if port in self._ports:
+            raise Exception(f'同じid({port.label})のPortが既に存在します')
+        self._ports.append(port)
+
+    def get(self, port_label:str) -> Port:
+        for port in self._ports:
+            if port.label == port_label:
+                return port
+        return None

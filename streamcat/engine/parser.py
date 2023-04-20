@@ -1,9 +1,9 @@
 from streamcat.core import Port
 from streamcat.store import Flow, FlowData
 from streamcat.store.factory import DatumFactory
-from .flow_command import FlowCommand
 from .saver_activator import SaverActivator
-from .stepoints import Stepoints
+from .flow_command import FlowCommand
+from .flow_elements import FlowElements
 from .step import Steps
 from .point import Point, Points
 from .flow_port import FlowPort
@@ -88,18 +88,17 @@ class Parser:
             # そのため、use_exec_auth=Trueを指定する
             nodes_json = self._flow_data.get_nodes(use_exec_auth=True)
             # フローJSONからStepとPointを生成する
-            stepoints = self._update_flow_by_runnable(nodes_json, vis_args, use_cache, src_point)
+            flow_elements = self._update_flow_by_runnable(nodes_json, vis_args, use_cache, src_point)
             # フローの入出力Portを作成する
-            # (Stepoints.run()でPortが必要になる)
-            stepoints.i_ports = self._parse_flow_ports(self._flow_data.i_ports, stepoints.points)
-            stepoints.o_ports = self._parse_flow_ports(self._flow_data.o_ports, stepoints.points)
+            flow_elements.i_ports = self._parse_flow_ports(self._flow_data.i_ports, flow_elements.points)
+            flow_elements.o_ports = self._parse_flow_ports(self._flow_data.o_ports, flow_elements.points)
             # runnable以外のノードを走査する
             # (Portを作成した後に処理する)
-            self._update_flow_by_other_than_runnable(nodes_json, stepoints, use_cache)
-            # Stepointsを返す
-            return stepoints
+            self._update_flow_by_other_than_runnable(nodes_json, flow_elements, use_cache)
+            # FlowElementsを返す
+            return flow_elements
         else:
-            return Stepoints(steps=Steps(), points=Points(), i_ports=[], o_ports=[])
+            return FlowElements(steps=Steps(), points=Points(), i_ports=[], o_ports=[])
 
     def _parse_flow_ports(self, ports_json, points:Points):
         """
@@ -237,9 +236,9 @@ class Parser:
                     step.ex_acceptable = True
 
         # 作成したStep及びPointのリストを返す
-        return Stepoints(substeps, points, i_ports=[], o_ports=[])
+        return FlowElements(substeps, points, i_ports=[], o_ports=[])
 
-    def _update_flow_by_other_than_runnable(self, nodes_json, stepoints:Stepoints, use_cache:bool):
+    def _update_flow_by_other_than_runnable(self, nodes_json, flow_elements:FlowElements, use_cache:bool):
         """
         指定したnodesの中にある、runnable以外のnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -253,7 +252,7 @@ class Parser:
             if node.is_runnable or node.type in EXCEPT_TYPES:
                 continue
 
-            target_point = stepoints.points.get(node.id)
+            target_point = flow_elements.points.get(node.id)
             if target_point is None:
                 continue
 
@@ -271,7 +270,7 @@ class Parser:
 
             # 入出力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
             # ただし、メインフローの場合は入出力Pointか否かを条件にしない
-            if self.is_main or not (self.is_i_port(stepoints.i_ports, target_point) or self.is_o_port(stepoints.o_ports, target_point)):
+            if self.is_main or not (self.is_i_port(flow_elements.i_ports, target_point) or self.is_o_port(flow_elements.o_ports, target_point)):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
@@ -285,7 +284,7 @@ class Parser:
                         continue
                     # uuidが既に振られている場合は、Loaderから取ってくるようにする
                     try:
-                        self._folder_data_source_prepender.do_prepend(stepoints.points, stepoints.substeps, target_point, node.get('uuid'))
+                        self._folder_data_source_prepender.do_prepend(flow_elements.points, flow_elements.substeps, target_point, node.get('uuid'))
                     except Exception as e:
                         if node.has_cache:
                             # キャッシュの参照ができなくてもフローの実行は中断しない
@@ -320,7 +319,7 @@ class Parser:
             # サブフローのFlowCommandを生成する
             flow_cmd = FlowCommand(sub_flow, is_main=False, saver_activator=self._saver_activator)
             # サブフローのフローJSONからStepointを生成する
-            flow_cmd._stepoints = flow_cmd._parse(vis_args, use_cache, src_point)
+            flow_cmd._flow_elements = flow_cmd._parse(vis_args, use_cache, src_point)
             # サブフローを前処理する
             return self._saver_activator.traverse(flow_cmd=flow_cmd, src_point=src_point)
         else:

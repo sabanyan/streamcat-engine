@@ -1,8 +1,8 @@
 from streamcat.core import Command
 from streamcat.store import Flow
 from .point import Point, Points
-from .flow_port import FlowPort
 from .ports import Ports
+from .flow_port import FlowPort
 
 class FlowCommand(Command):
     """
@@ -98,7 +98,7 @@ class FlowCommand(Command):
         # self.context = {}
 
         # Steps, Points, i_ports, o_portsを保持する
-        self._stepoints = None
+        self._flow_elements = None
 
         # データソースを追加する
         from streamcat.store.factory import DatumFactory
@@ -138,7 +138,7 @@ class FlowCommand(Command):
             if use_cache is None:
                 use_cache = True
             # フローJSONを解釈する
-            self._stepoints = self._parse(vis_args, use_cache)
+            self._flow_elements = self._parse(vis_args, use_cache)
             # run()をリエントラント可能にするため、ここでappenderとrelayed_o_portsを初期化する
             self._outs_terminator.init(args)
             self._saver_activator.set_activity(self._outs_terminator.activity)
@@ -183,22 +183,22 @@ class FlowCommand(Command):
 
     @property
     def points(self):
-        return self._stepoints.points
+        return self._flow_elements.points
 
     @points.setter
     def points(self, points:Points):
-        self._stepoints.points = points
+        self._flow_elements.points = points
 
     @property
     def substeps(self):
-        return self._stepoints.substeps
+        return self._flow_elements.substeps
 
     @property
     def i_ports(self):
-        if self._stepoints is None:
+        if self._flow_elements is None:
             return []
         else:
-            return self._stepoints.i_ports
+            return self._flow_elements.i_ports
 
     @i_ports.setter
     def i_ports(self, value):
@@ -206,10 +206,10 @@ class FlowCommand(Command):
 
     @property
     def o_ports(self):
-        if self._stepoints is None:
+        if self._flow_elements is None:
             return []
         else:
-            return self._stepoints.o_ports
+            return self._flow_elements.o_ports
 
     @o_ports.setter
     def o_ports(self, value):

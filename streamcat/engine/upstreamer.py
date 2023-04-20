@@ -1,6 +1,6 @@
 from .point import Points, Point
-from .tube import Tube
 from .flow_port import FlowPort
+from .tube import Tube
 
 def union(sets:list[set]):
     """
