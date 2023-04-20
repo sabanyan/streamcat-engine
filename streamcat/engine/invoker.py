@@ -13,7 +13,7 @@ class Invoker(Upstreamer):
         self._o_ports = o_ports
         self._is_main = is_main
 
-    def run(self, flow_args:dict, inputs:dict, o_ports:list):
+    def run(self, flow_args:dict, inputs:dict):
         """
         フローを実行する
         """
@@ -22,7 +22,7 @@ class Invoker(Upstreamer):
 
         # 実行準備が整った全てのStepを取得する
         prev_invokable_steps = set()
-        invokable_steps = self._search_up_all_invokable_steps(o_ports)
+        invokable_steps = self._search_up_all_invokable_steps(self._o_ports)
         # print('invokable_steps1', invokable_steps)
 
         # 実行前後のrunnableのSetに変化が無ければ終了する(無限Loop対策)
@@ -37,7 +37,7 @@ class Invoker(Upstreamer):
             # print('invokable_steps2')
 
             # 再度、実行準備が整った全てのStepを取得する
-            invokable_steps = self._search_up_all_invokable_steps(o_ports)
+            invokable_steps = self._search_up_all_invokable_steps(self._o_ports)
             # print('invokable_steps3', invokable_steps, self.points)
 
         # 実行すべきStepがもう残っていないなら終了する

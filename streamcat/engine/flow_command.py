@@ -157,7 +157,7 @@ class FlowCommand(Command):
         # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
         from .invoker import Invoker
-        return Invoker(self.points, self.i_ports, self.o_ports, self.is_main).run(flow_args, inputs, self.o_ports)
+        return Invoker(self.points, self.i_ports, self.o_ports, self.is_main).run(flow_args, inputs)
 
     def _make_complete_flow_args(self, args:dict) -> dict:
         """
