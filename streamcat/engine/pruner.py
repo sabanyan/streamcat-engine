@@ -28,7 +28,18 @@ class Pruner(Upstreamer):
                 subflow_elements = FlowElements(s.command.substeps, s.command.points, s.command.i_ports, s.command.o_ports)
                 self._subflow_pruners[s] = Pruner(subflow_elements)
 
-    def search_up_i_ports(self, o_ports:FlowPorts):
+    def traverse(self, o_ports:FlowPorts):
+        """
+        不要な接続を刈る
+        """
+        # フローの出力Portから入力Portを取得する
+        self._search_up_i_ports(o_ports)
+
+        # 全てのサブフローの探索を終えた後に不要な接続を刈る
+        if self._is_main:
+            self._cut_unusing_tubes()
+
+    def _search_up_i_ports(self, o_ports:FlowPorts):
         """
         指定するフロー出力Portからフロー構造を逆に辿って、実行可能Stepとフロー入力Portを返す
         """
@@ -41,16 +52,9 @@ class Pruner(Upstreamer):
         # 実行可能Stepの入力Pointを取得する
         in_points.update({p for s in invokable_steps for p in self._points if p.dst_tubes.have_step(s)})
 
-        # 開始Pointに紐づくフローの入力Portを取得する
-        filtered_i_ports = {i_port for in_point in in_points for i_port in self._i_ports if i_port.point == in_point}
+        # 開始Pointに紐づくフローの入力Portを返す
+        return {i_port for in_point in in_points for i_port in self._i_ports if i_port.point == in_point}
 
-        # 全てのサブフローの探索を終えた後に不要な接続を刈る
-        if self._is_main:
-            self._cut_unusing_tubes()
-
-        # 実行可能Stepとフロー入力Portを返す
-        return filtered_i_ports
-    
     def _cut_unusing_tubes(self):
         """
         実行時に使用されないTubeを切断する
@@ -92,9 +96,9 @@ class Pruner(Upstreamer):
             # 指定するフロー出力PortをFlowPort型で取得する
             o_ports = {p for p in subflow.o_ports if p == o_port}
 
-            # サブフローの出力Portからサブフローの開始Stepと入力Portを取得する
+            # サブフローの出力Portからサブフローの入力Portを取得する
             subflow_pruner = self._subflow_pruners[step]
-            i_ports = subflow_pruner.search_up_i_ports(o_ports)
+            i_ports = subflow_pruner._search_up_i_ports(o_ports)
 
             # そのサブフローの入力Portに紐づく入力Pointを取得する
             prev_points = {p for i_port in i_ports for p in self._points if p.dst_tubes.have_tube(i_port, step)}
