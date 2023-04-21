@@ -6,7 +6,7 @@ class OutsTerminator:
     """
     コマンドやデータデストを付加する
     """
-    def __init__(self, flow_cmd:FlowCommand, flow, datum_factory, lock_uuid) -> None:
+    def __init__(self, flow_cmd:FlowCommand, flow, datum_factory, lock_uuid:str, activity) -> None:
         from .appenders import (
             CacheDataDestAppender,
             VisDataDestAppender,
@@ -16,7 +16,7 @@ class OutsTerminator:
 
         # Appenders
         self._runs_command_appender = RunsCommandAppender()
-        self._activity_data_dest_appender = ActivityDataDestAppender(datum_factory, flow)
+        self._activity_data_dest_appender = ActivityDataDestAppender(activity)
 
         # Appenders
         start_at = self._activity_data_dest_appender.activity._start_at
@@ -29,26 +29,20 @@ class OutsTerminator:
         self._datum_factory = datum_factory
         self._lock_uuid = lock_uuid
 
-    def init(self, args:dict):
+    def init(self, activity):
         """
         初期状態に戻す
         """
         from .appenders import ActivityDataDestAppender, CacheDataDestAppender
-        self._activity_data_dest_appender = ActivityDataDestAppender(self._datum_factory,
-                                                                     self._flow,
-                                                                     args)
+        self._activity_data_dest_appender = ActivityDataDestAppender(activity)
 
         start_at = self._activity_data_dest_appender.activity._start_at
         self._cache_data_dest_appender = CacheDataDestAppender(self._flow, self._datum_factory, self._lock_uuid, start_at)
-
-    @property
-    def activity(self):
-        return self._activity_data_dest_appender.activity
     
     def terminate(self, vis_args:dict, use_cache:bool=False):
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
         # また、キャッシュの出力処理もしない
-        if self._flow_cmd.is_main:
+        if self._flow_cmd._is_main:
             # プレビューを取得するPoint
             vis_ids = vis_args.keys()
             is_vis = len(vis_ids) > 0

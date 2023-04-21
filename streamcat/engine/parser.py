@@ -1,7 +1,6 @@
 from streamcat.core import Port
 from streamcat.store import Flow, FlowData
 from streamcat.store.factory import DatumFactory
-from .saver_activator import SaverActivator
 from .flow_command import FlowCommand
 from .flow_elements import FlowElements
 from .step import Steps
@@ -71,24 +70,22 @@ class Parser:
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow_cmd:FlowCommand, flow_data:FlowData, datum_factory:DatumFactory, saver_activator:SaverActivator, is_main:bool=False) -> None:
-        self._flow_cmd = flow_cmd
+    def __init__(self, flow_data:FlowData, datum_factory:DatumFactory, is_main:bool=False) -> None:
         self._flow_data = flow_data
         self._datum_factory = datum_factory
-        self._saver_activator = saver_activator
-        self.is_main = is_main
+        self._is_main = is_main
 
         from .appenders import FolderDataSourcePrepender
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
-    def parse(self, vis_args, use_cache:bool, src_point:Point=None):
+    def parse(self, use_cache:bool):
         # フローJSONからStepointを生成する
         if self._flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する
             nodes_json = self._flow_data.get_nodes(use_exec_auth=True)
             # フローJSONからStepとPointを生成する
-            flow_elements = self._update_flow_by_runnable(nodes_json, vis_args, use_cache, src_point)
+            flow_elements = self._update_flow_by_runnable(nodes_json, use_cache)
             # フローの入出力Portを作成する
             flow_elements.i_ports = self._parse_flow_ports(self._flow_data.i_ports, flow_elements.points)
             flow_elements.o_ports = self._parse_flow_ports(self._flow_data.o_ports, flow_elements.points)
@@ -140,7 +137,7 @@ class Parser:
                 return runnable_port
         return None
 
-    def _update_flow_by_runnable(self, nodes_json, vis_args, use_cache, src_point):
+    def _update_flow_by_runnable(self, nodes_json, use_cache):
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
@@ -171,20 +168,10 @@ class Parser:
             srcs = node.get('srcs') or {}
             dsts = node.get('dsts') or {}
 
-            # NOTE: SaverCommandの入力Pointのidを取得する為だけに残しているが、
-            # Proprocessor._get_src_point_of_data_dst()にその機能を統合してもいいかも
-            if len(srcs)==1 and len(dsts)==0:
-                # データデストまたはSaverCommandには入力Pointのidを渡す
-                src_point_id = next(iter(srcs.values()))
-                node_src_point = points.get(src_point_id)
-            else:
-                # 中継する
-                node_src_point = src_point
-
             # 
             # CommandまたはFlowCommandを取得する
             # 
-            cmd = self._create_command(node, vis_args, use_cache, node_src_point)
+            cmd = self._create_command(node, use_cache)
 
             # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
             # 'args'の下にフロー変数を格納する
@@ -270,7 +257,7 @@ class Parser:
 
             # 入出力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
             # ただし、メインフローの場合は入出力Pointか否かを条件にしない
-            if self.is_main or not (self.is_i_port(flow_elements.i_ports, target_point) or self.is_o_port(flow_elements.o_ports, target_point)):
+            if self._is_main or not (self.is_i_port(flow_elements.i_ports, target_point) or self.is_o_port(flow_elements.o_ports, target_point)):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
@@ -296,7 +283,7 @@ class Parser:
                     # キャッシュが既にあるpointをTrueにしてもしょうがないのでFalseにする
                     target_point.makeCache = False
 
-    def _create_command(self, node, vis_args, use_cache, src_point):
+    def _create_command(self, node:Node, use_cache:bool):
         from streamcat.store.auth import NotAuthorizedException
         from streamcat.depo.std.commands import CommandLink
 
@@ -317,11 +304,10 @@ class Parser:
             else:
                 raise Exception(f'共有フロー({node})のUUIDまたはリテラルが指定されていません')
             # サブフローのFlowCommandを生成する
-            flow_cmd = FlowCommand(sub_flow, is_main=False, saver_activator=self._saver_activator)
-            # サブフローのフローJSONからStepointを生成する
-            flow_cmd._flow_elements = flow_cmd._parse(vis_args, use_cache, src_point)
-            # サブフローを前処理する
-            return self._saver_activator.traverse(flow_cmd=flow_cmd, src_point=src_point)
+            flow_cmd = FlowCommand(sub_flow, is_main=False)
+            # サブフローのフローJSONを解釈する
+            flow_cmd.parse(use_cache)
+            return flow_cmd
         else:
             raise Exception(f'ノード({node.id})のtypeが不正な値({node.type})です')
 

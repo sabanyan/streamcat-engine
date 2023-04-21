@@ -70,8 +70,13 @@ class FlowCommand(Command):
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True, saver_activator=None):
+    def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True):
         super().__init__(flow.label)
+
+        self._flow = flow
+        self._lock_uuid = lock_uuid
+        # メインフローであればTrue
+        self._is_main = is_main
 
         # 実行前にフローJSONの書式の検証をする
         flow.flow_data.valid_flow_json_or_raise()
@@ -83,9 +88,6 @@ class FlowCommand(Command):
         # 仮引数を保持する
         self.params = self._flow_data.params or {}
 
-        # メインフローであればTrue
-        self.is_main = is_main
-
         # SaverActivatorが中継した出力Portのリストを保持する
         # (Port.labelの重複をさせないためPortsを用いる)
         self.relayed_o_ports = Ports()
@@ -94,11 +96,11 @@ class FlowCommand(Command):
         from streamcat.store import ModuleStore
         self.module_store = ModuleStore()
 
-        # 
-        # self.context = {}
-
         # Steps, Points, i_ports, o_portsを保持する
         self._flow_elements = None
+
+        # Activityはメインフローの実行時(run)に作成する
+        self._activity = None
 
         # データソースを追加する
         from streamcat.store.factory import DatumFactory
@@ -106,58 +108,54 @@ class FlowCommand(Command):
         self._datum_factory = DatumFactory(flow._session)
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
-        # Activity期間中は同じSaverActivatorインスタンスを使う
-        from .outs_terminator import OutsTerminator
-        from .saver_activator import SaverActivator
-        if saver_activator is None:
-            self._outs_terminator = OutsTerminator(self, flow, self._datum_factory, lock_uuid)
-            self._saver_activator = SaverActivator(flow, self._datum_factory, self._outs_terminator.activity)
-        else:
-            # saver_activatorが指定された場合はサブフローなので、OutsTerminatorは使わない
-            self._outs_terminator = None
-            self._saver_activator = saver_activator
-
-        # 
-        # データデストか否かの判定をする
-        # 
-        # データデストのself.o_portsには、データデストの出力を親フローに繋げる為に
-        # フローの前処理でPortを追加するので、Flowオブジェクトの生成時に判定する
-        # self._is_datadst = len(self.i_ports) == 1 and len(self.o_ports) == 0
-
     def run(self, args={}, inputs={}):
         """
         フローを実行する
         """
+        from .saver_activator import SaverActivator
+        from .outs_terminator import OutsTerminator
+        from .pruner import Pruner
+        from .invoker import Invoker
+
         # 実行前に全てのサブフローに対して縦型探索して、フローJSONの解釈とフローの前処理を全て終わらせておく
-        if self.is_main:
+        if self._is_main:
             # プレビュー引数を取得する
             vis_args = args.get('vis') or {}
             # キャッシュ参照・保存引数を取得する
             use_cache = args.get('use_cache')
             # TODO: 指定がない場合は暫定的にuse_cache=Trueにする
-            if use_cache is None:
-                use_cache = True
+            use_cache = use_cache is None or use_cache
+
             # フローJSONを解釈する
-            self._flow_elements = self._parse(vis_args, use_cache)
-            # run()をリエントラント可能にするため、ここでappenderとrelayed_o_portsを初期化する
-            self._outs_terminator.init(args)
-            self._saver_activator.set_activity(self._outs_terminator.activity)
+            self.parse(use_cache)
+
+            # フローの実行毎にActivity Datumを新規作成する
+            activity_folder = self._datum_factory.load_activity_folder()
+            self._activity = activity_folder.create_activity(self.label, self._flow, args)
+
+            # SaverCommandの副作用(出力処理)を実行する為に、その出力Pointをフローの出力Pointに設定する
             self.relayed_o_ports = Ports()
-            # フローを前処理する
-            self._saver_activator.traverse(flow_cmd=self)
+            _saver_activator = SaverActivator(self._flow, self._datum_factory, self._activity)
+            _saver_activator.traverse(flow_cmd=self)
+
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
-            self._outs_terminator.terminate(vis_args, use_cache)
+            outs_terminator = OutsTerminator(self, self._flow, self._datum_factory, self._lock_uuid, self._activity)
+            outs_terminator.terminate(vis_args, use_cache)
+
             # フローを縦型探索して不要な接続を刈る
-            from .pruner import Pruner
-            Pruner(self.substeps, self.points, self.i_ports, self.is_main).search_up_i_ports(self.o_ports)
+            Pruner(self.substeps, self.points, self.i_ports, self._is_main).search_up_i_ports(self.o_ports)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
 
         # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
-        from .invoker import Invoker
-        return Invoker(self.points, self.i_ports, self.o_ports, self.is_main).run(flow_args, inputs)
+        return Invoker(self.points, self.i_ports, self.o_ports, self._is_main).run(flow_args, inputs)
+
+    def parse(self, use_cache:bool):
+        # フローJSONを解釈する
+        from .parser import Parser
+        self._flow_elements = Parser(self._flow_data, self._datum_factory, self._is_main).parse(use_cache)
 
     def _make_complete_flow_args(self, args:dict) -> dict:
         """
@@ -176,10 +174,9 @@ class FlowCommand(Command):
 
         return complete_flow_args
 
-    def _parse(self, vis_args, use_cache:bool, src_point:Point=None):
-        # フローJSONを解釈する
-        from .parser import Parser
-        return Parser(self, self._flow_data, self._datum_factory, self._saver_activator, self.is_main).parse(vis_args, use_cache, src_point)
+    @property
+    def is_main(self):
+        return self._is_main
 
     @property
     def points(self):
@@ -218,6 +215,10 @@ class FlowCommand(Command):
     @property
     def lasts(self):
         return {p.id: p.datum for p in self.points if p.is_last}
+
+    @property
+    def activity(self):
+        return self._activity
 
     @lasts.setter
     def lasts(self, value):
@@ -273,10 +274,6 @@ class FlowCommand(Command):
     def close_all_o_ports(self):
         self.o_ports.clear()
 
-    @property
-    def activity(self):
-        return self._saver_activator._context.activity
-
     def dtor(self, args={}):
         """
         終了処理
@@ -285,6 +282,6 @@ class FlowCommand(Command):
         """
         # TmpファイルはNYSOL-Pythonコマンドの入力に使用するので
         # Nysol-Python(Runsコマンド)の実行が終了した後に削除する
-        if self.is_main:
+        if self._is_main:
             from streamcat.core import Tmp
             Tmp.remove_files()

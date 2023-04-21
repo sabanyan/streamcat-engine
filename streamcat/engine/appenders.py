@@ -268,14 +268,10 @@ class RunsCommandAppender():
 
 
 class ActivityDataDestAppender():
-    def __init__(self, datum_factory, flow:Flow, args:dict={}):
-        self.flow_uuid = flow.uuid
-        # アクティビティフォルダを取得する
-        folder_store = datum_factory.load_activity_folder()
+    def __init__(self, activity):
+        self.activity = activity
         # Activityコマンドを取得する
         activity_cmd = CommandLink('activity').resolve()
-        # Activity Datumを作成する
-        self.activity = folder_store.create_activity(flow.label, flow, args)
         # Activity Stepへの引数を作成する
         activity_args = {'activity': self.activity, 'outs':ApparentOuts(), 'is_vis':False, 'points':{}}
         # Activity Stepを作成する

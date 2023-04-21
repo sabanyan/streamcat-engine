@@ -32,17 +32,23 @@ class SaverActivator:
         # Context
         self._context = SaverActivator.Context(flow, datum_factory, activity)
 
-    def set_activity(self, activity):
-        self._context = SaverActivator.Context(self._context.flow,
-                                               self._context.datum_factory,
-                                               activity)
-
     def traverse(self, flow_cmd:FlowCommand, src_point:Point=None):
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない
         # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
         # TODO: SaverCommand以外に副作用を持つコマンドも同じ設定をする必要があるだろう
         # 
+
+        # サブフローを縦型探索してSaverCommandの出力Pointを処理する
+        for step in flow_cmd.substeps:
+            if step.is_flow:
+                # step.classificationの設定がないStepにも対応できるよう入出力Portの数で判定する
+                is_datadst = len(step.command.i_ports) == 1 and len(step._o_ports) == 0
+                if is_datadst:
+                    data_dst_src_point = [p for p in flow_cmd.points if p.dst_tubes.have_step(step)][0]
+                else:
+                    data_dst_src_point = src_point
+                self.traverse(step.command, src_point=data_dst_src_point)
 
         # フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
         # そのフロー出力ポートを中継ポートに設定する
@@ -76,7 +82,7 @@ class SaverActivator:
             # SaverCommandとそのサブクラスのコマンドは、その出力ポイントをフローの出力Pointに設定する
             if isinstance(src_tube.step.command, SaverCommand):
                 # サブフローにおいては、フロー出力Point以降のSaverCommandは実行しない
-                if flow_cmd.is_main or not self._search_out_port_point(flow_cmd, src_tube.step):
+                if flow_cmd._is_main or not self._search_out_port_point(flow_cmd, src_tube.step):
                     # フローの出力Pointに設定する
                     o_port = FlowPort(point.id, 'mcmd', point, relayed=True)
                     # FIXME: relayed_o_port()でもオープンしてるから不要では？
@@ -97,7 +103,7 @@ class SaverActivator:
             # フローが中継ポートを持っている場合
             for port in step.command.relayed_o_ports:
                 # サブフローにおいては、フロー出力Point以降のSaverCommandは実行しない
-                if flow_cmd.is_main or not self._search_out_port_point(flow_cmd, step):
+                if flow_cmd._is_main or not self._search_out_port_point(flow_cmd, step):
                     # 中継する
                     new_port = self._relay_o_port(flow_cmd, step, port)
                     # 中継済みのポートとして記録する
