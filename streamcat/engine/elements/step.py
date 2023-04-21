@@ -37,7 +37,7 @@ class Step:
 
     @property
     def is_flow(self):
-        from .flow_command import FlowCommand
+        from .. import FlowCommand
         return isinstance(self.command, FlowCommand)
 
     @property

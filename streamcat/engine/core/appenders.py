@@ -1,10 +1,8 @@
 from streamcat.core import Port
 from streamcat.store import Flow, ApparentOuts
 from streamcat.depo.std.commands import CommandLink
-from .flow_command import FlowCommand
-from .step import Step
-from .point import Point
-from .tube import Tubes, Tube
+from .. import FlowCommand
+from ..elements import Step, Point, Tube, Tubes
 
 class FolderDataSourcePrepender():
     def __init__(self, datum_factory):

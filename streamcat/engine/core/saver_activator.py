@@ -1,7 +1,5 @@
-from .flow_command import FlowCommand
-from .step import Step, Steps
-from .point import Point
-from .flow_port import FlowPort
+from .. import FlowCommand
+from ..elements import Step, Steps, Point, FlowPort
 
 class SaverActivator:
     """
@@ -160,7 +158,7 @@ class SaverActivator:
         フローの出力ポートを親フローに中継する
         """
         from streamcat.core import SavableDatum, Port
-        from .tube import Tube
+        from ..elements import Tube
 
         # サブフローから中継された出力Portに紐づくPointを新規作成する
         src_tube = Tube(Port(port.label, 'mcmd'), step)

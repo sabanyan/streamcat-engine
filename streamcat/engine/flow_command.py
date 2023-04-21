@@ -1,7 +1,6 @@
 from streamcat.core import Command
 from streamcat.store import Flow
-from .point import Point, Points
-from .flow_port import FlowPort, FlowPorts
+from .elements import Points, FlowPort, FlowPorts
 
 class FlowCommand(Command):
     """
@@ -110,10 +109,7 @@ class FlowCommand(Command):
         """
         フローを実行する
         """
-        from .saver_activator import SaverActivator
-        from .outs_terminator import OutsTerminator
-        from .pruner import Pruner
-        from .invoker import Invoker
+        from .core import SaverActivator, OutsTerminator, Pruner, Invoker
 
         # 実行前に全てのサブフローに対して縦型探索して、フローJSONの解釈とフローの前処理を全て終わらせておく
         if self._is_main:
@@ -150,7 +146,7 @@ class FlowCommand(Command):
 
     def parse(self, use_cache:bool):
         # フローJSONを解釈する
-        from .parser import Parser
+        from .core.parser import Parser
         self._flow_elements = Parser(self._flow_data, self._datum_factory, self._is_main).parse(use_cache)
 
     def _make_complete_flow_args(self, args:dict) -> dict:

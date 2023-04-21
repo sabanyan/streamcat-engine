@@ -1,11 +1,8 @@
 from streamcat.core import Port
 from streamcat.store import Flow, FlowData
 from streamcat.store.factory import DatumFactory
-from .flow_command import FlowCommand
-from .flow_elements import FlowElements
-from .step import Steps
-from .point import Point, Points
-from .flow_port import FlowPort, FlowPorts
+from .. import FlowCommand
+from ..elements import FlowElements, Steps, Point, Points, FlowPort, FlowPorts
 
 class Parser:
 
@@ -141,8 +138,7 @@ class Parser:
         """
         指定したnodesの中にある、runnableのnodeを使ってFlowオブジェクトの属性を更新する
         """
-        from .step import Step
-        from .tube import Tube
+        from ..elements import Step, Tube
 
         steps = Steps()
         points = Points()

@@ -1,6 +1,5 @@
-from .flow_command import FlowCommand
-from .point import Point, Points
-from .flow_port import FlowPort
+from .. import FlowCommand
+from ..elements import Point, Points, FlowPort
 
 class OutsTerminator:
     """

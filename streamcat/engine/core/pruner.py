@@ -1,10 +1,6 @@
 from .upstreamer import Upstreamer
-from .flow_command import FlowCommand
-from .flow_elements import FlowElements
-from .step import Step
-from .point import Point
-from .flow_port import FlowPorts
-from .tube import Tube, Tubes
+from .. import FlowCommand
+from ..elements import FlowElements, Step, Point, FlowPorts, Tube, Tubes
 
 class Pruner(Upstreamer):
     """

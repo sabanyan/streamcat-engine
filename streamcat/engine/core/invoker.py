@@ -1,6 +1,5 @@
 from .upstreamer import Upstreamer
-from .flow_elements import FlowElements
-from .step import Step
+from ..elements import FlowElements, Step
 
 class Invoker(Upstreamer):
     """
