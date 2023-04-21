@@ -5,7 +5,7 @@ from .flow_command import FlowCommand
 from .flow_elements import FlowElements
 from .step import Steps
 from .point import Point, Points
-from .flow_port import FlowPort
+from .flow_port import FlowPort, FlowPorts
 
 class Parser:
 
@@ -95,13 +95,13 @@ class Parser:
             # FlowElementsを返す
             return flow_elements
         else:
-            return FlowElements(steps=Steps(), points=Points(), i_ports=[], o_ports=[])
+            return FlowElements()
 
-    def _parse_flow_ports(self, ports_json, points:Points):
+    def _parse_flow_ports(self, ports_json:list[dict], points:Points):
         """
         フローJSONからのリストからFlowPortのリストを作る
         """
-        rets = []
+        rets = FlowPorts()
         for port_json in ports_json:
             point = points.get(port_json['nodeId'])
             if point is None:
@@ -110,7 +110,7 @@ class Parser:
             new_port = FlowPort(port_json['label'], port_json.get('type') or port_json['types'], point)
             if new_port in rets:
                 raise Exception(f'同じlabelのPort({new_port.label})が存在します')
-            rets.append(new_port)
+            rets.add(new_port)
         return rets
 
     def _replace_variadic_port(self, ports, targets:dict):
@@ -223,7 +223,7 @@ class Parser:
                     step.ex_acceptable = True
 
         # 作成したStep及びPointのリストを返す
-        return FlowElements(substeps, points, i_ports=[], o_ports=[])
+        return FlowElements(substeps, points)
 
     def _update_flow_by_other_than_runnable(self, nodes_json, flow_elements:FlowElements, use_cache:bool):
         """
@@ -326,8 +326,8 @@ class Parser:
             dst_tube is None or point.add_dst_tube(dst_tube)
         return point
 
-    def is_i_port(self, i_ports:list[FlowPort], point:Point):
+    def is_i_port(self, i_ports:FlowPorts, point:Point):
         return any(p.point==point for p in i_ports)
 
-    def is_o_port(self, o_ports:list[FlowPort], point:Point):
+    def is_o_port(self, o_ports:FlowPorts, point:Point):
         return any(p.point==point for p in o_ports)

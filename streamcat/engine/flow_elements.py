@@ -1,12 +1,15 @@
 from .step import Steps
 from .point import Points
-from .flow_port import FlowPort
+from .flow_port import FlowPorts
 
 class FlowElements():
     """
     フローが含むStep、Point、フロー入出力Portを保持する
     """
-    def __init__(self, steps:Steps, points:Points, i_ports:list[FlowPort], o_ports:list[FlowPort]):
+    def __init__(self, steps:Steps=Steps(),
+                 points:Points=Points(),
+                 i_ports:FlowPorts=FlowPorts(),
+                 o_ports:FlowPorts=FlowPorts()):
         self.substeps = steps
         self.points = points
         self.i_ports = i_ports

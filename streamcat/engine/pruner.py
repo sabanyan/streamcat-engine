@@ -3,7 +3,7 @@ from .flow_command import FlowCommand
 from .flow_elements import FlowElements
 from .step import Step
 from .point import Point
-from .flow_port import FlowPort
+from .flow_port import FlowPorts
 from .tube import Tube, Tubes
 
 class Pruner(Upstreamer):
@@ -28,7 +28,7 @@ class Pruner(Upstreamer):
                 subflow_elements = FlowElements(s.command.substeps, s.command.points, s.command.i_ports, s.command.o_ports)
                 self._subflow_pruners[s] = Pruner(subflow_elements)
 
-    def search_up_i_ports(self, o_ports:set[FlowPort]):
+    def search_up_i_ports(self, o_ports:FlowPorts):
         """
         指定するフロー出力Portからフロー構造を逆に辿って、実行可能Stepとフロー入力Portを返す
         """

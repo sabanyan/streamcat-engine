@@ -1,8 +1,7 @@
 from streamcat.core import Command
 from streamcat.store import Flow
 from .point import Point, Points
-from .ports import Ports
-from .flow_port import FlowPort
+from .flow_port import FlowPort, FlowPorts
 
 class FlowCommand(Command):
     """
@@ -90,7 +89,7 @@ class FlowCommand(Command):
 
         # SaverActivatorが中継した出力Portのリストを保持する
         # (Port.labelの重複をさせないためPortsを用いる)
-        self.relayed_o_ports = Ports()
+        self.relayed_o_ports = FlowPorts()
 
         # TODO: 用途不明
         from streamcat.store import ModuleStore
@@ -134,7 +133,7 @@ class FlowCommand(Command):
             self._activity = activity_folder.create_activity(self.label, self._flow, args)
 
             # SaverCommandの副作用(出力処理)を実行する為に、その出力Pointをフローの出力Pointに設定する
-            self.relayed_o_ports = Ports()
+            self.relayed_o_ports = FlowPorts()
             _saver_activator = SaverActivator(self._flow, self._datum_factory, self._activity)
             _saver_activator.traverse(flow_cmd=self)
 
@@ -193,7 +192,7 @@ class FlowCommand(Command):
     @property
     def i_ports(self):
         if self._flow_elements is None:
-            return []
+            return FlowPorts()
         else:
             return self._flow_elements.i_ports
 
@@ -204,7 +203,7 @@ class FlowCommand(Command):
     @property
     def o_ports(self):
         if self._flow_elements is None:
-            return []
+            return FlowPorts()
         else:
             return self._flow_elements.o_ports
 
@@ -248,7 +247,7 @@ class FlowCommand(Command):
         if point not in self.points:
             raise Exception(f'指定されたPoint({point.id})がFlow({self})にありませんでした')
 
-        self.o_ports.append(new_o_port)
+        self.o_ports.add(new_o_port)
 
     def close_i_port(self, port_label:str):
         for port in self.i_ports:

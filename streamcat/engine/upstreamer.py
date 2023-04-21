@@ -1,5 +1,5 @@
 from .point import Points, Point
-from .flow_port import FlowPort
+from .flow_port import FlowPorts
 from .tube import Tube
 
 def union(sets:list[set]):
@@ -19,7 +19,7 @@ class Upstreamer:
     def __init__(self, points:Points) -> None:
         self._points = points
 
-    def _search_up_all_invokable_steps(self, o_ports:set[FlowPort]):
+    def _search_up_all_invokable_steps(self, o_ports:FlowPorts):
         """
         指定されたo_portsからフロー構造を逆に辿って、実行準備が整ったstepを見つけ出す
         """
