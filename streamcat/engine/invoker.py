@@ -1,16 +1,15 @@
 from .upstreamer import Upstreamer
+from .flow_elements import FlowElements
 from .step import Step
-from .point import Points
-from .flow_port import FlowPort
 
 class Invoker(Upstreamer):
     """
     フローを実行する
     """
-    def __init__(self, points: Points, i_ports:list[FlowPort], o_ports:list[FlowPort], is_main:bool) -> None:
-        super().__init__(points)
-        self._i_ports = i_ports
-        self._o_ports = o_ports
+    def __init__(self, flow_elements:FlowElements, is_main:bool) -> None:
+        super().__init__(flow_elements.points)
+        self._i_ports = flow_elements.i_ports
+        self._o_ports = flow_elements.o_ports
         self._is_main = is_main
 
     def run(self, flow_args:dict, inputs:dict):

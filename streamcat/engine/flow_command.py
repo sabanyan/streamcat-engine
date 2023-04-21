@@ -143,14 +143,14 @@ class FlowCommand(Command):
             outs_terminator.terminate(vis_args, use_cache)
 
             # フローを縦型探索して不要な接続を刈る
-            Pruner(self.substeps, self.points, self.i_ports, self._is_main).search_up_i_ports(self.o_ports)
+            Pruner(self._flow_elements, self._is_main).search_up_i_ports(self.o_ports)
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)
 
         # フローを実行し、outsを返す
         # 実行において、再び縦型探索される
-        return Invoker(self.points, self.i_ports, self.o_ports, self._is_main).run(flow_args, inputs)
+        return Invoker(self._flow_elements, self._is_main).run(flow_args, inputs)
 
     def parse(self, use_cache:bool):
         # フローJSONを解釈する

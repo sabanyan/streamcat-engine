@@ -1,7 +1,8 @@
 from .upstreamer import Upstreamer
 from .flow_command import FlowCommand
-from .step import Steps
-from .point import Points, Point
+from .flow_elements import FlowElements
+from .step import Step
+from .point import Point
 from .flow_port import FlowPort
 from .tube import Tube, Tubes
 
@@ -9,9 +10,9 @@ class Pruner(Upstreamer):
     """
     フローを縦型探索して不要な接続を刈る
     """
-    def __init__(self, steps:Steps, points:Points, i_ports:list[FlowPort], is_main:bool=False) -> None:
-        super().__init__(points)
-        self._i_ports = i_ports
+    def __init__(self, flow_elements:FlowElements, is_main:bool=False) -> None:
+        super().__init__(flow_elements.points)
+        self._i_ports = flow_elements.i_ports
         self._is_main = is_main
 
         # 全てのサブフローStepに対して、その入力Portへ繋がり、実行時に使用されるTube
@@ -21,7 +22,11 @@ class Pruner(Upstreamer):
         self._using_flow_src_tubes = Tubes()
 
         # 全てのサブフローStepに対して、一つのPrunerオブジェクトを用意する
-        self._subflow_pruners = {s : Pruner(s.command.substeps, s.command.points, s.command.i_ports) for s in steps if s.is_flow}
+        self._subflow_pruners:dict[Step, Pruner] = {}
+        for s in flow_elements.substeps:
+            if s.is_flow:
+                subflow_elements = FlowElements(s.command.substeps, s.command.points, s.command.i_ports, s.command.o_ports)
+                self._subflow_pruners[s] = Pruner(subflow_elements)
 
     def search_up_i_ports(self, o_ports:set[FlowPort]):
         """

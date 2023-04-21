@@ -29,39 +29,31 @@ class OutsTerminator:
         self._datum_factory = datum_factory
         self._lock_uuid = lock_uuid
 
-    def init(self, activity):
-        """
-        初期状態に戻す
-        """
-        from .appenders import ActivityDataDestAppender, CacheDataDestAppender
-        self._activity_data_dest_appender = ActivityDataDestAppender(activity)
-
-        start_at = self._activity_data_dest_appender.activity._start_at
-        self._cache_data_dest_appender = CacheDataDestAppender(self._flow, self._datum_factory, self._lock_uuid, start_at)
-    
     def terminate(self, vis_args:dict, use_cache:bool=False):
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない
         # また、キャッシュの出力処理もしない
-        if self._flow_cmd._is_main:
-            # プレビューを取得するPoint
-            vis_ids = vis_args.keys()
-            is_vis = len(vis_ids) > 0
+        if not self._flow_cmd.is_main:
+            return
 
-            # outs出力処理
-            if is_vis:
-                # Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
-                self._terminate_for_vizs(self._flow_cmd, vis_args, vis_ids)
-            else:
-                # フロー出力PointにRunsコマンドとActivityコマンドを付加する
-                self._terminate_for_exec(self._flow_cmd)
+        # プレビューを取得するPoint
+        vis_ids = vis_args.keys()
+        is_vis = len(vis_ids) > 0
 
-            # キャッシュを利用する指定がされていれば、キャッシュデータデストを付加する
-            if use_cache:
-                # キャッシュ出力=ONのPointにキャッシュデータデストを付加する
-                # ・サブフロー内ではキャッシュは作成しない
-                # ・is_outかつis_cacheなPointにも対応できるよう
-                #   データデストを付加した後にキャッシュデータデストを付加すること
-                self._append_cache_saver_cmds(self._flow_cmd)
+        # outs出力処理
+        if is_vis:
+            # Vis出力PointにVisコマンド、RunsコマンドとActivityコマンドを付加する
+            self._terminate_for_vizs(self._flow_cmd, vis_args, vis_ids)
+        else:
+            # フロー出力PointにRunsコマンドとActivityコマンドを付加する
+            self._terminate_for_exec(self._flow_cmd)
+
+        # キャッシュを利用する指定がされていれば、キャッシュデータデストを付加する
+        if use_cache:
+            # キャッシュ出力=ONのPointにキャッシュデータデストを付加する
+            # ・サブフロー内ではキャッシュは作成しない
+            # ・is_outかつis_cacheなPointにも対応できるよう
+            #   データデストを付加した後にキャッシュデータデストを付加すること
+            self._append_cache_saver_cmds(self._flow_cmd)
 
     def _terminate_for_vizs(self, flow_cmd:FlowCommand, vis_args:dict, vis_ids:list[str]):
         """
