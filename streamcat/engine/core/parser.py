@@ -76,7 +76,7 @@ class Parser:
         self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
     def parse(self, use_cache:bool):
-        # フローJSONからStepointを生成する
+        # フローJSONからFlowElementsを生成する
         if self._flow_data.has_nodes:
             # フローの参照権限がなくても実行権限があれば、フローJSONを参照する必要がある
             # そのため、use_exec_auth=Trueを指定する

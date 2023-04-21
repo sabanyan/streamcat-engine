@@ -5,32 +5,13 @@ class SaverActivator:
     """
     実行可能フローの前処理
     """
-
-    class Context():
-        """
-        Preprocessorを再帰的に下降して呼び出すときに参照する共通の格納場所
-        """
-        def __init__(self, flow, datum_factory, activity):
-            self.datum_factory = datum_factory
-
-            self.flow = flow
-            self.flow_uuid = flow.uuid
-            self.flow_label = flow.label
-
-            # 処理のAcitivityのUUID
-            self.activity = activity
-
-            # 処理の開始時刻を取得する
-            self.start_at = activity._start_at
-
-            # ポート名の接尾語(ポート名が被らないようにするため)
-            self.port_suffix_num = 0
-
     def __init__(self, flow_cmd:FlowCommand, flow, datum_factory=None, activity=None):
-        # Context
-        self._context = SaverActivator.Context(flow, datum_factory, activity)
         # FlowCommand
         self._flow_cmd = flow_cmd
+        # SCommandに設定する引数
+        self._flow = flow
+        self._datum_factory = datum_factory
+        self._activity = activity
 
     def traverse(self, src_point:Point=None):
         # 
@@ -50,9 +31,9 @@ class SaverActivator:
                     data_dst_src_point = src_point
                 #
                 SaverActivator(step.command,
-                               self._context.flow,
-                               self._context.datum_factory,
-                               self._context.activity).traverse(src_point=data_dst_src_point)
+                               self._flow,
+                               self._datum_factory,
+                               self._activity).traverse(src_point=data_dst_src_point)
 
         # フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
         # そのフロー出力ポートを中継ポートに設定する
@@ -188,15 +169,15 @@ class SaverActivator:
                 continue
             if isinstance(step.command, SCommand):
                 # SCommand共通引数を作成する
-                args = {'flow'         : self._context.flow,
-                        'flow_uuid'    : self._context.flow_uuid,
-                        'flow_label'   : self._context.flow_label,
-                        'result_folder': self._context.flow.find_parent(),
+                args = {'flow'         : self._flow,
+                        'flow_uuid'    : self._flow.uuid,
+                        'flow_label'   : self._flow.label,
+                        'result_folder': self._flow.find_parent(),
                         # データデストの入力PointのlabelをSaverCommandに渡す
                         'src_point'    : src_point,
-                        'datum_factory': self._context.datum_factory,
-                        'start_at'     : self._context.start_at,
-                        'activity_uuid': self._context.activity.uuid}
+                        'datum_factory': self._datum_factory,
+                        'start_at'     : self._activity._start_at,
+                        'activity_uuid': self._activity.uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する
                 args.update(step.args)
                 step.args = args
