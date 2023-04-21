@@ -133,15 +133,13 @@ class FlowCommand(Command):
 
             # SaverCommandの副作用(出力処理)を実行する為に、その出力Pointをフローの出力Pointに設定する
             self.relayed_o_ports = FlowPorts()
-            saver_activator = SaverActivator(self._flow, self._datum_factory, self._activity)
-            saver_activator.traverse(flow_cmd=self)
+            SaverActivator(self, self._flow, self._datum_factory, self._activity).traverse()
 
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
-            outs_terminator = OutsTerminator(self, self._flow, self._datum_factory, self._lock_uuid, self._activity)
-            outs_terminator.terminate(vis_args, use_cache)
+            OutsTerminator(self, self._flow, self._datum_factory, self._lock_uuid, self._activity).terminate(vis_args, use_cache)
 
             # フローを縦型探索して不要な接続を刈る
-            Pruner(self._flow_elements, self._is_main).traverse(self.o_ports)
+            Pruner(self._flow_elements, self._is_main).traverse()
 
         # フローが定義する仮引数とこれに対応する値をDictで用意する
         flow_args = self._make_complete_flow_args(args)

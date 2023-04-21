@@ -28,11 +28,13 @@ class SaverActivator:
             # ポート名の接尾語(ポート名が被らないようにするため)
             self.port_suffix_num = 0
 
-    def __init__(self, flow, datum_factory=None, activity=None):
+    def __init__(self, flow_cmd:FlowCommand, flow, datum_factory=None, activity=None):
         # Context
         self._context = SaverActivator.Context(flow, datum_factory, activity)
+        # FlowCommand
+        self._flow_cmd = flow_cmd
 
-    def traverse(self, flow_cmd:FlowCommand, src_point:Point=None):
+    def traverse(self, src_point:Point=None):
         # 
         # Rootフローの出力Pointから辿れないコマンドは実行されない
         # その為、SaverCommandはその副作用(出力処理)を実行する為に、そのコマンドの出力Pointをフローの出力Pointに設定する
@@ -40,27 +42,29 @@ class SaverActivator:
         # 
 
         # サブフローを縦型探索してSaverCommandの出力Pointを処理する
-        for step in flow_cmd.steps:
+        for step in self._flow_cmd.steps:
             if step.is_flow:
                 # step.classificationの設定がないStepにも対応できるよう入出力Portの数で判定する
                 is_datadst = len(step.command.i_ports) == 1 and len(step._o_ports) == 0
                 if is_datadst:
-                    data_dst_src_point = [p for p in flow_cmd.points if p.dst_tubes.have_step(step)][0]
+                    data_dst_src_point = [p for p in self._flow_cmd.points if p.dst_tubes.have_step(step)][0]
                 else:
                     data_dst_src_point = src_point
-                self.traverse(step.command, src_point=data_dst_src_point)
+                #
+                SaverActivator(step.command,
+                               self._context.flow,
+                               self._context.datum_factory,
+                               self._context.activity).traverse(src_point=data_dst_src_point)
 
         # フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
         # そのフロー出力ポートを中継ポートに設定する
-        self._open_saver_cmd_points(flow_cmd)
+        self._open_saver_cmd_points(self._flow_cmd)
 
         # フロー内の全ての中継ポートを再中継する
-        self._relay_o_ports(flow_cmd)
+        self._relay_o_ports(self._flow_cmd)
 
         # SCommandに共通の引数を設定する
-        self._set_scmds_args(flow_cmd.steps, src_point)
-
-        return flow_cmd
+        self._set_scmds_args(self._flow_cmd.steps, src_point)
 
     def _open_saver_cmd_points(self, flow_cmd:FlowCommand):
         """

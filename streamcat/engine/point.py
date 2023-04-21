@@ -26,7 +26,7 @@ class Point:
 
         # 入力ポートと出力ポートの型が不一致ならば例外を送出する
         self._validate_port_type(src_tube)
-        
+
         self.makeCache = makeCache
 
     def __repr__(self):
@@ -162,7 +162,7 @@ class Points:
             raise Exception(f'PointsにPoint({point_id})は存在しません')
         else:
             return point
-        
+
     def __len__(self):
         return len(self._points)
 

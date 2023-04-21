@@ -171,7 +171,7 @@ class Steps:
             raise Exception(f'StepsにStep({step_id})は存在しません')
         else:
             return step
-        
+
     def __len__(self):
         return len(self._steps)
 

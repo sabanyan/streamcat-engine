@@ -13,6 +13,7 @@ class Pruner(Upstreamer):
     def __init__(self, flow_elements:FlowElements, is_main:bool=False) -> None:
         super().__init__(flow_elements.points)
         self._i_ports = flow_elements.i_ports
+        self._o_ports = flow_elements.o_ports
         self._is_main = is_main
 
         # 全てのサブフローStepに対して、その入力Portへ繋がり、実行時に使用されるTube
@@ -28,12 +29,12 @@ class Pruner(Upstreamer):
                 subflow_elements = FlowElements(s.command.steps, s.command.points, s.command.i_ports, s.command.o_ports)
                 self._subflow_pruners[s] = Pruner(subflow_elements)
 
-    def traverse(self, o_ports:FlowPorts):
+    def traverse(self):
         """
         不要な接続を刈る
         """
         # フローの出力Portから入力Portを取得する
-        self._search_up_i_ports(o_ports)
+        self._search_up_i_ports(self._o_ports)
 
         # 全てのサブフローの探索を終えた後に不要な接続を刈る
         if self._is_main:
