@@ -40,7 +40,7 @@ class SaverActivator:
         # 
 
         # サブフローを縦型探索してSaverCommandの出力Pointを処理する
-        for step in flow_cmd.substeps:
+        for step in flow_cmd.steps:
             if step.is_flow:
                 # step.classificationの設定がないStepにも対応できるよう入出力Portの数で判定する
                 is_datadst = len(step.command.i_ports) == 1 and len(step._o_ports) == 0
@@ -58,7 +58,7 @@ class SaverActivator:
         self._relay_o_ports(flow_cmd)
 
         # SCommandに共通の引数を設定する
-        self._set_scmds_args(flow_cmd.substeps, src_point)
+        self._set_scmds_args(flow_cmd.steps, src_point)
 
         return flow_cmd
 
@@ -93,7 +93,7 @@ class SaverActivator:
         """
         フロー内の全ての中継ポートを再中継する
         """
-        for step in flow_cmd.substeps:
+        for step in flow_cmd.steps:
             # コマンドにはポートを動的に追加できないため、
             # コマンドがデータデストの場合は、そのコマンドは実行できない
             if not step.is_flow:

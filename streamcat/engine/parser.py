@@ -144,7 +144,7 @@ class Parser:
         from .step import Step
         from .tube import Tube
 
-        substeps = Steps()
+        steps = Steps()
         points = Points()
 
         # Commandに繋がらない孤立したデータノードからもPointを生成する為
@@ -187,7 +187,7 @@ class Parser:
             # runnableのインスタンス化を行う
             step = Step(node.id, cmd, args, o_ports=o_ports, classification=node.get('classification'))
             # Stepを集める
-            substeps.add(step)
+            steps.add(step)
 
             # srcとdstからpointを作る
             for s_port_label, s_node_id in srcs.items():
@@ -223,7 +223,7 @@ class Parser:
                     step.ex_acceptable = True
 
         # 作成したStep及びPointのリストを返す
-        return FlowElements(substeps, points)
+        return FlowElements(steps, points)
 
     def _update_flow_by_other_than_runnable(self, nodes_json, flow_elements:FlowElements, use_cache:bool):
         """
@@ -271,7 +271,7 @@ class Parser:
                         continue
                     # uuidが既に振られている場合は、Loaderから取ってくるようにする
                     try:
-                        self._folder_data_source_prepender.do_prepend(flow_elements.points, flow_elements.substeps, target_point, node.get('uuid'))
+                        self._folder_data_source_prepender.do_prepend(flow_elements.points, flow_elements.steps, target_point, node.get('uuid'))
                     except Exception as e:
                         if node.has_cache:
                             # キャッシュの参照ができなくてもフローの実行は中断しない

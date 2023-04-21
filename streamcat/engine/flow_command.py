@@ -185,8 +185,8 @@ class FlowCommand(Command):
         self._flow_elements.points = points
 
     @property
-    def substeps(self):
-        return self._flow_elements.substeps
+    def steps(self):
+        return self._flow_elements.steps
 
     @property
     def i_ports(self):
@@ -275,7 +275,7 @@ class FlowCommand(Command):
     def dtor(self, args={}):
         """
         終了処理
-        - self.substepsの各Stepは
+        - self.stepsの各Stepは
           Invokder._run_invokable_steps()においてdtor()される
         """
         # TmpファイルはNYSOL-Pythonコマンドの入力に使用するので

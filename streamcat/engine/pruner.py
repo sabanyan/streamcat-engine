@@ -23,9 +23,9 @@ class Pruner(Upstreamer):
 
         # 全てのサブフローStepに対して、一つのPrunerオブジェクトを用意する
         self._subflow_pruners:dict[Step, Pruner] = {}
-        for s in flow_elements.substeps:
+        for s in flow_elements.steps:
             if s.is_flow:
-                subflow_elements = FlowElements(s.command.substeps, s.command.points, s.command.i_ports, s.command.o_ports)
+                subflow_elements = FlowElements(s.command.steps, s.command.points, s.command.i_ports, s.command.o_ports)
                 self._subflow_pruners[s] = Pruner(subflow_elements)
 
     def traverse(self, o_ports:FlowPorts):

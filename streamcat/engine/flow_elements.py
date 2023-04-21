@@ -10,7 +10,7 @@ class FlowElements():
                  points:Points=Points(),
                  i_ports:FlowPorts=FlowPorts(),
                  o_ports:FlowPorts=FlowPorts()):
-        self.substeps = steps
+        self.steps = steps
         self.points = points
         self.i_ports = i_ports
         self.o_ports = o_ports
