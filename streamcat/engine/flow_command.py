@@ -93,9 +93,7 @@ class FlowCommand(Command):
 
         # データソースを追加する
         from streamcat.store.factory import DatumFactory
-        from .appenders import FolderDataSourcePrepender
         self._datum_factory = DatumFactory(flow._session)
-        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         # 仮引数を保持する
         self.params = self._flow_data.params or {}
@@ -108,7 +106,7 @@ class FlowCommand(Command):
         from streamcat.store import ModuleStore
         self.module_store = ModuleStore()
 
-    def run(self, args={}, inputs={}):
+    def run(self, args:dict={}, inputs:dict={}):
         """
         フローを実行する
         """

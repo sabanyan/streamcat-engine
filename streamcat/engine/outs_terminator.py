@@ -25,9 +25,6 @@ class OutsTerminator:
 
         # FlowCommand
         self._flow_cmd = flow_cmd
-        self._flow = flow
-        self._datum_factory = datum_factory
-        self._lock_uuid = lock_uuid
 
     def terminate(self, vis_args:dict, use_cache:bool=False):
         # サブフローの場合、フロー出力PointへのSaverコマンド等の付加をしない

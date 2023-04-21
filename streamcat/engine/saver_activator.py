@@ -1,5 +1,5 @@
 from .flow_command import FlowCommand
-from .step import Steps
+from .step import Step, Steps
 from .point import Point
 from .flow_port import FlowPort
 
@@ -108,7 +108,7 @@ class SaverActivator:
                     # 中継済みのポートとして記録する
                     flow_cmd.relayed_o_ports.add(new_port)
 
-    def _search_out_port_point(self, flow_cmd:FlowCommand, step):
+    def _search_out_port_point(self, flow_cmd:FlowCommand, step:Step):
         """
         指定されたStepの全ての入力Pointについて、経路を逆に辿るとフロー出力Pointに繋がる場合は、Trueを返す
         ただし、辿る経路の途中にN入力コマンドがある場合は、そのN入力のうちフロー出力Pointに繋がる入力Pointを切断してFalseを返す
@@ -151,7 +151,7 @@ class SaverActivator:
         # stepの全ての入力Pointについて、経路を逆に辿るとフロー出力Pointに繋がる場合は、Trueを返す
         return len(out_points) > 0 and len(out_points) == len(prev_points)
 
-    def _relay_o_port(self, flow_cmd:FlowCommand, step, port):
+    def _relay_o_port(self, flow_cmd:FlowCommand, step:Step, port:FlowPort):
         """
         フローの出力ポートを親フローに中継する
         """
