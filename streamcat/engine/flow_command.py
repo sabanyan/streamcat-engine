@@ -74,8 +74,15 @@ class FlowCommand(Command):
 
         self._flow = flow
         self._lock_uuid = lock_uuid
+
         # メインフローであればTrue
         self._is_main = is_main
+
+        # Steps, Points, i_ports, o_portsを保持する
+        self._flow_elements = None
+
+        # Activityはメインフローの実行時(run)に作成する
+        self._activity = None
 
         # 実行前にフローJSONの書式の検証をする
         flow.flow_data.valid_flow_json_or_raise()
@@ -83,6 +90,12 @@ class FlowCommand(Command):
         # フローJSONをコピーする
         # (TODO: なぜコピーする必要があるのか忘れてしまった)
         self._flow_data = flow.flow_data.copy()
+
+        # データソースを追加する
+        from streamcat.store.factory import DatumFactory
+        from .appenders import FolderDataSourcePrepender
+        self._datum_factory = DatumFactory(flow._session)
+        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
         # 仮引数を保持する
         self.params = self._flow_data.params or {}
@@ -94,18 +107,6 @@ class FlowCommand(Command):
         # TODO: 用途不明
         from streamcat.store import ModuleStore
         self.module_store = ModuleStore()
-
-        # Steps, Points, i_ports, o_portsを保持する
-        self._flow_elements = None
-
-        # Activityはメインフローの実行時(run)に作成する
-        self._activity = None
-
-        # データソースを追加する
-        from streamcat.store.factory import DatumFactory
-        from .appenders import FolderDataSourcePrepender
-        self._datum_factory = DatumFactory(flow._session)
-        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
 
     def run(self, args={}, inputs={}):
         """
@@ -134,8 +135,8 @@ class FlowCommand(Command):
 
             # SaverCommandの副作用(出力処理)を実行する為に、その出力Pointをフローの出力Pointに設定する
             self.relayed_o_ports = FlowPorts()
-            _saver_activator = SaverActivator(self._flow, self._datum_factory, self._activity)
-            _saver_activator.traverse(flow_cmd=self)
+            saver_activator = SaverActivator(self._flow, self._datum_factory, self._activity)
+            saver_activator.traverse(flow_cmd=self)
 
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
             outs_terminator = OutsTerminator(self, self._flow, self._datum_factory, self._lock_uuid, self._activity)

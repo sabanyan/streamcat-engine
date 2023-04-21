@@ -49,7 +49,7 @@ class Pruner(Upstreamer):
             self._cut_unusing_tubes()
 
         # 実行可能Stepとフロー入力Portを返す
-        return invokable_steps, filtered_i_ports
+        return filtered_i_ports
     
     def _cut_unusing_tubes(self):
         """
@@ -94,7 +94,7 @@ class Pruner(Upstreamer):
 
             # サブフローの出力Portからサブフローの開始Stepと入力Portを取得する
             subflow_pruner = self._subflow_pruners[step]
-            start_steps, i_ports = subflow_pruner.search_up_i_ports(o_ports)
+            i_ports = subflow_pruner.search_up_i_ports(o_ports)
 
             # そのサブフローの入力Portに紐づく入力Pointを取得する
             prev_points = {p for i_port in i_ports for p in self._points if p.dst_tubes.have_tube(i_port, step)}

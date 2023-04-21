@@ -255,7 +255,7 @@ class Parser:
                 target_point.datum = store
                 continue
 
-            # 入出力Point以外の場合、そのPointに紐づくDatumオブジェクト格納する
+            # 入出力Point以外の場合、そのPointに紐づくDatumオブジェクトを格納する
             # ただし、メインフローの場合は入出力Pointか否かを条件にしない
             if self._is_main or not (self.is_i_port(flow_elements.i_ports, target_point) or self.is_o_port(flow_elements.o_ports, target_point)):
                 if node.has_value:

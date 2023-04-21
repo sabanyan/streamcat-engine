@@ -85,7 +85,6 @@ class SaverActivator:
                 if flow_cmd._is_main or not self._search_out_port_point(flow_cmd, src_tube.step):
                     # フローの出力Pointに設定する
                     o_port = FlowPort(point.id, 'mcmd', point, relayed=True)
-                    # FIXME: relayed_o_port()でもオープンしてるから不要では？
                     flow_cmd.open_o_port(o_port)
                     # 中継済みのポートとして記録する
                     flow_cmd.relayed_o_ports.add(o_port)
