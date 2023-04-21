@@ -257,7 +257,7 @@ class Parser:
 
             # 入出力Point以外の場合、そのPointに紐づくDatumオブジェクトを格納する
             # ただし、メインフローの場合は入出力Pointか否かを条件にしない
-            if self._is_main or not (self.is_i_port(flow_elements.i_ports, target_point) or self.is_o_port(flow_elements.o_ports, target_point)):
+            if self._is_main or not (flow_elements.i_ports.exists_by_point(target_point) or flow_elements.o_ports.exists_by_point(target_point)):
                 if node.has_value:
                     # nodeのvalue属性はテストコードで用いている
                     if isinstance(node['value'], list):
@@ -325,9 +325,3 @@ class Parser:
             src_tube is None or point.add_src_tube(src_tube)
             dst_tube is None or point.add_dst_tube(dst_tube)
         return point
-
-    def is_i_port(self, i_ports:FlowPorts, point:Point):
-        return any(p.point==point for p in i_ports)
-
-    def is_o_port(self, o_ports:FlowPorts, point:Point):
-        return any(p.point==point for p in o_ports)

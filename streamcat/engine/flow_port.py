@@ -72,3 +72,9 @@ class FlowPorts():
         全てのPortを削除する
         """
         self._ports.clear()
+
+    def exists(self, port_label:str):
+        return any(p.label==port_label for p in self._ports)
+
+    def exists_by_point(self, point:Point):
+        return any(p.point==point for p in self._ports)

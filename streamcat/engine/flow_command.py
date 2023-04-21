@@ -214,26 +214,17 @@ class FlowCommand(Command):
     def lasts(self):
         return {p.id: p.datum for p in self.points if p.is_last}
 
-    @property
-    def activity(self):
-        return self._activity
-
     @lasts.setter
     def lasts(self, value):
         pass
 
+    @property
+    def activity(self):
+        return self._activity
+
     # @property
     # def outs(self):
     #     return {p.point.id: p.point.datum for p in self.o_ports}
-
-    def is_i_port(self, point:Point):
-        return any(p.point==point for p in self.i_ports)
-
-    def is_o_port(self, point:Point):
-        return any(p.point==point for p in self.o_ports)
-
-    def has_o_port(self, port_label:str):
-        return any(p.label==port_label for p in self.o_ports)
 
     def open_o_port(self, new_o_port:FlowPort):
         """

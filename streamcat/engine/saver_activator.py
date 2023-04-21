@@ -71,7 +71,7 @@ class SaverActivator:
 
         for point in flow_cmd.points:
             # 既にフロー出力Pointの場合は中継しない
-            if flow_cmd.is_o_port(point):
+            if flow_cmd.o_ports.exists_by_point(point):
                 continue
 
             # コマンドの出力Pointでない場合も中継しない
@@ -120,12 +120,12 @@ class SaverActivator:
 
         # stepの全ての入力Pointについて、経路を逆に辿ってフロー出力Pointに繋がるか調べる
         for p in prev_points:
-            if flow_cmd.is_o_port(p):
+            if flow_cmd.o_ports.exists_by_point(p):
                 # stepの入力Pointがフロー出力Pointの場合は、そのstepの入力Pointを記録する
                 for dst_tube in p.dst_tubes.filter_by_step(step):
                     # フロー出力Point
                     out_points.add(p)
-            elif flow_cmd.is_i_port(p):
+            elif flow_cmd.i_ports.exists_by_point(p):
                 # stepの入力Pointがフロー入力Pointの場合は、その経路の探索を終える
                 pass
             else:
@@ -165,7 +165,7 @@ class SaverActivator:
 
         # 親フロー内で出力Portのlabelが重複する場合は、末尾に数字を付加する
         port_label = port.label
-        while flow_cmd.has_o_port(port_label):
+        while flow_cmd.o_ports.exists(port_label):
             port_label = SavableDatum._increment_file_name(port_label)
 
         # サブフローの出力を親フローに繋げる
