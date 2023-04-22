@@ -4686,6 +4686,155 @@ class DataSourceTest(TestCaseBase):
         ]
         self.assertListEqual(result, expected)
 
+    def test_remove_tmp_files_after_run(self):
+        """
+        フロー実行後にTmpファイルが削除されること
+        """
+        from streamcat.core import Tmp
+
+        # ルートデータストアを取得する
+        root = self.factory3.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewnumber -> tmp
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "type": "command",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "a": "num",
+                        "I": "1",
+                        "S": "1",
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "Tmpファイルコマンド",
+                    "type": "command",
+                    "commandId": "tmp",
+                    "args": {},
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    },
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # subflowを呼び出す
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "f",
+                    "label": "f",
+                    "type": "flow",
+                    "uuid": "48d4e950-c41b-4b4f-a170-42599d6088d6",
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {
+                        "d1": "D"
+                    },
+                },
+                {
+                    "id": "D",
+                    "label": "モナリザ",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": 'o0', 
+                    "label": "ライブラリ出力🖨", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "uuid": self.data_dst.uuid,
+                    "srcs": {
+                        "i": 'D'
+                    },
+                    "dsts": {},
+                }
+            ],
+            "ports": [[],[]]
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Tmpファイルを作成するサブフロー', FlowData(sub_flow_json))
+        sub_flow.uuid = '48d4e950-c41b-4b4f-a170-42599d6088d6'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('Mainフロー', FlowData(flow_json)) 
+        flow.save()
+        flow = flow.reload()
+
+        # フロー実行前に全てのTmpファイルを削除する
+        tmp_files = [f for f in Tmp._get_tmp_directory().glob(f'__SCATTMP_*')]
+        for f in tmp_files:
+            f.unlink(missing_ok=True)
+
+        # フローを実行する
+        flow_cmd = FlowCommand(flow)
+        outs = execute(flow_cmd, {}, {})
+        outs = convert_from_job(outs)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(outs), 1)
+
+        # D
+        self.assertIsNotNone(outs['D'], 'SaverCommandは結果(D)を出力しませんでした')
+        out_frame1 = outs['D']
+        self.assertTrue(self.factory3.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(out_frame1.label.startswith('モナリザ'))
+        self.assertTrue(out_frame1.file_exists)
+
+        # TmpディレクトリからTMPファイルを取得する
+        tmp_files = [f for f in Tmp._get_tmp_directory().glob(f'__SCATTMP_*')]
+        # フロー実行後はTmpファイルは削除されていること
+        self.assertEqual(len(tmp_files), 0, msg=f'{len(tmp_files)}つのTmpファイルが残っています')
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory3.data.load_trash_folder()
+        trash.trash_all()
+
     def test_vis_optimization(self):
         """
         プレビューの結果データの作成に関係しないコマンドは実行しないこと
@@ -4754,7 +4903,7 @@ class DataSourceTest(TestCaseBase):
                 }
             ]
         }
-    
+
         # ルートデータストアを取得する
         root = self.factory.data.load_root()
 
