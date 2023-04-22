@@ -233,30 +233,6 @@ class FlowCommand(Command):
 
         self.o_ports.add(new_o_port)
 
-    def close_i_port(self, port_label:str):
-        for port in self.i_ports:
-            if port.label == port_label:
-                self.i_ports.remove(port)
-                return
-        return Exception(f'指定されたPort({port_label})はFlow({self})に存在しません')
-
-    def close_o_port(self, port_label:str):
-        for port in self.o_ports:
-            if port.label == port_label:
-                self.o_ports.remove(port)
-                return
-        return Exception(f'指定されたPort({port_label})はFlow({self})に存在しません')
-
-    def close_o_port_by_point(self, point):
-        for port in self.o_ports:
-            if port.point == point:
-                self.o_ports.remove(port)
-                return
-        return Exception(f'指定されたPoint({port})はFlow({self})の出力Pointではありません')
-
-    def close_all_o_ports(self):
-        self.o_ports.clear()
-
     def dtor(self, args={}):
         """
         終了処理

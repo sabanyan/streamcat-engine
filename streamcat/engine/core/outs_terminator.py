@@ -58,7 +58,7 @@ class OutsTerminator:
         # プレビューの結果を得るのに不要なコマンドをInvokerでrun()させない為
         # メインフローの全ての出力Portを閉じる
         # (_search_invokable_steps()では出力Portを起点に実行すべきコマンドを探す)
-        flow_cmd.close_all_o_ports()
+        flow_cmd.o_ports.clear()
 
         # プレビュー実行の場合、実行結果情報を保存しない
         self._activity_data_dest_appender.set_is_vis()
@@ -92,7 +92,7 @@ class OutsTerminator:
             # Activity Stepを付加する
             out_point = self._activity_data_dest_appender.do_append(flow_cmd, out_point, src_point_of_data_dst)
             # 出力Point設定を元のPointからActivity_pointに変更する
-            flow_cmd.close_o_port_by_point(original_out_point)
+            flow_cmd.o_ports.remove_by_point(original_out_point)
             out_point and flow_cmd.open_o_port(FlowPort(out_point.id, 'outs', out_point))
 
         # SaverCommandとそのサブクラスのコマンドが存在しない場合でも、Activity Stepを付加する

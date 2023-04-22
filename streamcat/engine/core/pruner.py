@@ -73,11 +73,11 @@ class Pruner(Upstreamer):
             for prune_flow_dst_tube in prune_flow_dst_tubes:
                 p.dst_tubes.remove(prune_flow_dst_tube)
                 # Invoker._prepare_inputs()での例外送出を防ぐため使用されない入力Portも閉じる
-                prune_flow_dst_tube.step.command.close_i_port(prune_flow_dst_tube.port.label)
+                prune_flow_dst_tube.step.command.i_ports.remove(prune_flow_dst_tube.port.label)
             # 使用されないサブフローStepからの出力Tubeを切断する
             for prune_flow_src_tube in prune_flow_src_tubes:
                 p.src_tubes.remove(prune_flow_src_tube)
-                prune_flow_src_tube.step.command.close_o_port(prune_flow_src_tube.port.label)
+                prune_flow_src_tube.step.command.o_ports.remove(prune_flow_src_tube.port.label)
 
     def _get_prev_points(self, last_tube:Tube):
         """

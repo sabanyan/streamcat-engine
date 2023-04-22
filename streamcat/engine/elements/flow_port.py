@@ -61,11 +61,25 @@ class FlowPorts():
                 return port
         return None
 
-    def remove(self, port:FlowPort):
+    def remove(self, port_label:str):
         """
         Portを削除する
         """
-        self._ports.remove(port)
+        for port in self._ports:
+            if port.label == port_label:
+                self._ports.remove(port)
+                return
+        return Exception(f'指定されたPort({port_label})は存在しませんでした')
+
+    def remove_by_point(self, point:Point):
+        """
+        Portを削除する
+        """
+        for port in self._ports:
+            if port.point == point:
+                self._ports.remove(port)
+                return
+        return Exception(f'指定されたPoint({port})に紐づくPortは存在しませんでした')
 
     def clear(self):
         """
