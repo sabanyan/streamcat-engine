@@ -5,7 +5,9 @@ from .. import FlowCommand
 from ..elements import FlowElements, Steps, Point, Points, FlowPort, FlowPorts
 
 class Parser:
-
+    """
+    フローJSONを解釈する
+    """
     class Node():
         """
         ノード
@@ -96,13 +98,13 @@ class Parser:
 
     def _parse_flow_ports(self, ports_json:list[dict], points:Points):
         """
-        フローJSONからのリストからFlowPortのリストを作る
+        フローJSONのリストからFlowPortのリストを作る
         """
         rets = FlowPorts()
         for port_json in ports_json:
             point = points.get(port_json['nodeId'])
             if point is None:
-                raise Exception(f'Port({port_json["label"]})に紐づくPoint({port_json["nodeId"]})がフロー({self})に存在しません')
+                raise Exception(f'Port({port_json["label"]})に紐づくPoint({port_json["nodeId"]})がフローに存在しません')
             # サブフローのポートの識別子には'label'を用いる
             new_port = FlowPort(port_json['label'], port_json.get('type') or port_json['types'], point)
             if new_port in rets:

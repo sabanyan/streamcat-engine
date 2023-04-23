@@ -1,6 +1,9 @@
 from threading import Thread
 
 class Job(Thread):
+    """
+    Stepを実行する実行単位
+    """
     def __init__(self, step, inputs):
         # スレッドIDに紐づくTmpファイルの削除が機能するよう
         # Stepの実行と終了処理を一つのスレッドで実行する

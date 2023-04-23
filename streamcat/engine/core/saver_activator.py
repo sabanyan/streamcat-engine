@@ -3,7 +3,7 @@ from ..elements import Step, Steps, Point, FlowPort
 
 class SaverActivator:
     """
-    実行可能フローの前処理
+    Saverコマンドを実行可能にする
     """
     def __init__(self, flow_cmd:FlowCommand, flow, datum_factory=None, activity=None):
         # FlowCommand

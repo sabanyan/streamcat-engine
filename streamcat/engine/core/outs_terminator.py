@@ -3,7 +3,7 @@ from ..elements import Point, Points, FlowPort
 
 class OutsTerminator:
     """
-    コマンドやデータデストを付加する
+    RunsコマンドとActivityコマンドを付加する
     """
     def __init__(self, flow_cmd:FlowCommand, flow, datum_factory, lock_uuid:str, activity) -> None:
         from .appenders import (
