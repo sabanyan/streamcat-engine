@@ -6,68 +6,6 @@ class FlowCommand(Command):
     """
     フローJSONを実行するコマンド
     """
-
-    class Node():
-        """
-        ノード
-        """
-        def __init__(self, node_json):
-            self.id = node_json['id']
-            self.type = node_json['type']
-            self._node_json = node_json
-
-        def __repr__(self):
-            if self.type == 'command':
-                return self._node_json.get('commandId', self.id)
-            else:
-                return self._node_json.get('label', self.id)
-
-        def __getitem__(self, key:str):
-            value = self._node_json.get(key)
-            if value is None:
-                raise Exception(f'Node({self.id})に"{key}"は存在しません')
-            else:
-                return value
-
-        def get(self, key:str):
-            return self._node_json.get(key)
-
-        @property
-        def is_store(self):
-            """
-            指定されたnodeがStoreの場合はTrueを返す
-            """
-            return self.type == 'store'
-
-        @property
-        def is_frame(self):
-            """
-            指定されたnodeがFrameの場合はTrueを返す
-            """
-            return self.type == 'frame'
-
-        @property
-        def is_runnable(self):
-            """
-            指定されたnodeがrunnableかどうかを判断する
-            """
-            return self.type == 'command' or self.type == 'flow'
-
-        @property
-        def has_value(self):
-            """
-            valueをもつnodeかどうか
-            uuidが入っていたらそっちを優先する
-            """
-            return self.get('value') is not None and self.get('uuid') is None
-
-        @property
-        def has_cache(self):
-            """
-            CacheをもつFrameの場合はTrueを返す
-            """
-            return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
-
     def __init__(self, flow:Flow, lock_uuid:str=None, is_main:bool=True):
         super().__init__(flow.label)
 
