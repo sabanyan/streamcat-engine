@@ -1,11 +1,8 @@
 from streamcat.core import Port
-from streamcat.store import Flow
+from streamcat.store import Flow, ApparentOuts
 from streamcat.depo.std.commands import CommandLink
-from streamcat.store.apparent_out import ApparentOuts
-from .flow_command import FlowCommand
-from .point import Point
-from .step import Step
-from .tube import Tubes, Tube
+from .. import FlowCommand
+from ..elements import Step, Point, Tube, Tubes
 
 class FolderDataSourcePrepender():
     def __init__(self, datum_factory):
@@ -13,26 +10,24 @@ class FolderDataSourcePrepender():
         # flow.pyで定義されているFlowはflowと表記する
         self._datum_factory = datum_factory
 
-    def do_prepend(self, flow_cmd:FlowCommand, point:Point, frame_uuid):
+    def do_prepend(self, points, steps, point:Point, frame_uuid):
         frame = self._datum_factory.find_by_uuid(frame_uuid)
         folder_store = frame.find_parent()
-        self._put_loader(flow_cmd, point, folder_store, frame_uuid)
+        self._put_loader(points, steps, point, folder_store, frame_uuid)
 
-    def _put_loader(self, flow_cmd:FlowCommand, target_point:Point, store, frame_uuid):
+    def _put_loader(self, points, steps, target_point:Point, store, frame_uuid):
         """
         target_point(uuidが既にあるdatumのpoint)の前に
         LoaderStepとStorePointをくっつける
         Loaderは指定したstoreからデータを取ってくる
         """
-        loader_cmd = CommandLink('loader').resolve()
-        loader_step = Step('loader', loader_cmd, {'uuid':frame_uuid})
+        loader_step = Step(f'loader_{target_point.id}', CommandLink('loader').resolve(), {'uuid':frame_uuid})
         point_id = target_point.id + '_loader'
         store_point = Point(point_id, None, store, Tube(Port('folder', 'store'), loader_step))
         target_point.src_tubes = Tubes()
         target_point.add_src_tube(Tube(Port('o', 'mcmd'), loader_step))
-        flow_cmd.points.add(store_point)
-        flow_cmd.substeps.append(loader_step)
-
+        points.add(store_point)
+        steps.add(loader_step, avoid_id_collision=True)
 
 class FolderDataDestAppender():
     def __init__(self, flow:Flow, datum_factory, lock_uuid, start_at):
@@ -79,14 +74,14 @@ class FolderDataDestAppender():
         args['start_at'] = self._start_at
 
         # saverコマンドのstepを作成する
-        saver_step = Step(saver.label, saver, args)
+        saver_step = Step(f'{saver.label}_{point.id}', saver, args)
         saver_point = Point(f'{point.id}_{command_id}', Tube(Port('o', 'mcmd'), saver_step))
 
         # pointにsaverコマンドを付加する
         # (pointが終端でない場合は、二股の出力Portになる)
         point.add_dst_tube(Tube(Port('i', 'mcmd'), saver_step))
 
-        flow_cmd.substeps.append(saver_step)
+        flow_cmd.steps.add(saver_step, avoid_id_collision=True)
         flow_cmd.points.add(saver_point)
 
         return saver_point
@@ -181,10 +176,10 @@ class VisDataDestAppender():
         # pointにConvToUtf8 Stepを繋げる
         point.add_dst_tube(Tube(Port('i', ['mcmd','matrix']), convtoutf8_step))
 
-        flow_cmd.substeps.append(convtoutf8_step)
-        flow_cmd.substeps.append(rowrange_step)
-        flow_cmd.substeps.append(align_step)
-        flow_cmd.substeps.append(tolist_step)
+        flow_cmd.steps.add(convtoutf8_step, avoid_id_collision=True)
+        flow_cmd.steps.add(rowrange_step, avoid_id_collision=True)
+        flow_cmd.steps.add(align_step, avoid_id_collision=True)
+        flow_cmd.steps.add(tolist_step, avoid_id_collision=True)
         flow_cmd.points.add(convtoutf8_point)
         flow_cmd.points.add(rowrange_point)
         flow_cmd.points.add(align_point)
@@ -222,7 +217,7 @@ class VisDataDestAppender():
         if u_point is not None:
             u_point.add_dst_tube(Tube(Port('m', 'out'), vcmd_step))
 
-        flow_cmd.substeps.append(vcmd_step)
+        flow_cmd.steps.add(vcmd_step, avoid_id_collision=True)
         flow_cmd.points.add(vcmd_point)
 
         return vcmd_point
@@ -239,7 +234,7 @@ class RunsCommandAppender():
         self.runs_step = Step('runs', runs_cmd, o_ports=self.runs_o_ports, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self._next_port_no = 0
-        # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
+        # FlowCommand.stepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
     def do_append(self, flow_cmd:FlowCommand, point1:Point, point2:Point=None):
@@ -263,7 +258,7 @@ class RunsCommandAppender():
         point.add_dst_tube(Tube(Port(port_label, 'mcmd'), self.runs_step))
 
         if not self._already_step_added:
-            flow_cmd.substeps.append(self.runs_step)
+            flow_cmd.steps.add(self.runs_step)
             self._already_step_added = True
 
         flow_cmd.points.add(runs_point)
@@ -271,21 +266,17 @@ class RunsCommandAppender():
 
 
 class ActivityDataDestAppender():
-    def __init__(self, datum_factory, flow:Flow, args:dict={}):
-        self.flow_uuid = flow.uuid
-        # アクティビティフォルダを取得する
-        folder_store = datum_factory.load_activity_folder()
+    def __init__(self, activity):
+        self.activity = activity
         # Activityコマンドを取得する
         activity_cmd = CommandLink('activity').resolve()
-        # Activity Datumを作成する
-        self.activity = folder_store.create_activity(flow.label, flow, args)
         # Activity Stepへの引数を作成する
         activity_args = {'activity': self.activity, 'outs':ApparentOuts(), 'is_vis':False, 'points':{}}
         # Activity Stepを作成する
         self.activity_step = Step('activity', activity_cmd, activity_args, ex_acceptable=True)
         # ポート名は0番から順に採番する
         self._next_port_no = 0
-        # FlowCommand.substepsにruns_stepをすでに追加した場合はTrue
+        # FlowCommand.stepsにruns_stepをすでに追加した場合はTrue
         self._already_step_added = False
 
     def set_is_vis(self):
@@ -319,7 +310,7 @@ class ActivityDataDestAppender():
         Activity Pointを作成する
         """
         activity_point = Point(point_id, Tube(Port('o', 'outs'), self.activity_step))
-        flow_cmd.substeps.append(self.activity_step)
+        flow_cmd.steps.add(self.activity_step)
         flow_cmd.points.add(activity_point)
         self._already_step_added = True
         return activity_point

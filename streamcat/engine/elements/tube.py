@@ -16,6 +16,9 @@ class Tube:
         else:
             return f'({self.step}.{self.port.label})'
 
+    def __hash__(self):
+        return hash(self.port.label + self.step.id)
+
     def __eq__(self, other):
         return self.port == other.port and self.step == other.step
 
@@ -39,29 +42,51 @@ class Tube:
         """
         return self.port is not None and self.step is not None
 
-    @property
-    def is_flow_tube(self):
-        """
-        親フローに繋がるTubeの場合はTrueを返す
-        """
-        return self.port is not None and self.step is None
-
 
 class Tubes:
-    """
-    Tubeのリスト
-    """
-    def __init__(self, *tubes) -> None:
-        if len(tubes)==0:
-            self._tubes = []
-        else:
-            self._tubes = list(tubes)
+
+    def __init__(self, tubes:set[Tube]=set()):
+        # tubesはset型なのでTubeの重複は無い
+        # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
+        self._tubes = list(tubes)
+
+    def __repr__(self):
+        return self._tubes.__repr__()
+
+    def __iter__(self) -> Iterator[Tube]:
+        yield from self._tubes
+
+    def __contains__(self, tube:Tube):
+        return tube in self._tubes
+
+    def __getitem__(self, index) -> Tube:
+        return self._tubes[index]
+
+    def __len__(self):
+        return len(self._tubes)
+
+    def __sub__(self, other):
+        return Tubes(set(self._tubes) - set(other._tubes))
 
     def add(self, tube:Tube):
         """
         Tubeを追加する
         """
+        if tube in self._tubes:
+            raise Exception(f'同じTube({tube})が既に存在します')
         self._tubes.append(tube)
+
+    def update(self, tubes):
+        """
+        Tubeを全て追加する
+        重複する場合は引数で追加したTubeで上書きする
+        """
+        for tube in tubes:
+            if tube in self._tubes:
+                i = self._tubes.index(tube)
+                self._tubes[i] = tube
+            else:
+                self._tubes.append(tube)
 
     def remove(self, tube:Tube):
         """
@@ -87,29 +112,20 @@ class Tubes:
                 return tube
         return None 
 
-    def find_flow_tube(self) -> Tube:
-        """
-        親フローに繋がるTubeを返す
-        """
-        for tube in self._tubes:
-            if tube.is_flow_tube:
-                # 1つのPointに、フローに繋がるTubeが複数存在することはない
-                return tube
-        # フローに繋がるTubeが無ければNoneを返す
-        return None
-
-    def select_flow_tube(self):
-        """
-        親フローに繋がるTubeを返す、無ければ他のTubeを返す
-        """
-        return self.find_flow_tube() or self._tubes[0]
-
     def filter_by_step(self, step:Step):
         """
         Stepに紐づくTubesを返す
         """
         rets = Tubes()
         rets._tubes = [tube for tube in self._tubes if tube.step==step]
+        return rets
+
+    def filter_with_subflow(self):
+        """
+        Flow Stepに紐づくTubesを返す
+        """
+        rets = Tubes()
+        rets._tubes = [tube for tube in self._tubes if tube.step.is_flow]
         return rets
 
     def sort(self):
@@ -121,14 +137,7 @@ class Tubes:
     def have_step(self, step:Step):
         return len(self.filter_by_step(step)) > 0
 
-    def __repr__(self):
-        return self._tubes.__repr__()
-
-    def __iter__(self) -> Iterator[Tube]:
-        yield from self._tubes
-
-    def __getitem__(self, index) -> Tube:
-        return self._tubes[index]
-
-    def __len__(self):
-        return len(self._tubes)
+    def have_tube(self, port:Port, step:Step):
+        rets = Tubes()
+        rets = self.filter_by_step(step)
+        return len([t for t in rets if t.port == port]) > 0

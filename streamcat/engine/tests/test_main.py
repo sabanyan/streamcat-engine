@@ -24,27 +24,22 @@ class MainTest(TestCaseBase):
       "nodes": [
         {
           "id": "i",
-          "type": "frame",
           "label": "テストデータ",
-          "value": [["顧客", "数量", "金額"],
+          "type": "frame",
+          "value": [
+              ["顧客", "数量", "金額"],
               ["A", 1, 10],
               ["A", 2, 20],
               ["B", 1, 30],
               ["B", 3, 40],
-              ["B", 1, 50]],
+              ["B", 1, 50]
+          ],
           "dataSource": "csv"
         },
         {
-          "type": "frame",
-          "id": "d1",
-          "label": "d1",
-          "uuid": None,
-          "dataSource": "csv"
-        },
-        {
-          "type": "command",
           "id": "c1",
           "label": "c1",
+          "type": "command",
           "srcs": {
             "i": "i"
           },
@@ -56,6 +51,13 @@ class MainTest(TestCaseBase):
             "x": True
           },
           "commandId": "mcut"
+        },
+        {
+          "id": "d1",
+          "label": "d1",
+          "type": "frame",
+          "uuid": None,
+          "dataSource": "csv"
         }
       ]
     }
@@ -4296,7 +4298,7 @@ class MainTest(TestCaseBase):
         """
         Windows形式ファイルもプレビューできる
         """
-        MY_TESTDATA_DIR = '../streamcat-engine/streamcat/engine/tests/test_data/'
+        MY_TESTDATA_DIR = './streamcat-engine/streamcat/engine/tests/test_data/'
         frame = self.create_data2(Path(MY_TESTDATA_DIR) / '漢字読み.csv')
 
         flow_json = {

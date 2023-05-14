@@ -1699,7 +1699,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -2120,7 +2120,7 @@ class DataSourceTest(TestCaseBase):
         in_folder = in_folder.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = in_folder.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -2791,7 +2791,7 @@ class DataSourceTest(TestCaseBase):
         project = project.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = project.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -3442,7 +3442,7 @@ class DataSourceTest(TestCaseBase):
         project = project.reload()
 
         # 入力CSVファイルを作成する
-        MY_TESTDATA_DIR = Path('../streamcat-engine/streamcat/engine/tests/test_data/')
+        MY_TESTDATA_DIR = Path('./streamcat-engine/streamcat/engine/tests/test_data/')
         in_file_path = project.path / '2500.csv'
         shutil.copyfile(MY_TESTDATA_DIR / '2500.csv', in_file_path)
 
@@ -4411,8 +4411,8 @@ class DataSourceTest(TestCaseBase):
                     "uuid": root.uuid
                 }, 
                 {
-                    "id": "c1", 
-                    "label": "c1", 
+                    "id": "c2", 
+                    "label": "c2", 
                     "type": "command", 
                     "commandId": "saver",
                     "args": {}, 
@@ -4686,6 +4686,155 @@ class DataSourceTest(TestCaseBase):
         ]
         self.assertListEqual(result, expected)
 
+    def test_remove_tmp_files_after_run(self):
+        """
+        フロー実行後にTmpファイルが削除されること
+        """
+        from streamcat.core import Tmp
+
+        # ルートデータストアを取得する
+        root = self.factory3.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewnumber -> tmp
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "type": "command",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "a": "num",
+                        "I": "1",
+                        "S": "1",
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "Tmpファイルコマンド",
+                    "type": "command",
+                    "commandId": "tmp",
+                    "args": {},
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    },
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ]
+            ]
+        }
+
+        # subflowを呼び出す
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "f",
+                    "label": "f",
+                    "type": "flow",
+                    "uuid": "48d4e950-c41b-4b4f-a170-42599d6088d6",
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {
+                        "d1": "D"
+                    },
+                },
+                {
+                    "id": "D",
+                    "label": "モナリザ",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": 'o0', 
+                    "label": "ライブラリ出力🖨", 
+                    "type": "flow", 
+                    "classification": "data_dest",
+                    "uuid": self.data_dst.uuid,
+                    "srcs": {
+                        "i": 'D'
+                    },
+                    "dsts": {},
+                }
+            ],
+            "ports": [[],[]]
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Tmpファイルを作成するサブフロー', FlowData(sub_flow_json))
+        sub_flow.uuid = '48d4e950-c41b-4b4f-a170-42599d6088d6'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('Mainフロー', FlowData(flow_json)) 
+        flow.save()
+        flow = flow.reload()
+
+        # フロー実行前に全てのTmpファイルを削除する
+        tmp_files = [f for f in Tmp._get_tmp_directory().glob(f'__SCATTMP_*')]
+        for f in tmp_files:
+            f.unlink(missing_ok=True)
+
+        # フローを実行する
+        flow_cmd = FlowCommand(flow)
+        outs = execute(flow_cmd, {}, {})
+        outs = convert_from_job(outs)
+
+        # ライブラリにデータソースが出力されていること
+        self.assertEqual(len(outs), 1)
+
+        # D
+        self.assertIsNotNone(outs['D'], 'SaverCommandは結果(D)を出力しませんでした')
+        out_frame1 = outs['D']
+        self.assertTrue(self.factory3.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(out_frame1.label.startswith('モナリザ'))
+        self.assertTrue(out_frame1.file_exists)
+
+        # TmpディレクトリからTMPファイルを取得する
+        tmp_files = [f for f in Tmp._get_tmp_directory().glob(f'__SCATTMP_*')]
+        # フロー実行後はTmpファイルは削除されていること
+        self.assertEqual(len(tmp_files), 0, msg=f'{len(tmp_files)}つのTmpファイルが残っています')
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # ゴミ箱を空にする
+        trash = self.factory3.data.load_trash_folder()
+        trash.trash_all()
+
     def test_vis_optimization(self):
         """
         プレビューの結果データの作成に関係しないコマンドは実行しないこと
@@ -4754,7 +4903,7 @@ class DataSourceTest(TestCaseBase):
                 }
             ]
         }
-    
+
         # ルートデータストアを取得する
         root = self.factory.data.load_root()
 
@@ -5754,12 +5903,15 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(out_frame2.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
 
         # ほかす
+        out_frame1.throw_away()
+        out_frame2.throw_away()
         sub_flow1.throw_away()
         sub_flow2.throw_away()
         sub_flow3.throw_away()
         sub_flow4.throw_away()
         postgre_src.throw_away()
         postgre_dst.throw_away()
+        db.throw_away()
 
         # ゴミ箱を空にする
         trash = self.factory.data.load_trash_folder()
@@ -7145,8 +7297,8 @@ class DataSourceTest(TestCaseBase):
 
     def test_subflow_has_inout_at_same_point(self):
         """
-        サブフローにフロー入出力Pointの後にデータデストがある場合
-        サブフローのデータデストは実行されないこと
+        サブフロー内において、フロー入出力Pointの後にデータデストがある場合
+        そららのデータデストは実行されないこと
         """
         # ルートデータストアを取得する
         root = self.factory2.data.load_root()
@@ -7441,7 +7593,7 @@ class DataSourceTest(TestCaseBase):
                 }, 
                 {
                     "id": "o", 
-                    "label": "ライブラリ", 
+                    "label": "ライブラリ1", 
                     "type": "flow", 
                     "classification": "data_dest",
                     "args": {}, 
@@ -7555,6 +7707,1005 @@ class DataSourceTest(TestCaseBase):
         self.assertIsNotNone(outs['D1'])
         self.assertEqual(outs['D1'].type, 'frame')
         self.assertGreater(outs['D1'].file_size, 0)
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # 作成と変更を確定する
+        self.factory2.end()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_vis_outside_subflow(self):
+        """
+        メインフロー内において、プレビューの経路にないコマンド(サブフロー)は実行されないこと
+        """
+        # ルートデータストアを取得する
+        root = self.factory2.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewnumber -> raise -> data_dest
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "type": "command",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "I": "1",
+                        "S": "1",
+                        "a": "num",
+                        "l": "7"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "例外を送出",
+                    "type": "command",
+                    # このコマンドが実行されれば無条件に例外を送出する
+                    "commandId": "raise",
+                    "args": {
+                        "immediately": True
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "o",
+                    "label": "ライブラリ",
+                    "type": "flow",
+                    "classification": "data_dest",
+                    "args": {},
+                    "srcs": {
+                        "i": "d1"
+                    },
+                    "dsts": {},
+                    "flow": {
+                        "label": "ライブラリ",
+                        "nodes": [
+                            {
+                                "id": "d",
+                                "label": "d",
+                                "type": "frame",
+                                "dataSource": "csv"
+                            },
+                            {
+                                "id": "s", 
+                                "label": "ライブラリ",
+                                "type": "store", 
+                                "uuid": project.uuid, 
+                            },
+                            {
+                                "id": "c1",
+                                "label": "c1",
+                                "type": "command",
+                                "commandId": "saver",
+                                "args": {},
+                                "srcs": {
+                                    "i": "d",
+                                    "folder": "s"
+                                },
+                                "dsts": {
+                                    "o": "d1"
+                                }
+                            },
+                            {
+                                "id": "d1",
+                                "label": "d1",
+                                "type": "frame",
+                                "dataSource": "csv"
+                            }
+                        ],
+                        "ports": [
+                        [
+                            {
+                                "label": "i",
+                                "types": [
+                                    "mcmd"
+                                ],
+                                "nodeId": "d"
+                            }
+                        ],
+                        []
+                        ],
+                        "params": []
+                    }
+                }
+            ],
+            "ports": [
+                [],
+                [
+                {
+                    "type": "frame",
+                    "label": "d1",
+                    "nodeId": "d1"
+                }
+                ]
+            ],
+            "params": []
+        }
+
+        # mnewstr, sub_flow
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "c1",
+                    "label": "c1",
+                    "type": "command",
+                    "commandId": "mnewstr",
+                    "args": {
+                        "a": "str",
+                        "l": "5",
+                        "v": "ABC"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },     {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "f",
+                    "label": "f",
+                    "type": "flow",
+                    "uuid": "6d459fed-2be3-423e-9cca-a2bc5f090e11",
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {
+                        "d1": "d1"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [],
+                []
+            ],
+            "params": []
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '6d459fed-2be3-423e-9cca-a2bc5f090e11'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('main', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        vis_args = {
+          "d": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 10
+            }
+          }
+        }
+
+        # フローをプレビューする
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowCommand(flow)
+        job = execute(flow_link, {'vis':vis_args}, {})
+        outs = convert_from_job_vis(job)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(outs))
+
+        # 正しいVisが得られるか
+        correct = {'d': [['ABC'],['ABC'],['ABC'],['ABC'],['ABC']]}
+        self.assertDictEqual(outs, correct)
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # 作成と変更を確定する
+        self.factory2.end()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_vis_subflow_has_outside_datadst(self):
+        """
+        サブフロー内において、プレビュー実行の経路にないデータデストは実行されないこと
+        """
+        # ルートデータストアを取得する
+        root = self.factory2.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewnumber -> raise -> data_dst
+        # mnewnumber
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "type": "command",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "I": "1",
+                        "S": "10",
+                        "a": "num",
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "例外を送出",
+                    "type": "command",
+                    # このコマンドが実行されれば無条件に例外を送出する
+                    "commandId": "raise",
+                    "args": {
+                        "immediately": True
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d1"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "o",
+                    "label": "ライブラリ",
+                    "type": "flow",
+                    "classification": "data_dest",
+                    "args": {},
+                    "srcs": {
+                        "i": "d1"
+                    },
+                    "dsts": {},
+                    "flow": {
+                        "label": "ライブラリ",
+                        "nodes": [
+                            {
+                                "id": "d",
+                                "label": "d",
+                                "type": "frame",
+                                "dataSource": "csv"
+                            },
+                            {
+                                "id": "s",
+                                "label": "ライブラリ",
+                                "type": "store",
+                                "uuid": project.uuid
+                            },
+                            {
+                                "id": "c1",
+                                "label": "c1",
+                                "type": "command",
+                                "commandId": "saver",
+                                "args": {},
+                                "srcs": {
+                                    "i": "d",
+                                    "folder": "s"
+                                },
+                                "dsts": {
+                                    "o": "d1"
+                                }
+                            },
+                            {
+                                "id": "d1",
+                                "label": "d1",
+                                "type": "frame",
+                                "dataSource": "csv"
+                            }
+                        ],
+                        "ports": [
+                            [
+                                {
+                                    "label": "i",
+                                    "types": [
+                                        "mcmd"
+                                    ],
+                                    "nodeId": "d"
+                                }
+                            ],
+                            []
+                        ],
+                        "params": [],
+                    }
+                },
+                {
+                    "id": "c2",
+                    "args": {
+                        "I": "1",
+                        "S": "1",
+                        "a": "num",
+                        "l": "10"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                    "srcs": {},
+                    "type": "command",
+                    "label": "c2",
+                    "commandId": "mnewnumber"
+                },
+                {
+                    "id": "d2",
+                    "type": "frame",
+                    "label": "d2",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d2",
+                        "nodeId": "d2"
+                    }
+                ]
+            ],
+            "params": []
+        }
+
+        #
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "f",
+                    "label": "f",
+                    "type": "flow",
+                    "uuid": "5e1610cb-29fe-48f1-a1d5-abc2ebe53535",
+                    "args": {},
+                    "srcs": {},
+                    "dsts": {
+                        "d2": "d1"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [],
+                []
+            ],
+            "params": []
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '5e1610cb-29fe-48f1-a1d5-abc2ebe53535'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('main', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 10
+            }
+          }
+        }
+
+        # フローをプレビューする
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowCommand(flow)
+        job = execute(flow_link, {'vis':vis_args}, {})
+        outs = convert_from_job_vis(job)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(outs))
+
+        # 正しいVisが得られるか
+        correct = {'d1': [['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['7'], ['8'], ['9'], ['10']]}
+        self.assertDictEqual(outs, correct)
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # 作成と変更を確定する
+        self.factory2.end()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_vis_subflow_has_outside_path(self):
+        """
+        サブフロー内において、プレビュー実行の経路にないコマンドは実行されないこと
+        """
+        # ルートデータストアを取得する
+        root = self.factory2.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewrand -> mcut
+        # mnewrand -> raise
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "type": "command",
+                    "commandId": "mnewrand",
+                    "args": {
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c2",
+                    "label": "c2",
+                    "type": "command",
+                    "commandId": "mcut",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    },
+                },
+                {
+                    "id": "d2",
+                    "label": "d2",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "c1",
+                    "type": "command",
+                    "commandId": "mnewrand",
+                    "args": {
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d1"
+                    },
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c3",
+                    "label": "c3",
+                    "type": "command",
+                    "commandId": "raise",
+                    "args": {
+                        "immediately": True
+                    },
+                    "srcs": {
+                        "i": "d1"
+                    },
+                    "dsts": {
+                        "o": "d3"
+                    },
+                },
+                {
+                    "id": "d3",
+                    "label": "d3",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "d",
+                        "nodeId": "d"
+                    },
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d2",
+                        "nodeId": "d2"
+                    },
+                    {
+                        "type": "frame",
+                        "label": "d3",
+                        "nodeId": "d3"
+                    }
+                ]
+            ],
+            "params": []
+        }
+
+        # 
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "type": "command",
+                    "label": "c",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "I": "1",
+                        "S": "20",
+                        "a": "num",
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "c1",
+                    "type": "command",
+                    "commandId": "mnewnumber",
+                    "args": {
+                        "I": "1",
+                        "S": "30",
+                        "a": "num",
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d1"
+                    },
+                },
+                {
+                    "id": "d1",
+                    "type": "frame",
+                    "label": "d1",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "f1",
+                    "label": "f1",
+                    "type": "flow",
+                    "uuid": "14ed7cd5-7ee0-4927-af1a-5ff015453887",
+                    "args": {},
+                    "srcs": {
+                        "d": "d1",
+                        "d1": "d"
+                    },
+                    "dsts": {
+                        "d2": "d2",
+                        "d3": "d3"
+                    },
+                },
+                {
+                    "id": "d2",
+                    "label": "d2",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "d3",
+                    "label": "d3",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [],
+                []
+            ],
+            "params": []
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = '14ed7cd5-7ee0-4927-af1a-5ff015453887'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('main', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        vis_args = {
+          "d2": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 10
+            }
+          }
+        }
+
+        # フローをプレビューする
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowCommand(flow)
+        job = execute(flow_link, {'vis':vis_args}, {})
+        outs = convert_from_job_vis(job)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(outs))
+
+        # 正しいVisが得られるか
+        correct = {'d2': [['30'], ['31'], ['32'], ['33'], ['34'], ['35'], ['36'], ['37'], ['38'], ['39']]}
+        self.assertDictEqual(outs, correct)
+
+        # プロジェクトをほかす
+        project.throw_away()
+
+        # 作成と変更を確定する
+        self.factory2.end()
+
+        # ゴミ箱を空にする
+        trash = self.factory.data.load_trash_folder()
+        trash.trash_all()
+
+    def test_vis_mainflow_has_outside_path(self):
+        """
+        メインフロー内において、プレビュー実行の経路にないコマンドは実行されないこと
+        """
+        # ルートデータストアを取得する
+        root = self.factory2.data.load_root()
+
+        # プロジェクトを作成する
+        project = root.create_project_folder('プロジェクト')
+        project.save()
+        project = project.reload()
+
+        # mnewstr -> mcut
+        # mnewstr -> mcut
+        sub_flow_json = {
+            "nodes": [
+                {
+                    "id": "c",
+                    "label": "c",
+                    "commandId": "mnewstr",
+                    "type": "command",
+                    "args": {
+                        "a": "a",
+                        "l": "10",
+                        "v": "abc"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d"
+                    }
+                },
+                {
+                    "id": "d",
+                    "label": "d",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c2_",
+                    "label": "c2_",
+                    "commandId": "mcut",
+                    "type": "command",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "d"
+                    },
+                    "dsts": {
+                        "o": "d2"
+                    }
+                },
+                {
+                    "id": "d2",
+                    "label": "d2",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c1",
+                    "label": "c1",
+                    "commandId": "mnewstr",
+                    "type": "command",
+                    "args": {
+                        "a": "b",
+                        "l": "10",
+                        "v": "def"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "d1"
+                    }
+                },
+                {
+                    "id": "d1",
+                    "label": "d1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "c3_",
+                    "label": "c3_",
+                    "commandId": "mcut",
+                    "type": "command",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "d1"
+                    },
+                    "dsts": {
+                        "o": "d3"
+                    }
+                },
+                {
+                    "id": "d3",
+                    "label": "d3",
+                    "type": "frame",
+                    "dataSource": "csv"
+                }
+            ],
+            "ports": [
+                [
+                    {
+                        "type": "frame",
+                        "label": "d",
+                        "nodeId": "d"
+                    },
+                    {
+                        "type": "frame",
+                        "label": "d1",
+                        "nodeId": "d1"
+                    }
+                ],
+                [
+                    {
+                        "type": "frame",
+                        "label": "d2",
+                        "nodeId": "d2"
+                    },
+                    {
+                        "type": "frame",
+                        "label": "d3",
+                        "nodeId": "d3"
+                    }
+                ]
+            ]
+        }
+
+        # mnewnumber -> mcut -> subflow
+        # mnewnumber -> mcut __/
+        flow_json = {
+            "nodes": [
+                {
+                    "id": "C",
+                    "label": "C",
+                    "commandId": "raise",
+                    "type": "command",
+                    "commandId": "raise",
+                    "args": {
+                        "immediately": True
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "D"
+                    },
+                },
+                {
+                    "id": "D",
+                    "label": "D",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "C2",
+                    "label": "C2",
+                    "commandId": "mcut",
+                    "type": "command",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "D"
+                    },
+                    "dsts": {
+                        "o": "D2"
+                    },
+                },
+                {
+                    "id": "D2",
+                    "label": "D2",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "C1",
+                    "label": "C1",
+                    "commandId": "mnewnumber",
+                    "type": "command",
+                    "args": {
+                        "I": "1",
+                        "S": "1",
+                        "a": "num1",
+                        "l": "10"
+                    },
+                    "srcs": {},
+                    "dsts": {
+                        "o": "D1"
+                    },
+                },
+                {
+                    "id": "D1",
+                    "label": "D1",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "C3",
+                    "label": "C3",
+                    "commandId": "mcut",
+                    "type": "command",
+                    "args": {
+                        "f": "*"
+                    },
+                    "srcs": {
+                        "i": "D1"
+                    },
+                    "dsts": {
+                        "o": "D3"
+                    },
+                },
+                {
+                    "id": "D3",
+                    "label": "D3",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "f1",
+                    "label": "f1",
+                    "type": "flow",
+                    "uuid": "e7314fee-0bfb-48c1-a362-53c60d4612ca",
+                    "args": {},
+                    "srcs": {
+                        "d": "D2",
+                        "d1": "D3"
+                    },
+                    "dsts": {
+                        "d2": "D4",
+                        "d3": "D5"
+                    },
+                },
+                {
+                    "id": "D4",
+                    "label": "D4",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+                {
+                    "id": "D5",
+                    "label": "D5",
+                    "type": "frame",
+                    "dataSource": "csv"
+                },
+            ],
+            "ports": [[],[]]
+        }
+
+        # サブフローを作成する
+        sub_flow = project.create_flow('Sub', FlowData(sub_flow_json))
+        sub_flow.uuid = 'e7314fee-0bfb-48c1-a362-53c60d4612ca'
+        sub_flow.save()
+        sub_flow = sub_flow.reload()
+
+        # フローを作成する
+        flow = project.create_flow('main', FlowData(flow_json))
+        flow.save()
+        flow = flow.reload()
+
+        vis_args = {
+          "D5": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 10
+            }
+          }
+        }
+
+        # フローをプレビューする
+        # (RaiseCommandが実行されないこと)
+        flow_link = FlowCommand(flow)
+        job = execute(flow_link, {'vis':vis_args}, {})
+        outs = convert_from_job_vis(job)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(outs))
+
+        # 正しいVisが得られるか
+        correct = {'D5': [['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['7'], ['8'], ['9'], ['10']]}
+        self.assertDictEqual(outs, correct)
 
         # プロジェクトをほかす
         project.throw_away()

@@ -22,7 +22,7 @@ def execute(command, args={}, inputs={}, job_complete_handler=None):
     """
     全てのentrypointの基本形。
     """
-    from .step import Step
+    from .elements import Step
     from .job import Job
 
     # 進捗を取得する準備を行う

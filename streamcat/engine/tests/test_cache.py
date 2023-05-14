@@ -324,8 +324,8 @@ class CacheTest(TestCaseBase):
                     "dataSource": "csv"
                 },
                 {
-                    "id": "c1", 
-                    "label": "c1", 
+                    "id": "c2", 
+                    "label": "c2", 
                     "args": {
                         "a": "avg", 
                         "c": "avg(#{amount},${amount})", 
@@ -348,8 +348,8 @@ class CacheTest(TestCaseBase):
                     "dataSource": "csv"
                 }, 
                 {
-                    "id": "c2", 
-                    "label": "c2", 
+                    "id": "c3", 
+                    "label": "c3", 
                     "args": {
                         "a": "a", 
                         "c": "'a'", 
@@ -1430,6 +1430,10 @@ class CacheTest(TestCaseBase):
         cache_folder = self.factory.data.load_cache_folder()
         everyone_role = self.factory.role.load_everyone_role()
         everyone_role.clear_authz(cache_folder.id)
+
+        # Sessionにあるself._permissionsを期限切れ状態にしてDBからリロードされるようにする
+        # FIXME: SQLAlchemyのexecution_options(populate_existing=True)を使うとここのテストはパスできる
+        self.factory._session._session.expire(cache_folder, ['_permissions'])
 
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)

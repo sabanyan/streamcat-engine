@@ -1,8 +1,20 @@
 from threading import Thread
 
 class Job(Thread):
+    """
+    Stepを実行する実行単位
+    """
     def __init__(self, step, inputs):
-        super().__init__(target=step.run, name=None, args=[inputs])
+        # スレッドIDに紐づくTmpファイルの削除が機能するよう
+        # Stepの実行と終了処理を一つのスレッドで実行する
+        def run_step(inputs):
+            try:
+                return step.run(inputs)
+            finally:
+                # 終了処理をする
+                step.dtor()
+        # run_step()をスレッド処理に登録する
+        super().__init__(target=run_step, name=None, args=[inputs])
         self._step = step
         self._ex = None
         self._outs = None
@@ -23,8 +35,6 @@ class Job(Thread):
         # NOTE: スレッド実行中に送出された例外はキャッチできない
         if self._ex:
             raise self._ex
-        # 終了処理をする
-        self.dtor()
         # 結果を返す
         return self._outs
 

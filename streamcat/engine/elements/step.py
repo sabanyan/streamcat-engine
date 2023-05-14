@@ -1,3 +1,4 @@
+from collections import Iterator
 from streamcat.core import Command
 
 class Step:
@@ -25,9 +26,18 @@ class Step:
     def __repr__(self):
         return self.id
 
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return other is not None and self.id == other.id
+
+    def __ne__(self, other):
+        return other is None or self.id != other.id
+
     @property
     def is_flow(self):
-        from .flow_command import FlowCommand
+        from .. import FlowCommand
         return isinstance(self.command, FlowCommand)
 
     @property
@@ -137,3 +147,72 @@ class Step:
             for g in r.groups():
                 if param == g:
                     args[step_param] = args[step_param].replace(f'@[{g}]', value)
+
+
+class Steps:
+
+    def __init__(self, steps:set=set()):
+        # stepsはset型なのでStepの重複は無い
+        # NOTE: setよりlistの方がイテレーション速度が若干早いらしいのでlistを用いる
+        self._steps = list(steps)
+
+    def __repr__(self):
+        return self._steps.__repr__()
+
+    def __iter__(self) -> Iterator[Step]:
+        yield from self._steps
+
+    def __contains__(self, step:Step):
+        return step in self._steps
+
+    def __getitem__(self, step_id:str):
+        step = self.get(step_id)
+        if step is None:
+            raise Exception(f'StepsにStep({step_id})は存在しません')
+        else:
+            return step
+
+    def __len__(self):
+        return len(self._steps)
+
+    def add(self, step:Step, avoid_id_collision=False):
+        """
+        Stepを追加する
+        """
+        if step in self._steps:
+            if avoid_id_collision:
+                step.id = self._create_unique_id(step.id)
+            else:
+                raise Exception(f'同じid({step.id})のStepが既に存在します')
+        self._steps.append(step)
+
+    def update(self, steps):
+        """
+        Stepを全て追加する
+        重複する場合は引数で追加したStepで上書きする
+        """
+        for step in steps:
+            if step in self._steps:
+                i = self._steps.index(step)
+                self._steps[i] = step
+            else:
+                self._steps.append(step)
+
+    def get(self, step_id:str) -> Step:
+        for step in self._steps:
+            if step.id == step_id:
+                return step
+        return None
+
+    def _create_unique_id(self, step_id:str):
+        """
+        重複しないidを作成する
+        """
+        step_ids = {step.id for step in self._steps}
+        step_id_cnt = step_id
+        cnt = 1
+
+        while step_id_cnt in step_ids:
+            step_id_cnt = step_id + '_' + str(cnt)
+            cnt += 1
+        return step_id_cnt
