@@ -441,6 +441,9 @@ class CacheTest(TestCaseBase):
         # フローを削除する
         flow.delete()
 
+        # 削除を確定する
+        self.factory.end()
+
         # プロジェクトを削除する
         project.delete()
 
