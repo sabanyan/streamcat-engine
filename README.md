@@ -68,6 +68,6 @@ docker rmi postgres:16-alpine
 # 3. Dokcer Volumeの削除
 docker volume rm streamcat_files streamcat_meta
 
-# 4. docker-compose.ymlを削除する
-rm ./docker-compose.yml
+# 4. compose.yamlを削除する
+rm ./compose.yaml
 ```
