@@ -10,10 +10,9 @@ class ActivityTest(TestCaseBase):
     アクティビティの検証
     """
 
-    def setUp(self):
+    async def asyncSetUp(self) -> None:
         import copy
-
-        super().setUp()
+        await super().asyncSetUp()
 
         # 乱数をデータソースとするフロー
         self.flow_json0 = {

@@ -471,8 +471,8 @@ class MainTest(TestCaseBase):
       ]
     }
 
-    def setUp(self):
-        super().setUp()
+    async def asyncSetUp(self) -> None:
+        await super().asyncSetUp()
         self.root = self.factory.data.load_root()
         self.TESTDATA_DIR = self.root.path
 
