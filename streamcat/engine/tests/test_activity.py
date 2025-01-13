@@ -1,3 +1,4 @@
+import unittest
 from sqlalchemy.orm.exc import NoResultFound
 from streamcat.core import SavableDatum
 from streamcat.store import ProjectFolder, FlowData
@@ -5,7 +6,7 @@ from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_job, convert_from_job_exs, convert_from_job_vis
 
-class ActivityTest(TestCaseBase):
+class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     """
     アクティビティの検証
     """

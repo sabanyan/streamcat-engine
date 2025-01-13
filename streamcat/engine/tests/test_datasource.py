@@ -1,5 +1,4 @@
 import io
-import copy
 import unittest
 import shutil
 from pathlib import Path
@@ -11,7 +10,7 @@ from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_job, convert_from_job_exs, convert_from_job_vis
 from .make_flow_json import create_flow_by_flow_id
 
-class DataSourceTest(TestCaseBase):
+class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     """
     フローの入出力指定の検証
     """

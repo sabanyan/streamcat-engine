@@ -1,3 +1,4 @@
+import unittest
 from streamcat.store import ProjectFolder, FlowData
 from streamcat.store.lock import lock_manager
 from streamcat.store.auth import NotAuthorizedException
@@ -5,7 +6,7 @@ from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_job_vis, convert_from_job_cache
 
-class CacheTest(TestCaseBase):
+class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     """
     フローのキャッシュ指定の検証
     """

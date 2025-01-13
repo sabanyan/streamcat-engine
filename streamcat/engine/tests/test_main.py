@@ -7,7 +7,7 @@ from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from streamcat.engine import execute, FlowCommand
 from .make_flow_json import get_flow_json_by_flow_id
 
-class MainTest(TestCaseBase):
+class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     """
     実際のフロー実行のテスト
     """

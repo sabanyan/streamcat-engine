@@ -11,7 +11,7 @@ from streamcat.engine import execute, FlowCommand
 from .test_main import convert_from_job, convert_from_job_exs
 from .make_flow_json import create_flow_by_flow_id
 
-class RemoteFolderTest(TestCaseBase):
+class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
     flow_json0 = {
       "label": "test用",
