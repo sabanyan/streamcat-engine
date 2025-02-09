@@ -3,7 +3,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from streamcat.core import SavableDatum
 from streamcat.store import ProjectFolder, FlowData
 from streamcat.store.tests.test_case_base import TestCaseBase
-from streamcat.engine import execute, FlowCommand
+from streamcat.engine import aexecute, FlowCommand
 from .test_main import convert_from_job, convert_from_job_exs, convert_from_job_vis
 
 class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
@@ -77,7 +77,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.flow_json['nodes'].append(self.create_data_dst_node('d'))
         self.flow_json['nodes'].append(self.create_data_dst_node('d1'))
 
-    def test_save_activity_by_execute(self):
+    async def test_save_activity_by_execute(self):
         """
         フロー実行後にアクティビティが出力されること
         """
@@ -101,7 +101,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # USER2は、フローを実行する
         readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
-        job = execute(FlowCommand(readonly_flow), args={'param1':1234})
+        job = await aexecute(FlowCommand(readonly_flow), args={'param1':1234})
         results1 = convert_from_job(job)
 
         # 正しい結果が得られるか
@@ -148,7 +148,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
         self.factory2.data.find_trashcan().trash_all()
 
-    def test_save_activity_if_error(self):
+    async def test_save_activity_if_error(self):
         """
         フロー実行で例外が発生してもアクティビティが出力されること
         """
@@ -176,7 +176,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # USER3は、フローを実行する
         # USER3は、プロジェクトの閲覧者メンバなので、実行結果の出力で例外が送出される
         readonly_flow = self.factory3.data.find_by_uuid(flow.uuid)
-        job = execute(FlowCommand(readonly_flow))
+        job = await aexecute(FlowCommand(readonly_flow))
         results1 = convert_from_job_exs(job)
 
         # 正しい結果が得られるか
@@ -221,7 +221,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
         self.factory.data.find_trashcan().trash_all()
 
-    def test_save_activity_if_empty(self):
+    async def test_save_activity_if_empty(self):
         """
         フロー実行の結果がない場合でもアクティビティが出力されること
         """
@@ -245,7 +245,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # USER2は、フローを実行する
         readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
-        job = execute(FlowCommand(readonly_flow), {'use_cache':True})
+        job = await aexecute(FlowCommand(readonly_flow), {'use_cache':True})
         results1 = convert_from_job(job)
 
         # 結果は出力されないこと
@@ -284,7 +284,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
         self.factory.data.find_trashcan().trash_all()
 
-    def test_no_activity_by_preview(self):
+    async def test_no_activity_by_preview(self):
         """
         プレビュー実行ではアクティビティが出力されないこと
         """
@@ -317,7 +317,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
             }
           }
         }
-        job = execute(FlowCommand(readonly_flow), {'vis':vis_args})
+        job = await aexecute(FlowCommand(readonly_flow), {'vis':vis_args})
         results1 = convert_from_job_vis(job)
 
         # 正しいVisが得られるか

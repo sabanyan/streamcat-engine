@@ -4,7 +4,7 @@ from pathlib import Path
 from streamcat.store import FlowData, Matrix, CommandException
 from streamcat.store.tests.test_case_base import TestCaseBase
 from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
-from streamcat.engine import execute, FlowCommand
+from streamcat.engine import aexecute, FlowCommand
 from .make_flow_json import get_flow_json_by_flow_id
 
 class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
@@ -477,7 +477,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.TESTDATA_DIR = self.root.path
 
     # @unittest.skip
-    def test_simple_flow_execute(self):
+    async def test_simple_flow_execute(self):
         """
         mコマンド1個のフロー実行
         """
@@ -486,7 +486,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -501,7 +501,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d1'].delete()
 
     # @unittest.skip
-    def test_simple_flow_two_commands_execute(self):
+    async def test_simple_flow_two_commands_execute(self):
         """
         mコマンド2個のフロー実行
         """
@@ -537,7 +537,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量'], ['A', '1'], ['A', '2']]}
 
@@ -552,7 +552,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d2'].delete()
 
     # @unittest.skip
-    def test_simple_flow_two_commands_vis(self):
+    async def test_simple_flow_two_commands_vis(self):
         """
         mコマンド1個のフロー実行
         真ん中のdatumでVisする
@@ -599,7 +599,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d1': [['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -608,7 +608,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_three_commands_vis(self):
+    async def test_simple_flow_three_commands_vis(self):
         """
         mコマンド3個のフロー実行
         2個目のdatumでVisする
@@ -682,7 +682,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -691,7 +691,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_three_commands_execute(self):
+    async def test_simple_flow_three_commands_execute(self):
         """
         mコマンド3個のフロー実行（逆Y字の分岐）
         """
@@ -755,7 +755,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -774,7 +774,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_three_commands_vis_d2(self):
+    async def test_simple_flow_three_commands_vis_d2(self):
         """
         mコマンド3個のフロー実行（逆Y字の分岐）
         片方（d2）をVis
@@ -848,7 +848,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d2': [['A', '1'], ['A', '2']]}
 
@@ -857,7 +857,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_execute_two_inputs(self):
+    async def test_simple_flow_execute_two_inputs(self):
         """
         mコマンド1個（2つのinputを持つ）のフロー実行
         """
@@ -866,7 +866,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d1': [['顧客%0', '数量', '金額', '年齢'],
                           ['A', '1', '10', '21'],
@@ -886,7 +886,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d1'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_two_outputs(self):
+    async def test_simple_flow_execute_two_outputs(self):
         """
         mコマンド1個（2つのoutputを持つ）のフロー実行
         """
@@ -896,7 +896,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量', '金額'], ['A', '1', '10'], ['A', '2', '20']],
                    'd3': [['顧客', '数量', '金額'], ['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
@@ -916,7 +916,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_two_outputs_one_side_o(self):
+    async def test_simple_flow_execute_two_outputs_one_side_o(self):
         """
         mコマンド1個（2つのoutputを持つ）のフロー実行
         oだけ設置
@@ -932,7 +932,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['顧客', '数量', '金額'], ['A', '1', '10'], ['A', '2', '20']]}
 
@@ -947,7 +947,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d2'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_two_outputs_one_side_u(self):
+    async def test_simple_flow_execute_two_outputs_one_side_u(self):
         """
         mコマンド1個（2つのoutputを持つ）のフロー実行
         uだけ設置
@@ -963,7 +963,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量', '金額'], ['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -978,7 +978,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_vis_d2_two_outputs(self):
+    async def test_simple_flow_vis_d2_two_outputs(self):
         """
         mコマンド1個（2つのoutputを持つ）のフローVis
         oだけのテスト（d2）
@@ -996,7 +996,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
@@ -1005,7 +1005,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_vis_d3_two_outputs(self):
+    async def test_simple_flow_vis_d3_two_outputs(self):
         """
         mコマンド1個（2つのoutputを持つ）のフローVis
         uだけのテスト（d3）
@@ -1024,7 +1024,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(self.flow_json_outputs['label'], FlowData(self.flow_json_outputs))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -1033,7 +1033,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_long_flow_execute_two_outputs(self):
+    async def test_long_flow_execute_two_outputs(self):
         """
         mコマンド2個（2つのoutputを持つ）のフロー実行
         """
@@ -1081,7 +1081,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1100,7 +1100,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d4'].delete()
 
     # @unittest.skip
-    def test_long_flow_vis_d2_two_outputs(self):
+    async def test_long_flow_vis_d2_two_outputs(self):
         """
         mコマンド2個（2つのoutputを持つ）のフローVis
         oだけのテスト（d3）
@@ -1158,7 +1158,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d3': [['A', '1'], ['A', '2']]}
 
@@ -1167,7 +1167,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_long_flow_vis_d3_two_outputs(self):
+    async def test_long_flow_vis_d3_two_outputs(self):
         """
         mコマンド2個（2つのoutputを持つ）のフローVis
         uだけのテスト（d4）
@@ -1224,7 +1224,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'d4': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1233,7 +1233,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     # @unittest.skip
-    def test_simple_flow_execute_no_inputs_command(self):
+    async def test_simple_flow_execute_no_inputs_command(self):
         """
         mコマンド1個（1つもinputを持たない）のフロー実行
         mnewnumberの実行テスト
@@ -1244,7 +1244,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d1': [['No.'],
                           ['0'],
@@ -1268,7 +1268,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d1'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_use_mnrcommon(self):
+    async def test_simple_flow_execute_use_mnrcommon(self):
         """
         mコマンド1個（2つもinputを持ち、2つのoutputをもつ）のフロー実行
         mnrcommonの実行テスト
@@ -1279,7 +1279,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['日付%0', '金額'], ['20080203', '10'], ['20080203', '45']],
                    'd3': [['日付%0', '金額'], ['20080123', '10'], ['20080203', '20'], ['20080410', '50']]}
@@ -1300,7 +1300,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_include_subflow(self):
+    async def test_simple_flow_execute_include_subflow(self):
         """
         サブフローを1個をもつフローを実行する
         """
@@ -1356,7 +1356,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd3': [['65536']]}
 
@@ -1372,7 +1372,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['dd3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_include_two_subflows(self):
+    async def test_simple_flow_execute_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
         """
@@ -1428,7 +1428,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd3': [['4294967296']]}
 
@@ -1447,7 +1447,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     # そもそもNodeのvalue属性は仕様にない実装である。
     # テストコードの再利用を試みたがSquareCommandはNysolModuleを受け付けないしで、断念
     @unittest.skip('無効')
-    def test_simple_flow_vis_include_two_subflows(self):
+    async def test_simple_flow_vis_include_two_subflows(self):
         """
         サブフローを2個をもつフローを実行する
         真ん中のdatumでVisする
@@ -1516,7 +1516,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'dd2': [['256']]}
 
@@ -1528,7 +1528,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertTrue (self.delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_simple_flow_execute_include_branch_output_subflows(self):
+    async def test_simple_flow_execute_include_branch_output_subflows(self):
         """
         outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -1584,7 +1584,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1604,7 +1604,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['dd3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_vis_dd2_include_branch_output_subflows(self):
+    async def test_simple_flow_vis_dd2_include_branch_output_subflows(self):
         """
         outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -1670,7 +1670,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']]}
 
@@ -1682,7 +1682,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertTrue (self.delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_simple_flow_vis_dd3_include_branch_output_subflows(self):
+    async def test_simple_flow_vis_dd3_include_branch_output_subflows(self):
         """
         outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -1748,7 +1748,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'dd3': [['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -1760,7 +1760,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertTrue (self.delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_complex_flow_execute_include_branch_output_subflows(self):
+    async def test_complex_flow_execute_include_branch_output_subflows(self):
         """
         outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -1885,7 +1885,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.create_flow('sub2', sub_uuid)
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd4': [['顧客'], ['A'], ['A']], 'dd5': [['数量'], ['1'], ['3'], ['1']]}
 
@@ -1905,7 +1905,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['dd5'].delete()
 
     # @unittest.skip
-    def test_complex_flow_vis_include_branch_output_subflowss(self):
+    async def test_complex_flow_vis_include_branch_output_subflowss(self):
         """
         outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -2027,7 +2027,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'dd5': [['1'], ['3'], ['1']]}
 
@@ -2039,7 +2039,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertTrue (self.delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_complex_flow_two_vis_include_branch_output_subflowss(self):
+    async def test_complex_flow_two_vis_include_branch_output_subflowss(self):
         """
         おまけ（Visを2つしてみた。）
         outputが2つのサブフローをもつフローを実行する
@@ -2168,7 +2168,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
         correct = {'dd2': [['A', '1'], ['A', '2']], 'dd5': [['1'], ['3'], ['1']]}
 
@@ -2180,7 +2180,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertTrue (self.delete_flow(sub_uuid))
 
     # @unittest.skip
-    def test_simple_flow_execute_generate_one_cache(self):
+    async def test_simple_flow_execute_generate_one_cache(self):
         """
         mコマンド3個のフロー実行
         真ん中のdatumをキャッシュする
@@ -2251,7 +2251,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # 単純な実行結果のテスト
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
@@ -2278,7 +2278,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.delete_caches(cache_uuids)
 
     # @unittest.skip
-    def test_simple_flow_execute_generate_last_cache(self):
+    async def test_simple_flow_execute_generate_last_cache(self):
         """
         mコマンド3個のフロー実行
         最後のdatumをキャッシュする
@@ -2349,7 +2349,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # 単純な実行結果のテスト
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
@@ -2375,7 +2375,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.delete_caches(cache_uuids)
 
     # @unittest.skip
-    def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
+    async def test_complex_flow_execute_include_branch_output_subflows_generate_cache(self):
         """
         outputが2つのサブフローをもつフローを実行する
         サブフロー内ではmcutで['顧客', '数量']列を取得し、
@@ -2498,7 +2498,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # 単純なlastsのテスト
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd4': [['顧客'], ['A'], ['A']], 'dd5': [['数量'], ['1'], ['3'], ['1']]}
 
@@ -2530,7 +2530,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.delete_caches(cache_uuids)
 
     # @unittest.skip
-    def test_simploe_flow_include_subflow_execute_use_flowparam(self):
+    async def test_simploe_flow_include_subflow_execute_use_flowparam(self):
         """
         サブフローが1つのフローを実行する
         フローパラメータを使用する
@@ -2587,7 +2587,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2606,7 +2606,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['dd3'].delete()
 
     # @unittest.skip
-    def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
+    async def test_simploe_flow_include_subflow_execute_use_flowparams_in_one_line(self):
         """
         サブフローが1つのフローを実行する
         1つの項目で2つのフローパラメータを使用する
@@ -2664,7 +2664,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         mainflow_json['nodes'].append(self.create_data_dst_node('dd3'))
 
         flow = self.root.create_flow('メインフロー', FlowData(mainflow_json))
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         lasts = convert_from_job(lasts)
         correct = {'dd2': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'dd3': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2683,7 +2683,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['dd3'].delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_data_source_from_csv(self):
+    async def test_simple_flow_execute_data_source_from_csv(self):
         """
         1つのmコマンドを持つフローを実行する
         フローの先頭のdatumのuuidが既に入っている
@@ -2706,7 +2706,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow= self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2721,7 +2721,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         frame.delete()
 
     # @unittest.skip
-    def test_simple_flow_execute_data_source_from_cache(self):
+    async def test_simple_flow_execute_data_source_from_cache(self):
         """
         mコマンド3個のフロー実行
         フローの途中（d2）のdatumのuuidが既に入っている
@@ -2795,7 +2795,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'],['A', '1']]}
 
@@ -2810,7 +2810,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         frame.delete()
 
     # @unittest.skip
-    def test_simple_subflow_execute_by_append_inputs(self):
+    async def test_simple_subflow_execute_by_append_inputs(self):
         """
         1つのサブフローを実行する
         外部からframeを与えて実行する
@@ -2836,7 +2836,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
                            ["B", 1, 50]])
         }
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, inputs)
+        lasts = await aexecute(flow_link, {}, inputs)
         print(lasts)
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
@@ -2856,7 +2856,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d4'].delete()
 
     # @unittest.skip
-    def test_simple_subflow_execute_by_append_inputs_and_args(self):
+    async def test_simple_subflow_execute_by_append_inputs_and_args(self):
         """
         1つのサブフローを実行する
         外部からframeを与えて実行する
@@ -2888,7 +2888,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
           }
         }
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, args, inputs)
+        lasts = await aexecute(flow_link, args, inputs)
         lasts = convert_from_job(lasts)
         correct = {'d3': [['顧客', '数量'], ['A', '1'], ['A', '2']], 'd4': [['顧客', '数量'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2907,7 +2907,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d4'].delete()
 
     @unittest.skip('もともとskip状態')
-    def test_simple_flow_execute_use_mcat(self):
+    async def test_simple_flow_execute_use_mcat(self):
         """
         mコマンド1個（2つのinputを持つ）のフロー実行
         mcatの実行テスト
@@ -2916,7 +2916,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow_data = FlowData(self.flow_json_inputs_mcat)
         flow = self.root.create_flow(self.flow_json_inputs_mcat['label'], flow_data)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d1': Matrix([['A', '1', '10'],
                               ['A', '2', '20'],
@@ -2937,7 +2937,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d1'].delete()
 
     @unittest.skip('MCMDのmchkcsvに代わり、nysol_pythonのutil.mchkcsvに変更したので、このテストは失敗する')
-    def test_simple_flow_execute_use_nmcmd(self):
+    async def test_simple_flow_execute_use_nmcmd(self):
         """
         mコマンド2個のフロー実行
         確認したいことはnm.cmdの動作（mchkcsvを実行している）
@@ -2971,7 +2971,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2':[['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
 
@@ -2985,7 +2985,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d2'].delete()
 
     @unittest.skip('MCMDのmchkcsvに代わり、nysol_pythonのutil.mchkcsvに変更したので、このテストは失敗する')
-    def test_simple_flow_execute_use_mchkcsv_create_cache(self):
+    async def test_simple_flow_execute_use_mchkcsv_create_cache(self):
         """
         mコマンド1個のフロー実行
         確認したいことはmchkcsvの動作（nm.cmdより実行している）
@@ -3011,7 +3011,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = self.save_flow('test', flow_json)
 
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         caches = convert_from_job_cache(lasts)
         results = convert_from_job(lasts)
 
@@ -3047,7 +3047,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.delete_caches(cache_uuids)
 
     @unittest.skip('selrow無くなったので、、')
-    def test_simple_flow_execute_two_outputs_pcmd(self):
+    async def test_simple_flow_execute_two_outputs_pcmd(self):
         """
         独自コマンド1個（2つのoutputを持つ）のフロー実行
         """
@@ -3068,7 +3068,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
 
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']],
                    'd3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
@@ -3093,7 +3093,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     # だが、そもそもそのようなフローはフローエディタでは作成不可能なので
     # このテストは無効である
     @unittest.skip('無効')
-    def test_simple_flow_execute_two_outputs_pcmd_one_side_o(self):
+    async def test_simple_flow_execute_two_outputs_pcmd_one_side_o(self):
         """
         独自コマンド1個（2つのoutputを持つ）のフロー実行
         oだけ設置
@@ -3119,7 +3119,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d2': [['A', '1', '10'], ['A', '2', '20']]}
 
@@ -3139,7 +3139,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     # だが、そもそもそのようなフローはフローエディタでは作成不可能なので
     # このテストは無効である
     @unittest.skip('無効')
-    def test_simple_flow_execute_two_outputs_pcmd_one_side_u(self):
+    async def test_simple_flow_execute_two_outputs_pcmd_one_side_u(self):
         """
         独自コマンド1個（2つのoutputを持つ）のフロー実行
         uだけ設置
@@ -3165,7 +3165,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         correct = {'d3': [['B', '1', '30'], ['B', '3', '40'], ['B', '1', '50']]}
 
@@ -3180,7 +3180,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d3'].delete()
         frame.delete()
 
-    def test_same_inputs(self):
+    async def test_same_inputs(self):
         """
         一つのデータソースから二入力して結合する
         """
@@ -3263,7 +3263,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
@@ -3281,7 +3281,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # データソースを削除する
         frame.delete()
 
-    def test_same_frame_inputs(self):
+    async def test_same_frame_inputs(self):
         """
         同じフレームを共有する二つのデータソースを結合する
         """
@@ -3375,7 +3375,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
@@ -3393,7 +3393,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # データソースを削除する
         frame.delete()
 
-    def test_two_outputs_on_onepath(self):
+    async def test_two_outputs_on_onepath(self):
         """
         一つの経路上に二つの出力ポイントがある場合
         """
@@ -3499,7 +3499,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
@@ -3519,7 +3519,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d2'].delete()
 
 
-    def test_output_on_source_point(self):
+    async def test_output_on_source_point(self):
         """
         データソースポイントが出力ポイントとなる場合
         """
@@ -3598,7 +3598,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
@@ -3614,7 +3614,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d'].delete()
 
 
-    def test_output_with_cache(self):
+    async def test_output_with_cache(self):
         """
         出力ポイントがキャッシュONの場合
         """
@@ -3696,7 +3696,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.save_flow(self.flow_json['label'], flow_json)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは2つ生成されているか
@@ -3717,7 +3717,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d1'].delete()
 
 
-    def test_one_output_from_branch(self):
+    async def test_one_output_from_branch(self):
         """
         二股出力コマンドのうち一つだけを出力ポイントに指定した場合
         """
@@ -3808,7 +3808,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは1つ生成されているか
@@ -3824,7 +3824,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lasts['d1'].delete()
 
 
-    def test_two_vizs_on_onepath(self):
+    async def test_two_vizs_on_onepath(self):
         """
         一つの経路上から二つのvisを取得する場合
         """
@@ -3938,7 +3938,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは2つ生成されているか
@@ -3949,7 +3949,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
 
-    def test_vizs_duplicate_column_frame(self):
+    async def test_vizs_duplicate_column_frame(self):
         """
         同じ列名を持つデータでもプレビューできる
         """
@@ -4025,7 +4025,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4036,7 +4036,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
 
-    def test_vizs_empty_column_frame(self):
+    async def test_vizs_empty_column_frame(self):
         """
         空列名を持つデータでもプレビューできる
         """
@@ -4112,7 +4112,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4122,7 +4122,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vizs_percent_column_frame(self):
+    async def test_vizs_percent_column_frame(self):
         """
         %名を持つデータでもプレビューできる
         """
@@ -4198,7 +4198,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4208,7 +4208,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vizs_jag_csv_file(self):
+    async def test_vizs_jag_csv_file(self):
         """
         ギザギザなCSVファイルもプレビューできる
         """
@@ -4284,7 +4284,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4294,7 +4294,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d': [['A','1','10'], ['A','2',''],['B','',''], ['B','3','40'], ['B','1','']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vizs_win_file(self):
+    async def test_vizs_win_file(self):
         """
         Windows形式ファイルもプレビューできる
         """
@@ -4362,7 +4362,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4372,7 +4372,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d': [['宇宙','そら','B'], ['宇宙','コスモ','A'],['強敵','とも','C'], ['刑事','デカ','C']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vizs_mchkcsv(self):
+    async def test_vizs_mchkcsv(self):
         """
         mchkcsvによるCSVチェックの結果をプレビューできる
         """
@@ -4448,7 +4448,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = self.root.create_flow(self.flow_json['label'], FlowData(flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4460,7 +4460,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(lasts['d1'][0][0], '# CSVファイル診断 ')
         self.assertEqual(lasts['d1'][102][0], '#-------------------------------------------------------------')
 
-    def test_vizs_with_cache_on(self):
+    async def test_vizs_with_cache_on(self):
         """
         キャッシュONのポイントをプレビューできる
         """
@@ -4542,7 +4542,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # フローを保存して再取得する
         flow =self.save_flow(self.flow_json['label'], flow_json)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4552,7 +4552,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d1': [['A','1','10'],['B','2','20']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_msim_with_params(self):
+    async def test_msim_with_params(self):
         """
         msimとmsummaryコマンドは引数にstr list型を持つが、
         フロー変数の置き換え処理でエラーにならないことを検証する
@@ -4643,7 +4643,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
         args = {'flow_args': {"new_param1":"B", "new_param2":"C"}}
-        lasts = execute(FlowCommand(flow), args, {})
+        lasts = await aexecute(FlowCommand(flow), args, {})
         lasts = convert_from_job(lasts)
 
         # frameデータは1つ生成されているか
@@ -4658,7 +4658,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # 後片付け
         lasts['d1'].delete()
 
-    def test_inputs_sort(self):
+    async def test_inputs_sort(self):
         """
         コマンドのrun()のinputs引数には
         入力Portのlabel順に入力値が格納されること
@@ -4752,7 +4752,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow_json['nodes'].append(self.create_data_dst_node('d9'))
 
         flow = self.root.create_flow(flow_json['label'], FlowData(flow_json))
-        outs = execute(FlowCommand(flow))
+        outs = await aexecute(FlowCommand(flow))
         outs = convert_from_job(outs)
 
         # frameデータは1つ生成されているか
@@ -4772,7 +4772,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         result_d1 = self.get_frame_by_uuid(outs['d9'].uuid, header=True)
         self.assertEqual(result_d1, expected)
 
-    def test_mcmd_error_with_two_outputs(self):
+    async def test_mcmd_error_with_two_outputs(self):
         """
         2出力のフローを実行すると、2つのMCMDErrorが取得できること
         """
@@ -4867,7 +4867,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
         results = convert_from_job(lasts)
@@ -4898,7 +4898,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(results['d1'][2], MCMDError)
         self.assertIsInstance(results['d1'][3], MCMDError)
 
-    def test_mcmd_error_with_two_outputs2(self):
+    async def test_mcmd_error_with_two_outputs2(self):
         """
         2出力のフローを実行すると、2つのMCMDErrorが取得できること
         """
@@ -4994,7 +4994,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
         results = convert_from_job(lasts)
@@ -5020,7 +5020,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(results['d'][0], MCMDError)
         self.assertIsInstance(results['d1'][0], MCMDError)
 
-    def test_run_error(self):
+    async def test_run_error(self):
         """
         Commnad.run()から例外が送出される場合、CommandExceptionが取得できること
         """
@@ -5070,7 +5070,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
         results = convert_from_job(lasts)
@@ -5086,7 +5086,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results['dd2']), 1)
         self.assertIsInstance(results['dd2'][0], CommandException)
 
-    def test_visz_run_error(self):
+    async def test_visz_run_error(self):
         """
         Commnad.run()から例外が送出される場合、CommandExceptionが取得できること
         """
@@ -5143,7 +5143,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow =self.save_flow(self.flow_json['label'], flow_json)
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
 
         # 出力ポイントとこれに対応するvisデータを取得する
         # (対応するvisデータはNoneなので、convert_from_activity_visは使わない)
@@ -5159,7 +5159,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results['dd2']), 1)
         self.assertIsInstance(results['dd2'][0], CommandException)
 
-    def test_vizs_flow_with_input(self):
+    async def test_vizs_flow_with_input(self):
         """
         一つのフローと一つの入力ポイントが配置されている場合に、フローのプレビューができること
         """
@@ -5291,7 +5291,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5301,7 +5301,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d2': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vizs_flow_with_output(self):
+    async def test_vizs_flow_with_output(self):
         """
         一つのフローと一つの出力ポイントが配置されている場合に、フローのプレビューができること
         """
@@ -5433,7 +5433,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5443,7 +5443,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d2': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vizs_flow_with_inoutput(self):
+    async def test_vizs_flow_with_inoutput(self):
         """
         一つのフローと一つの入出力ポイントが配置されている場合に、フローのプレビューができること
         """
@@ -5581,7 +5581,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = self.root.create_flow('', FlowData(flow_json))
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5592,7 +5592,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(lasts, correct)
 
     @unittest.skip('メインフローのflowオブジェクトで送出された例外はActivityに渡されない')
-    def test_visz_subflow_with_datasource(self):
+    async def test_visz_subflow_with_datasource(self):
         """
         入力ポイントとデータソースを配置すフローをプレビューする
         """
@@ -5692,7 +5692,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # フローを実行する
         flow_link = FlowCommand(sub_flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
 
         print(lasts)
 
@@ -5714,7 +5714,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results['d2']), 1)
         self.assertIsInstance(results['d2'][0], CommandException)
 
-    def test_subflow_with_input_on_way1(self):
+    async def test_subflow_with_input_on_way1(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出せること
         (フローJSONでのNodeの並び順によって結果が変わらないこと)
@@ -5890,7 +5890,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -5903,7 +5903,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_subflow_with_input_on_way2(self):
+    async def test_subflow_with_input_on_way2(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出せること
         (フローJSONでのNodeの並び順によって結果が変わらないこと)
@@ -6079,7 +6079,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -6092,7 +6092,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_subflow_with_datasource(self):
+    async def test_subflow_with_datasource(self):
         """
         入力ポイントとデータソースを配置するサブフローを呼び出せること
         """
@@ -6248,7 +6248,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -6359,7 +6359,7 @@ def update_flow_node_uuid(flow_json, node_id, uuid):
 
 def convert_from_job(job):
     """
-    execute()の戻り値から
+    await aexecute()の戻り値から
     pointのidとframeのDictに置き換える
     """
     from streamcat.store import ApparentOuts
@@ -6370,7 +6370,7 @@ def convert_from_job(job):
 
 def convert_from_job_vis(job):
     """
-    execute()の戻り値から
+    await aexecute()の戻り値から
     pointのidとvisのDictに置き換える
     """
     from streamcat.store import ApparentOuts
@@ -6380,7 +6380,7 @@ def convert_from_job_vis(job):
 
 def convert_from_job_cache(job):
     """
-    execute()の戻り値から
+    await aexecute()の戻り値から
     pointのidとcacheのDictに置き換える
     """
     from streamcat.store import ApparentOuts
@@ -6391,7 +6391,7 @@ def convert_from_job_cache(job):
 
 def convert_from_job_exs(job):
     """
-    execute()の戻り値から
+    await aexecute()の戻り値から
     pointのidとframeのDictに置き換える
     """
     from streamcat.store import ApparentOuts

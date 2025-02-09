@@ -7,7 +7,7 @@ from streamcat.core import SavableDatum
 from streamcat.store import FlowData, RemoteFolderConn
 from streamcat.depo.std.commands.scmd.mcmd_error_info import MCMDError
 from streamcat.store.tests.test_case_base import TestCaseBase
-from streamcat.engine import execute, FlowCommand
+from streamcat.engine import aexecute, FlowCommand
 from .test_main import convert_from_job, convert_from_job_exs
 from .make_flow_json import create_flow_by_flow_id
 
@@ -142,7 +142,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     remote_folder_conn = RemoteFolderConn(conn_json)
 
     # @unittest.skip
-    def test_simple_flow(self):
+    async def test_simple_flow(self):
         """
         1つのデータソースの出力を1つのデータデストに繋げて実行する
         """
@@ -170,7 +170,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json0['label'], FlowData(self.flow_json0))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -187,7 +187,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         rfolder.delete()
 
     # @unittest.skip
-    def test_two_datadest(self):
+    async def test_two_datadest(self):
         """
         1つのデータソースの出力を2つのデータデストに繋げて実行する
         2つのデータソースの出力先は同じファイルなので、排他制御が必要になる
@@ -216,7 +216,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # runfuncの中で例外が送出されてもここまで上がってこない(T_T)
         flow = root.create_flow(self.flow_json['label'], FlowData(self.flow_json))
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -237,7 +237,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         datasource_f2.delete()
         rfolder.delete()
 
-    def test_error(self):
+    async def test_error(self):
         """
         リモートフォルダデータソースに存在しないファイル名を指定すると例外が送出されること
         """
@@ -303,7 +303,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
           }
         }
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
 
         # 出力ポイントとこれに対応するframeデータを取得する
         results = convert_from_job(lasts)
