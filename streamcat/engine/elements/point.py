@@ -1,4 +1,4 @@
-from collections import Iterator
+from typing import Iterator
 from .tube import Tube, Tubes
 
 class Point:

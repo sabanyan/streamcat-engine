@@ -18,7 +18,7 @@ StreamCatは、[Docker](https://ja.wikipedia.org/wiki/Docker)上で動作するW
 
 ### 1. Dockerコンテナの取得と起動
 
-1. [`streamcat.zip`](https://github.com/sabanyan/community/files/13345936/streamcat.zip)をダウンロードする
+1. [`streamcat.zip`](https://github.com/user-attachments/files/18745971/streamcat.zip)をダウンロードする
 
 2. 以下のコマンドを上から順に実行する
 
@@ -63,11 +63,11 @@ docker compose down
 
 # 2. Dockerイメージの削除
 docker rmi sabanyan/streamcat:latest
-docker rmi postgres:16-alpine
+docker rmi postgres:17-alpine
 
 # 3. Dokcer Volumeの削除
 docker volume rm streamcat_files streamcat_meta
 
-# 4. docker-compose.ymlを削除する
-rm ./docker-compose.yml
+# 4. compose.yamlを削除する
+rm ./compose.yaml
 ```

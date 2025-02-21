@@ -46,6 +46,27 @@ def execute(command, args={}, inputs={}, job_complete_handler=None):
         # exs.append(exception_manager(e))
         # return exs
 
+async def aexecute(command, args={}, inputs={}, job_complete_handler=None):
+    """
+    非同期実行版execute関数
+    """
+    from .elements import Step
+    from .job import AJob
+
+    try:
+        # runnableからstepを作成する
+        step = Step('main_flow', command, args)
+
+        # jobを作成する
+        job = AJob(step, inputs)
+
+        # jobを開始する
+        await job.run()
+
+        return job
+    except Exception as e:
+        raise
+
 # def domains(step, inputs):
 #     """
 #     port情報から、pointを作成する

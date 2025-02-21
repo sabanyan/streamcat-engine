@@ -1,4 +1,4 @@
-from collections import Iterator
+from typing import Iterator
 from streamcat.core import Command
 
 class Step:

@@ -1,16 +1,17 @@
+import unittest
 from streamcat.store import ProjectFolder, FlowData
 from streamcat.store.lock import lock_manager
 from streamcat.store.auth import NotAuthorizedException
 from streamcat.store.tests.test_case_base import TestCaseBase
-from streamcat.engine import execute, FlowCommand
+from streamcat.engine import aexecute, FlowCommand
 from .test_main import convert_from_job_vis, convert_from_job_cache
 
-class CacheTest(TestCaseBase):
+class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     """
     フローのキャッシュ指定の検証
     """
 
-    def test_cannot_save_cache_to_unauth_flow(self):
+    async def test_cannot_save_cache_to_unauth_flow(self):
         """
         更新権限の無いメインフローを、
         use_cache=Trueでプレビューしてもキャッシュの作成はしないこと
@@ -106,7 +107,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
         results1 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
@@ -119,7 +120,7 @@ class CacheTest(TestCaseBase):
         self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
 
         # USER3は、同じフローを再度プレビューする
-        lasts = execute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(readonly_flow), {'vis':vis_args,'use_cache':True})
         results2 = convert_from_job_vis(lasts)
 
         # キャッシュが作成されていないので、再度プレビューすると異なる値が得られること
@@ -131,7 +132,7 @@ class CacheTest(TestCaseBase):
         # プロジェクトを削除する
         project.delete()
 
-    def test_cannot_save_cache_to_locked_flow(self):
+    async def test_cannot_save_cache_to_locked_flow(self):
         """
         他ユーザにより排他ロック中のメインフローを、
         use_cache=Trueでプレビューしてもキャッシュの作成はしないこと
@@ -273,7 +274,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results1 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
@@ -295,7 +296,7 @@ class CacheTest(TestCaseBase):
         # プロジェクトを削除する
         project.delete()
 
-    def test_load_cache_to_locked_flow(self):
+    async def test_load_cache_to_locked_flow(self):
         """
         他ユーザにより排他ロック中のメインフローを、
         use_cache=Trueでプレビューすると、キャッシュの参照はできること
@@ -404,7 +405,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow, lock1.uuid), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow, lock1.uuid), {'vis':vis_args,'use_cache':True})
         results1 = convert_from_job_vis(lasts)
         caches1 = convert_from_job_cache(lasts)
 
@@ -427,7 +428,7 @@ class CacheTest(TestCaseBase):
 
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results2 = convert_from_job_vis(lasts)
 
         # キャッシュが参照されていれば値が一致する
@@ -441,10 +442,13 @@ class CacheTest(TestCaseBase):
         # フローを削除する
         flow.delete()
 
+        # 削除を確定する
+        self.factory.end()
+
         # プロジェクトを削除する
         project.delete()
 
-    def test_cannot_save_cache_to_subflow(self):
+    async def test_cannot_save_cache_to_subflow(self):
         """
         use_cache=Trueでプレビューしても、
         サブフロー内ではキャッシュの作成はしないこと
@@ -659,7 +663,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow, lock1.uuid), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow, lock1.uuid), {'vis':vis_args,'use_cache':True})
         results = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
@@ -682,7 +686,7 @@ class CacheTest(TestCaseBase):
         # プロジェクトを削除する
         project.delete()
 
-    def test_load_cache_to_subflow(self):
+    async def test_load_cache_to_subflow(self):
         """
         use_cache=Trueでプレビューすると、
         サブフロー内でもキャッシュの参照はできること
@@ -906,7 +910,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
         results = convert_from_job_vis(lasts)
 
         # 作成とキャッシュの作成を確定する
@@ -942,7 +946,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results2 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
@@ -950,7 +954,7 @@ class CacheTest(TestCaseBase):
         self.assertIn('d3', results2)
 
         # もう一度、メインフローをプレビューする
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results3 = convert_from_job_vis(lasts)
 
         # 乱数をデータソースとするメインフローをプレビューしても
@@ -964,7 +968,7 @@ class CacheTest(TestCaseBase):
         # プロジェクトを削除する
         project.delete()
 
-    def test_exec_subflow_with_no_cache(self):
+    async def test_exec_subflow_with_no_cache(self):
         """
         use_cache=Falseでプレビューすると、
         サブフロー内でもキャッシュの参照はしないこと
@@ -1248,7 +1252,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(sub_flow), {'vis':vis_args,'use_cache':True})
         results1 = convert_from_job_vis(lasts)
 
         # 作成とキャッシュの作成を確定する
@@ -1287,7 +1291,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':False})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':False})
         results2 = convert_from_job_vis(lasts)
 
         # サブフローのキャッシュが参照されないこと
@@ -1328,7 +1332,7 @@ class CacheTest(TestCaseBase):
         # プロジェクトを削除する
         project.delete()
 
-    def test_skip_unauth_cache(self):
+    async def test_skip_unauth_cache(self):
         """
         キャッシュの参照権限が無い場合でも、キャッシュを無視してプレビューができること
         """
@@ -1414,7 +1418,7 @@ class CacheTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results1 = convert_from_job_vis(lasts)
 
         # 正しいVisが得られるか
@@ -1437,7 +1441,7 @@ class CacheTest(TestCaseBase):
 
         # 再びプレビューする
         flow = self.factory.data.find_by_uuid(flow.uuid)
-        lasts = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results2 = convert_from_job_vis(lasts)
 
         # キャッシュが参照できないので、再度プレビューすると異なる値が得られること
@@ -1449,7 +1453,7 @@ class CacheTest(TestCaseBase):
         # プロジェクトを削除する
         project.delete()
 
-    def test_cannot_unauth_datasource(self):
+    async def test_cannot_unauth_datasource(self):
         """
         データソースの参照権限が無い場合は、プレビューすると例外が送出されること
         """
@@ -1530,7 +1534,7 @@ class CacheTest(TestCaseBase):
           }
         }
         with self.assertRaises(NotAuthorizedException):
-            job = execute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
+            job = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
             convert_from_job_vis(job)
 
         # フローを削除する

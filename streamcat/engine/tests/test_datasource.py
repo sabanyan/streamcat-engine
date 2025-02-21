@@ -1,5 +1,4 @@
 import io
-import copy
 import unittest
 import shutil
 from pathlib import Path
@@ -7,11 +6,11 @@ from pathlib import Path
 from streamcat.core import SavableDatum
 from streamcat.store import DatabaseConn, FlowData, NysolModule, CommandException
 from streamcat.store.tests.test_case_base import TestCaseBase
-from streamcat.engine import execute, FlowCommand
+from streamcat.engine import aexecute, FlowCommand
 from .test_main import convert_from_job, convert_from_job_exs, convert_from_job_vis
 from .make_flow_json import create_flow_by_flow_id
 
-class DataSourceTest(TestCaseBase):
+class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
     """
     フローの入出力指定の検証
     """
@@ -26,7 +25,7 @@ class DataSourceTest(TestCaseBase):
     }
     database_conn = DatabaseConn(conn_json)
 
-    def test_subflow_has_input_on_way(self):
+    async def test_subflow_has_input_on_way(self):
         """
         フローの途中に入力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -211,7 +210,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -224,7 +223,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_mainflow_has_input_on_way(self):
+    async def test_mainflow_has_input_on_way(self):
         """
         フローの途中に入力ポイントを配置するフローをメインフローとして実行した場合、
         入力ポイントは無視されること
@@ -406,7 +405,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは3つ生成されているか
@@ -418,7 +417,7 @@ class DataSourceTest(TestCaseBase):
                    'd3': [['x','1','10'], ['x','2','20'],['y','1','30'], ['y','3','40'], ['z','1','50']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_subflow_has_inout_on_way(self):
+    async def test_subflow_has_inout_on_way(self):
         """
         フローの途中に入力と出力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -636,7 +635,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -649,7 +648,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_subflow_has_outin_on_way(self):
+    async def test_subflow_has_outin_on_way(self):
         """
         フローの途中に出力と入力ポイントの順に配置するサブフローを呼び出した場合、
         出力ポイントより後ろのコマンドは実行されないこと
@@ -866,7 +865,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -879,7 +878,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_mainflow_has_in_and_datasource(self):
+    async def test_mainflow_has_in_and_datasource(self):
         """
         入力ポイントかつデータソースのポイントは、
         メインフローとして実行する場合は、データソースとして扱われること
@@ -968,7 +967,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは3つ生成されているか
@@ -988,7 +987,7 @@ class DataSourceTest(TestCaseBase):
 
         self.assertDictEqual(lasts, correct)
 
-    def test_subflow_has_output_on_way1(self):
+    async def test_subflow_has_output_on_way1(self):
         """
         フローの途中に出力ポイントを配置するサブフローを呼び出した場合、
         出力ポイントより後ろのコマンドは実行されないこと
@@ -1163,7 +1162,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1180,7 +1179,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_subflow_has_output_on_way2(self):
+    async def test_subflow_has_output_on_way2(self):
         """
         一つの経路に二つの出力ポイントを配置したサブフロー呼び出す場合、
         経路途中の出力ポイントより後ろの出力ポイントをプレビューできること
@@ -1379,7 +1378,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1392,7 +1391,7 @@ class DataSourceTest(TestCaseBase):
         # フローを削除する
         sub_flow.delete()
 
-    def test_subflow_has_in_and_out_point(self):
+    async def test_subflow_has_in_and_out_point(self):
         """
         フローの途中に入力かつ出力ポイントを配置するサブフローを呼び出した場合、
         入力ポイントより手前のコマンドは実行されないこと
@@ -1579,7 +1578,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1597,7 +1596,7 @@ class DataSourceTest(TestCaseBase):
         sub_flow.delete()
         frame.delete()
 
-    def test_subflow_has_datasource(self):
+    async def test_subflow_has_datasource(self):
         """
         データソースを持つサブフローを実行・プレビューすると、その入力も実行されること
         (プレビューであってもデータデストを実行して出力を実行する)
@@ -1735,7 +1734,7 @@ class DataSourceTest(TestCaseBase):
         }
         flow_link = FlowCommand(flow)
         args = {'vis':vis_args, 'flow_args': {'frame_uuid':in_frame.uuid}}
-        lasts = execute(flow_link, args, {})
+        lasts = await aexecute(flow_link, args, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -1775,7 +1774,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datadest(self):
+    async def test_subflow_has_datadest(self):
         """
         データデストを持つサブフローを実行・プレビューすると、その出力も実行されること
         (プレビューであってもデータデストを実行して出力を実行する)
@@ -1877,7 +1876,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -1896,7 +1895,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datadest2(self):
+    async def test_subflow_has_datadest2(self):
         """
         2つのSaverコマンドを持つデータデストを持つサブフローを
         実行・プレビューすると、その出力も実行されること
@@ -1998,7 +1997,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
         
         # ライブラリにデータソースが出力されていること
@@ -2024,7 +2023,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datasource_and_dest(self):
+    async def test_subflow_has_datasource_and_dest(self):
         """
         データソースとデストを持つサブフローを実行・プレビューすると、その入出力も実行されること
         (プレビューであってもデータデストを実行して出力を実行する)
@@ -2153,7 +2152,7 @@ class DataSourceTest(TestCaseBase):
         # サブフローを実行する
         flow_link = FlowCommand(sub_flow)
         args = {'flow_args': {'frame_uuid':in_frame.uuid}}
-        lasts = execute(flow_link, args, {})
+        lasts = await aexecute(flow_link, args, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -2166,7 +2165,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, args, {})
+        lasts = await aexecute(flow_link, args, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -2187,7 +2186,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datedst_and_out_point(self):
+    async def test_subflow_has_datedst_and_out_point(self):
         """
         サブフローがデータデストとフロー出力Pointをもつ場合、
         実行・プレビューすると、その入出力も実行されること
@@ -2359,7 +2358,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -2385,7 +2384,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datedst_and_out_point2(self):
+    async def test_subflow_has_datedst_and_out_point2(self):
         """
         サブフローがデータデストとフロー出力Pointをもつ場合、
         実行・プレビューすると、その入出力も実行されること
@@ -2556,7 +2555,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -2576,7 +2575,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_hasnot_in_and_out_point(self):
+    async def test_subflow_hasnot_in_and_out_point(self):
         """
         入出力Portの無いサブフローであっても、SaverCommandは実行されること
         """
@@ -2657,7 +2656,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -2676,7 +2675,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_hasnot_in_and_out_point2(self):
+    async def test_subflow_hasnot_in_and_out_point2(self):
         """
         入出力Portが無いサブフローで、かつSaverCommandも含まれていない場合、
         そのサブフローは実行されないこと
@@ -2762,7 +2761,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
 
         # 出力結果は0件であること
         lasts = convert_from_job(lasts)
@@ -2777,7 +2776,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datadst_after_outs(self):
+    async def test_subflow_has_datadst_after_outs(self):
         """
         サブフロー内において、データデストの前にフロー出力Pointがある経路とない経路が混在する場合、
         ある経路の場合はそこで処理が打ち切られ、ない経路の場合はデータデストまで処理が行われること
@@ -3366,7 +3365,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        outs = execute(flow_link, {}, {})
+        outs = await aexecute(flow_link, {}, {})
         outs = convert_from_job(outs)
 
         # ライブラリにデータソースが出力されていること
@@ -3398,7 +3397,7 @@ class DataSourceTest(TestCaseBase):
         # d3_frame
         # 
         datasource = root.create_datasource('tmp_source1', d3_frame.find_parent(), LoaderCommand(), {'uuid':d3_frame.uuid})
-        outs = execute(FlowCommand(datasource), args=vis_args)
+        outs = await aexecute(FlowCommand(datasource), args=vis_args)
         outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
@@ -3411,7 +3410,7 @@ class DataSourceTest(TestCaseBase):
         # d6_frame
         # 
         datasource = root.create_datasource('tmp_source2', d6_frame.find_parent(), LoaderCommand(), {'uuid':d6_frame.uuid})
-        outs = execute(FlowCommand(datasource), args=vis_args)
+        outs = await aexecute(FlowCommand(datasource), args=vis_args)
         outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
@@ -3427,7 +3426,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datadst_after_outs2(self):
+    async def test_subflow_has_datadst_after_outs2(self):
         """
         サブフロー内において、データデストの前にフロー出力Pointがある経路とない経路が混在する場合、
         ある経路の場合はそこで処理が打ち切られ、ない経路の場合はデータデストまで処理が行われること
@@ -4070,7 +4069,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        outs = execute(flow_link, {}, {})
+        outs = await aexecute(flow_link, {}, {})
         outs = convert_from_job(outs)
 
         # ライブラリにデータソースが出力されていること
@@ -4102,7 +4101,7 @@ class DataSourceTest(TestCaseBase):
         # d3_frame
         # 
         datasource = root.create_datasource('tmp_source1', d3_frame.find_parent(), LoaderCommand(), {'uuid':d3_frame.uuid})
-        outs = execute(FlowCommand(datasource), args=vis_args)
+        outs = await aexecute(FlowCommand(datasource), args=vis_args)
         outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
@@ -4135,7 +4134,7 @@ class DataSourceTest(TestCaseBase):
         # d6_frame
         # 
         datasource = root.create_datasource('tmp_source2', d6_frame.find_parent(), LoaderCommand(), {'uuid':d6_frame.uuid})
-        outs = execute(FlowCommand(datasource), args=vis_args)
+        outs = await aexecute(FlowCommand(datasource), args=vis_args)
         outs = convert_from_job_vis(outs)
 
         # visデータは1つ生成されているか
@@ -4151,7 +4150,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_saver_after_outs(self):
+    async def test_subflow_has_saver_after_outs(self):
         """
         サブフロー内において、Saverコマンドの前にフロー出力Pointがある場合、
         そのSaverコマンドは例外を送出し、フローは実行されないこと
@@ -4326,7 +4325,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_cmd = FlowCommand(flow)
-        outs = execute(flow_cmd, {}, {})
+        outs = await aexecute(flow_cmd, {}, {})
         outs = convert_from_job_exs(outs)
 
         # 例外が出力されること
@@ -4340,7 +4339,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_out_point_between_savers(self):
+    async def test_subflow_has_out_point_between_savers(self):
         """
         サブフロー内において、2つのSaverコマンドの間ににフロー出力Pointがある場合、
         そのフロー出力Pointより後のSaverコマンドは例外を送出し、フローは実行されないこと
@@ -4541,7 +4540,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_cmd = FlowCommand(flow)
-        outs = execute(flow_cmd, {}, {})
+        outs = await aexecute(flow_cmd, {}, {})
         outs = convert_from_job_exs(outs)
 
         # 例外が出力されること
@@ -4555,7 +4554,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_run_flow_cmd(self):
+    async def test_run_flow_cmd(self):
         """
         Flow Commandを直接runしても結果が得られること
         """
@@ -4634,7 +4633,7 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
-    def test_run_cmd(self):
+    async def test_run_cmd(self):
         """
         Commandを直接runしても結果が得られること
         """
@@ -4686,7 +4685,7 @@ class DataSourceTest(TestCaseBase):
         ]
         self.assertListEqual(result, expected)
 
-    def test_remove_tmp_files_after_run(self):
+    async def test_remove_tmp_files_after_run(self):
         """
         フロー実行後にTmpファイルが削除されること
         """
@@ -4810,7 +4809,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_cmd = FlowCommand(flow)
-        outs = execute(flow_cmd, {}, {})
+        outs = await aexecute(flow_cmd, {}, {})
         outs = convert_from_job(outs)
 
         # ライブラリにデータソースが出力されていること
@@ -4835,7 +4834,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory3.data.load_trash_folder()
         trash.trash_all()
 
-    def test_vis_optimization(self):
+    async def test_vis_optimization(self):
         """
         プレビューの結果データの作成に関係しないコマンドは実行しないこと
         """
@@ -4923,7 +4922,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -4934,7 +4933,7 @@ class DataSourceTest(TestCaseBase):
                           ['11'], ['12'], ['13'], ['14'], ['15'], ['16'], ['17'], ['18'], ['19'], ['20']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vis_optimization_with_make_cache(self):
+    async def test_vis_optimization_with_make_cache(self):
         """
         キャッシュ作成=ONのPointが存在しても
         プレビューの結果データの作成に関係しないコマンドは実行しないこと
@@ -5023,7 +5022,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行する
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
 
         print(lasts)
 
@@ -5037,7 +5036,7 @@ class DataSourceTest(TestCaseBase):
                           ['11'], ['12'], ['13'], ['14'], ['15'], ['16'], ['17'], ['18'], ['19'], ['20']]}
         self.assertDictEqual(lasts, correct)
 
-    def test_vis_deep_subflow_call(self):
+    async def test_vis_deep_subflow_call(self):
         """
         十分に深い呼出関係のサブフローをプレビューできること
         """
@@ -5517,7 +5516,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {'vis':vis_args}, {})
+        lasts = await aexecute(flow_link, {'vis':vis_args}, {})
         lasts = convert_from_job_vis(lasts)
 
         # visデータは2つ生成されているか
@@ -5538,7 +5537,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_deep_datadest_call(self):
+    async def test_deep_datadest_call(self):
         """
         十分に深い呼出関係のデータデストを実行できること
         """
@@ -5887,7 +5886,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        lasts = execute(flow_link, {}, {})
+        lasts = await aexecute(flow_link, {}, {})
         lasts = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -5918,7 +5917,7 @@ class DataSourceTest(TestCaseBase):
         trash.trash_all()
 
     @unittest.skip('テストケースの実行ログが溢れるのでテストしない')
-    def test_vis_circular_subflow_call(self):
+    async def test_vis_circular_subflow_call(self):
         """
         循環参照する場合は実行・プレビュー時に例外を送出すること
         """
@@ -5998,9 +5997,9 @@ class DataSourceTest(TestCaseBase):
         # フローを実行しようとすると例外を送出すること
         flow_link = FlowCommand(flow)
         with self.assertRaises(RecursionError):
-            execute(flow_link, {'vis':vis_args}, {})
+            await aexecute(flow_link, {'vis':vis_args}, {})
 
-    def test_subflow_has_no_data_out_point(self):
+    async def test_subflow_has_no_data_out_point(self):
         """
         データを返さない出力Pointを持つサブフローを呼び出すとエラーになること
         """
@@ -6089,12 +6088,12 @@ class DataSourceTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         results = convert_from_job_vis(lasts)
         self.assertIsNone(results)
 
         # 実行しても結果は得られない
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         results = convert_from_job(lasts)
         self.assertIsNone(results)
 
@@ -6105,7 +6104,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_inner_subflow(self):
+    async def test_inner_subflow(self):
         """
         Flowリテラルが実行できること
         """
@@ -6242,7 +6241,7 @@ class DataSourceTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         results = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -6257,7 +6256,7 @@ class DataSourceTest(TestCaseBase):
         self.assertDictEqual(results, correct)
 
         # フローを実行する
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         results = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -6267,7 +6266,7 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
 
-    def test_inner_subflow_has_makecache(self):
+    async def test_inner_subflow_has_makecache(self):
         """
         キャッシュ出力指定のPointを持つFlowリテラルが実行できること
         (Flowリテラルはサブフローなので、キャッシュは出力されない仕様である)
@@ -6407,7 +6406,7 @@ class DataSourceTest(TestCaseBase):
             }
           }
         }
-        lasts = execute(FlowCommand(flow), {'vis':vis_args}, {})
+        lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         results = convert_from_job_vis(lasts)
 
         # visデータは1つ生成されているか
@@ -6422,7 +6421,7 @@ class DataSourceTest(TestCaseBase):
         self.assertDictEqual(results, correct)
 
         # フローを実行する
-        lasts = execute(FlowCommand(flow), {}, {})
+        lasts = await aexecute(FlowCommand(flow), {}, {})
         results = convert_from_job(lasts)
 
         # ライブラリにデータソースが出力されていること
@@ -6432,7 +6431,7 @@ class DataSourceTest(TestCaseBase):
         self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
 
-    def test_run_flow_cmd_reentrant(self):
+    async def test_run_flow_cmd_reentrant(self):
         """
         Flow Commandのrun()を再実行できること
         """
@@ -6577,7 +6576,7 @@ class DataSourceTest(TestCaseBase):
         # 初回と再実行はそれぞれ異なる出力結果を出力すること
         self.assertNotEqual(out_frame1.uuid, out_frame2.uuid)
 
-    def test_run_datedest_after_empty_point(self):
+    async def test_run_datedest_after_empty_point(self):
         """
         空のPointを入力とするデータデストを実行しても
         実行結果は出力されないこと
@@ -6671,7 +6670,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        outs = execute(flow_link, {}, {})
+        outs = await aexecute(flow_link, {}, {})
         outs = convert_from_job(outs)
 
         # 結果は出力されないこと
@@ -6684,7 +6683,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_datedest_after_empty_point(self):
+    async def test_subflow_has_datedest_after_empty_point(self):
         """
         サブフローが空のPointを入力とするデータデストを持つ場合
         実行結果は出力されないこと
@@ -6847,7 +6846,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        outs = execute(flow_link, {}, {})
+        outs = await aexecute(flow_link, {}, {})
         outs = convert_from_job(outs)
 
         # 結果は出力されないこと
@@ -6860,7 +6859,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_forked_branch_after_out(self):
+    async def test_subflow_has_forked_branch_after_out(self):
         """
         サブフローにフロー出力Pointの後に分岐がある場合、
         分岐の後のデータデストとフロー出力Pointが機能すること
@@ -7274,7 +7273,7 @@ class DataSourceTest(TestCaseBase):
 
         # フローを実行する
         flow_link = FlowCommand(flow)
-        outs = execute(flow_link, {}, {})
+        outs = await aexecute(flow_link, {}, {})
         outs = convert_from_job(outs)
 
         # ライブラリに結果データが出力されていること
@@ -7295,7 +7294,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_subflow_has_inout_at_same_point(self):
+    async def test_subflow_has_inout_at_same_point(self):
         """
         サブフロー内において、フロー入出力Pointの後にデータデストがある場合
         そららのデータデストは実行されないこと
@@ -7685,7 +7684,7 @@ class DataSourceTest(TestCaseBase):
         # フローを実行して、キャッシュを作成する
         # (サブフロー内ではキャッシュは作成しない)
         flow_cmd = FlowCommand(flow)
-        outs = execute(flow_cmd, {'use_cache':True}, {})
+        outs = await aexecute(flow_cmd, {'use_cache':True}, {})
         outs = convert_from_job(outs)
 
         # ライブラリに結果データが出力されていること
@@ -7698,7 +7697,7 @@ class DataSourceTest(TestCaseBase):
         # 再度、フローを実行する
         # (入力にはキャッシュが使用される)
         flow_cmd = FlowCommand(flow)
-        outs = execute(flow_cmd, {'use_cache':True}, {})
+        outs = await aexecute(flow_cmd, {'use_cache':True}, {})
         outs = convert_from_job(outs)
 
         # ライブラリに結果データが出力されていること
@@ -7718,7 +7717,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_vis_outside_subflow(self):
+    async def test_vis_outside_subflow(self):
         """
         メインフロー内において、プレビューの経路にないコマンド(サブフロー)は実行されないこと
         """
@@ -7924,7 +7923,7 @@ class DataSourceTest(TestCaseBase):
         # フローをプレビューする
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        job = execute(flow_link, {'vis':vis_args}, {})
+        job = await aexecute(flow_link, {'vis':vis_args}, {})
         outs = convert_from_job_vis(job)
 
         # visデータは1つ生成されているか
@@ -7944,7 +7943,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_vis_subflow_has_outside_datadst(self):
+    async def test_vis_subflow_has_outside_datadst(self):
         """
         サブフロー内において、プレビュー実行の経路にないデータデストは実行されないこと
         """
@@ -8153,7 +8152,7 @@ class DataSourceTest(TestCaseBase):
         # フローをプレビューする
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        job = execute(flow_link, {'vis':vis_args}, {})
+        job = await aexecute(flow_link, {'vis':vis_args}, {})
         outs = convert_from_job_vis(job)
 
         # visデータは1つ生成されているか
@@ -8173,7 +8172,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_vis_subflow_has_outside_path(self):
+    async def test_vis_subflow_has_outside_path(self):
         """
         サブフロー内において、プレビュー実行の経路にないコマンドは実行されないこと
         """
@@ -8405,7 +8404,7 @@ class DataSourceTest(TestCaseBase):
         # フローをプレビューする
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        job = execute(flow_link, {'vis':vis_args}, {})
+        job = await aexecute(flow_link, {'vis':vis_args}, {})
         outs = convert_from_job_vis(job)
 
         # visデータは1つ生成されているか
@@ -8425,7 +8424,7 @@ class DataSourceTest(TestCaseBase):
         trash = self.factory.data.load_trash_folder()
         trash.trash_all()
 
-    def test_vis_mainflow_has_outside_path(self):
+    async def test_vis_mainflow_has_outside_path(self):
         """
         メインフロー内において、プレビュー実行の経路にないコマンドは実行されないこと
         """
@@ -8697,7 +8696,7 @@ class DataSourceTest(TestCaseBase):
         # フローをプレビューする
         # (RaiseCommandが実行されないこと)
         flow_link = FlowCommand(flow)
-        job = execute(flow_link, {'vis':vis_args}, {})
+        job = await aexecute(flow_link, {'vis':vis_args}, {})
         outs = convert_from_job_vis(job)
 
         # visデータは1つ生成されているか
