@@ -1,6 +1,6 @@
 from streamcat.core import Port
 from streamcat.store import Flow, FlowData
-from streamcat.store.factory import DatumFactory
+from streamcat.store.finder import DatumFactory
 from .. import FlowCommand
 from ..elements import FlowElements, Steps, Point, Points, FlowPort, FlowPorts
 
