@@ -5,12 +5,12 @@ class SaverActivator:
     """
     Saverコマンドを実行可能にする
     """
-    def __init__(self, flow_cmd:FlowCommand, flow, datum_factory=None, activity=None):
+    def __init__(self, flow_cmd:FlowCommand, flow, datum_finder=None, activity=None):
         # FlowCommand
         self._flow_cmd = flow_cmd
         # SCommandに設定する引数
         self._flow = flow
-        self._datum_factory = datum_factory
+        self._datum_finder = datum_finder
         self._activity = activity
 
     def traverse(self, src_point:Point=None):
@@ -32,7 +32,7 @@ class SaverActivator:
                 #
                 SaverActivator(step.command,
                                self._flow,
-                               self._datum_factory,
+                               self._datum_finder,
                                self._activity).traverse(src_point=data_dst_src_point)
 
         # フロー内の全てのSaverCommandの出力Pointをフロー出力Pointに設定し
@@ -175,7 +175,7 @@ class SaverActivator:
                         'result_folder': self._flow.find_parent(),
                         # データデストの入力PointのlabelをSaverCommandに渡す
                         'src_point'    : src_point,
-                        'datum_factory': self._datum_factory,
+                        'datum_finder': self._datum_finder,
                         'start_at'     : self._activity._start_at,
                         'activity_uuid': self._activity.uuid}
                 # 引数の設定が重複した場合は、コマンドの個別引数の方を優先する

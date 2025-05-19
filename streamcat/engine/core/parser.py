@@ -69,13 +69,13 @@ class Parser:
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow_data:FlowData, datum_factory:DatumFinder, is_main:bool=False) -> None:
+    def __init__(self, flow_data:FlowData, datum_finder:DatumFinder, is_main:bool=False) -> None:
         self._flow_data = flow_data
-        self._datum_factory = datum_factory
+        self._datum_finder = datum_finder
         self._is_main = is_main
 
         from .appenders import FolderDataSourcePrepender
-        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
+        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_finder)
 
     def parse(self, use_cache:bool):
         # フローJSONからFlowElementsを生成する
@@ -247,7 +247,7 @@ class Parser:
             # Storeの場合、StoreオブジェクトをPointに格納する
             if node.is_store:
                 store_uuid = node.get('uuid')
-                store = self._datum_factory.find_by_uuid(store_uuid)
+                store = self._datum_finder.find_by_uuid(store_uuid)
 
                 # StoreにDatabaseを設定する
                 target_point.datum = store
@@ -292,11 +292,11 @@ class Parser:
             flow_uuid = node.get('uuid')
             if flow_json is not None:
                 # リテラル定義されたフローを取得する
-                sub_flow = Flow(self._datum_factory._session, None, node.get('label'), FlowData(flow_json))
+                sub_flow = Flow(self._datum_finder._session, None, node.get('label'), FlowData(flow_json))
             elif flow_uuid is not None:
                 try:
                     # サブフローをDBから取得する
-                    sub_flow = self._datum_factory.find_by_uuid(flow_uuid)
+                    sub_flow = self._datum_finder.find_by_uuid(flow_uuid)
                 except NotAuthorizedException:
                     raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
             else:

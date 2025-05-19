@@ -30,7 +30,7 @@ class FlowCommand(Command):
 
         # データソースを追加する
         from streamcat.store.finder import DatumFinder
-        self._datum_factory = DatumFinder(flow._session)
+        self._datum_finder = DatumFinder(flow._session)
 
         # 仮引数を保持する
         self.params = self._flow_data.params or {}
@@ -62,15 +62,15 @@ class FlowCommand(Command):
             self.parse(use_cache)
 
             # フローの実行毎にActivity Datumを新規作成する
-            activity_folder = self._datum_factory.load_activity_folder()
+            activity_folder = self._datum_finder.load_activity_folder()
             self._activity = activity_folder.create_activity(self.label, self._flow, args)
 
             # SaverCommandの副作用(出力処理)を実行する為に、その出力Pointをフローの出力Pointに設定する
             self.relayed_o_ports = FlowPorts()
-            SaverActivator(self, self._flow, self._datum_factory, self._activity).traverse()
+            SaverActivator(self, self._flow, self._datum_finder, self._activity).traverse()
 
             # フロー出力PointにRunsとActivityコマンドを、キャッシュ出力Pointにキャッシュデータデストを付加する
-            OutsTerminator(self, self._flow, self._datum_factory, self._lock_uuid, self._activity).terminate(vis_args, use_cache)
+            OutsTerminator(self, self._flow, self._datum_finder, self._lock_uuid, self._activity).terminate(vis_args, use_cache)
 
             # フローを縦型探索して不要な接続を刈る
             Pruner(self._flow_elements, self._is_main).traverse()
@@ -85,7 +85,7 @@ class FlowCommand(Command):
     def parse(self, use_cache:bool):
         # フローJSONを解釈する
         from .core.parser import Parser
-        self._flow_elements = Parser(self._flow_data, self._datum_factory, self._is_main).parse(use_cache)
+        self._flow_elements = Parser(self._flow_data, self._datum_finder, self._is_main).parse(use_cache)
 
     def _make_complete_flow_args(self, args:dict) -> dict:
         """

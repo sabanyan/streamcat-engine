@@ -5,13 +5,13 @@ from .. import FlowCommand
 from ..elements import Step, Point, Tube, Tubes
 
 class FolderDataSourcePrepender():
-    def __init__(self, datum_factory):
+    def __init__(self, datum_finder):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
-        self._datum_factory = datum_factory
+        self._datum_finder = datum_finder
 
     def do_prepend(self, points, steps, point:Point, frame_uuid):
-        frame = self._datum_factory.find_by_uuid(frame_uuid)
+        frame = self._datum_finder.find_by_uuid(frame_uuid)
         folder_store = frame.find_parent()
         self._put_loader(points, steps, point, folder_store, frame_uuid)
 
@@ -30,11 +30,11 @@ class FolderDataSourcePrepender():
         steps.add(loader_step, avoid_id_collision=True)
 
 class FolderDataDestAppender():
-    def __init__(self, flow:Flow, datum_factory, lock_uuid, start_at):
+    def __init__(self, flow:Flow, datum_finder, lock_uuid, start_at):
         # core.pyで定義されているFlowはf
         # flow.pyで定義されているFlowはflowと表記する
         self.flow = flow
-        self._datum_factory = datum_factory
+        self._datum_finder = datum_finder
         # フローのlock_uuid
         self._lock_uuid = lock_uuid
         self._start_at = start_at
@@ -91,7 +91,7 @@ class CacheDataDestAppender(FolderDataDestAppender):
     def do_append(self, flow_cmd:FlowCommand, point:Point):
         # TODO: 適当なコードだがまた後で修正することになるからとりあえずこれで
 
-        folder_store = self._datum_factory.load_cache_folder()
+        folder_store = self._datum_finder.load_cache_folder()
         saver = CommandLink('cachesaver').resolve()
 
         # pointの次に繋がっていたstepは、saver_pointの後に繋げる
