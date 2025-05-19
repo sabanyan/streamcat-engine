@@ -72,7 +72,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('沈黙が横たわる真昼に')
@@ -90,14 +90,14 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
-        cache_folder = self.factory2.data.load_cache_folder()
+        cache_folder = self.finder2.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
         # 作成を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # USER3は、更新権限の無いフローをプレビューしてもキャッシュは作成されないこと
-        readonly_flow = self.factory3.data.find_by_uuid(flow.uuid)
+        readonly_flow = self.finder3.data.find_by_uuid(flow.uuid)
         vis_args = {
           "d1": {
             "args": {
@@ -115,7 +115,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d1', results1)
 
         # キャッシュフォルダにキャッシュが作成されていないこと
-        cache_folder = self.factory3.data.load_cache_folder()
+        cache_folder = self.finder3.data.load_cache_folder()
         len_caches2 = len(cache_folder.find_children())
         self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
 
@@ -238,7 +238,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory0.data.load_root()
+        root = self.finder0.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('いつだって私の方が駆け足で')
@@ -251,7 +251,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
-        cache_folder = self.factory0.data.load_cache_folder()
+        cache_folder = self.finder0.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
         # 他ユーザによるフローの排他ロック
@@ -283,7 +283,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d4', results1)
 
         # キャッシュフォルダにキャッシュが作成されていないこと
-        cache_folder = self.factory.data.load_cache_folder()
+        cache_folder = self.finder.data.load_cache_folder()
         len_caches2 = len(cache_folder.find_children())
         self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
 
@@ -380,7 +380,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory0.data.load_root()
+        root = self.finder0.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('煌めいた')
@@ -413,7 +413,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lock_manager.unlock(lock1.uuid)
 
         # キャッシュの作成を確定する
-        self.factory0.end()
+        self.finder0.end()
 
         # visデータは1つ生成されているか
         self.assertEqual(len(results1), 1)
@@ -427,7 +427,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         lock2 = lock_manager.lock(flow.uuid, self.USER1)
 
         # 再びプレビューする
-        flow = self.factory.data.find_by_uuid(flow.uuid)
+        flow = self.finder.data.find_by_uuid(flow.uuid)
         lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results2 = convert_from_job_vis(lasts)
 
@@ -443,7 +443,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow.delete()
 
         # 削除を確定する
-        self.factory.end()
+        self.finder.end()
 
         # プロジェクトを削除する
         project.delete()
@@ -621,7 +621,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory0.data.load_root()
+        root = self.finder0.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('近くて遠い　二人名前はまだいらない')
@@ -640,7 +640,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
-        cache_folder = self.factory0.data.load_cache_folder()
+        cache_folder = self.finder0.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
         # フローを排他ロックしないとキャッシュが作成されない
@@ -672,7 +672,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d2', results)
 
         # キャッシュフォルダにキャッシュが作成されていないこと
-        cache_folder = self.factory.data.load_cache_folder()
+        cache_folder = self.finder.data.load_cache_folder()
         len_caches2 = len(cache_folder.find_children())
         self.assertEqual(len_caches2, len_caches1, msg='キャッシュファイルが作成されました')
 
@@ -878,7 +878,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory0.data.load_root()
+        root = self.finder0.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('どうして　笑えない？')
@@ -897,7 +897,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
-        cache_folder = self.factory0.data.load_cache_folder()
+        cache_folder = self.finder0.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
         # サブフローをプレビューして、サブフローにキャッシュを作成する
@@ -914,7 +914,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         results = convert_from_job_vis(lasts)
 
         # 作成とキャッシュの作成を確定する
-        self.factory0.end()
+        self.finder0.end()
 
         # 正しいVisが得られるか
         expect = {'d3': [['A','20180101','5200'],
@@ -932,7 +932,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(results, expect)
 
         # キャッシュフォルダにキャッシュが作成されていること
-        cache_folder = self.factory.data.load_cache_folder()
+        cache_folder = self.finder.data.load_cache_folder()
         len_caches2 = len(cache_folder.find_children())
         self.assertGreater(len_caches2, len_caches1, msg='キャッシュファイルが作成されませんでした')
 
@@ -1220,7 +1220,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory0.data.load_root()
+        root = self.finder0.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('“いつも通り”と呼べるようになれるかな')
@@ -1239,7 +1239,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
-        cache_folder = self.factory0.data.load_cache_folder()
+        cache_folder = self.finder0.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
         # サブフローをプレビューして、サブフローにキャッシュを作成する
@@ -1256,7 +1256,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         results1 = convert_from_job_vis(lasts)
 
         # 作成とキャッシュの作成を確定する
-        self.factory0.end()
+        self.finder0.end()
 
         # 正しいVisが得られるか
         expect = {'d2': [['A', '20280101', '3201', '3201'],
@@ -1277,7 +1277,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertDictEqual(results1, expect)
 
         # キャッシュフォルダにキャッシュが作成されていること
-        cache_folder = self.factory.data.load_cache_folder()
+        cache_folder = self.finder.data.load_cache_folder()
         len_caches2 = len(cache_folder.find_children())
         self.assertGreater(len_caches2, len_caches1, msg='キャッシュファイルが作成されませんでした')
 
@@ -1392,7 +1392,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('振りかざす純情じゃ　泣いてるみたいだ')
@@ -1405,7 +1405,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # フロー実行前のキャッシュファイル数を数えておく
-        cache_folder = self.factory.data.load_cache_folder()
+        cache_folder = self.finder.data.load_cache_folder()
         len_caches1 = len(cache_folder.find_children())
 
         # プレビューしてd1にキャッシュを作成する
@@ -1426,21 +1426,21 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d1', results1)
 
         # キャッシュフォルダにキャッシュが作成されていること
-        cache_folder = self.factory.data.load_cache_folder()
+        cache_folder = self.finder.data.load_cache_folder()
         len_caches2 = len(cache_folder.find_children())
         self.assertGreater(len_caches2, len_caches1, msg='キャッシュファイルが作成できませんでした')
 
         # キャッシュフォルダの権限を削除して参照不可にする
-        cache_folder = self.factory.data.load_cache_folder()
-        everyone_role = self.factory.role.load_everyone_role()
+        cache_folder = self.finder.data.load_cache_folder()
+        everyone_role = self.finder.role.load_everyone_role()
         everyone_role.clear_authz(cache_folder.id)
 
         # Sessionにあるself._permissionsを期限切れ状態にしてDBからリロードされるようにする
         # FIXME: SQLAlchemyのexecution_options(populate_existing=True)を使うとここのテストはパスできる
-        self.factory._session._session.expire(cache_folder, ['_permissions'])
+        self.finder._session._session.expire(cache_folder, ['_permissions'])
 
         # 再びプレビューする
-        flow = self.factory.data.find_by_uuid(flow.uuid)
+        flow = self.finder.data.find_by_uuid(flow.uuid)
         lasts = await aexecute(FlowCommand(flow), {'vis':vis_args,'use_cache':True})
         results2 = convert_from_job_vis(lasts)
 
@@ -1501,7 +1501,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('お母にゃん')
@@ -1520,7 +1520,7 @@ class CacheTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # データソースファイルの権限を削除して参照不可にする
-        everyone_role = self.factory.role.load_everyone_role()
+        everyone_role = self.finder.role.load_everyone_role()
         everyone_role.clear_authz(frame.id)
 
         # プレビューすると例外が送出されること

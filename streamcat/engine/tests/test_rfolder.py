@@ -147,7 +147,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         1つのデータソースの出力を1つのデータデストに繋げて実行する
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # リモートフォルダストアの作成
         rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
@@ -177,7 +177,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1_d2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.finder.data.exists(datasource_f1.uuid, type=SavableDatum.FLOW_TYPE))
         self.assertTrue(datasource_f1.label.startswith('(=^ェ^=)'))
 
         # 後片付け
@@ -193,7 +193,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         2つのデータソースの出力先は同じファイルなので、排他制御が必要になる
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # リモートフォルダストアの作成
         rfolder = root.create_remote_folder('windows', self.remote_folder_conn)
@@ -225,8 +225,8 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(lasts['f2_d2'], 'SaverCommandは結果(Datasource)を出力しませんでした')
         datasource_f1 = lasts['f1_d2']
         datasource_f2 = lasts['f2_d2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid, type=SavableDatum.FLOW_TYPE))
-        self.assertTrue(self.factory.data.exists(datasource_f2.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.finder.data.exists(datasource_f1.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.finder.data.exists(datasource_f2.uuid, type=SavableDatum.FLOW_TYPE))
         self.assertTrue(datasource_f1.label.startswith('(=^x^=)'))
         self.assertTrue(datasource_f1.label.startswith('(=^x^=)'))
 
@@ -277,7 +277,7 @@ class RemoteFolderTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # リモートフォルダストアの作成
         rfolder = root.create_remote_folder('windows', self.remote_folder_conn)

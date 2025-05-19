@@ -138,7 +138,7 @@ class DbTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         1つのDBデータソースの出力を1つのDBデータデストに繋げて実行する
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # DBストアの作成
         db = root.create_database('postgresql', self.database_conn)
@@ -162,7 +162,7 @@ class DbTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # ライブラリにデータソースが出力されていること
         self.assertEqual(len(lasts), 1)
         datasource_f1 = lasts['f1_d2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
+        self.assertTrue(self.finder.data.exists(datasource_f1.uuid))
         self.assertTrue(datasource_f1.label.startswith('🌲🌳🌲🍁'))
 
         # 後片付け
@@ -178,7 +178,7 @@ class DbTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         TODO: 2つのDBデータソースの出力先テーブルは同じテーブル名なので、排他制御が必要になる
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # DBストアの作成
         db = root.create_database('postgresql', self.database_conn)
@@ -203,8 +203,8 @@ class DbTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(lasts), 2)
         datasource_f1 = lasts['f1_d2']
         datasource_f2 = lasts['f2_d2']
-        self.assertTrue(self.factory.data.exists(datasource_f1.uuid))
-        self.assertTrue(self.factory.data.exists(datasource_f2.uuid))
+        self.assertTrue(self.finder.data.exists(datasource_f1.uuid))
+        self.assertTrue(self.finder.data.exists(datasource_f2.uuid))
         self.assertTrue(datasource_f1.label.startswith('コーヒープラペチーノ'))
         self.assertTrue(datasource_f2.label.startswith('コーヒープラペチーノ'))
 
@@ -255,7 +255,7 @@ class DbTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # DBストアの作成
         db = root.create_database('postgresql', self.database_conn)

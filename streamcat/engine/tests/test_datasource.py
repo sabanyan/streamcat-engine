@@ -187,7 +187,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('', FlowData(sub_flow_json))
@@ -373,7 +373,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('', FlowData(flow_json))
@@ -612,7 +612,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('', FlowData(sub_flow_json))
@@ -842,7 +842,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('', FlowData(sub_flow_json))
@@ -949,7 +949,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('', FlowData(flow_json))
@@ -993,7 +993,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         出力ポイントより後ろのコマンドは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
         # 参照先フレームを作成する
         frame1 = root.create_frame('CSV1', io.BytesIO(b''))
         frame1.save()
@@ -1139,7 +1139,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('', FlowData(sub_flow_json))
@@ -1354,7 +1354,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('', FlowData(sub_flow_json))
@@ -1540,7 +1540,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # 入力データを作成する
         data = [
@@ -1689,7 +1689,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # 入力フォルダを作成する
         in_folder = root.create_folder('入力フォルダ')
@@ -1771,7 +1771,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         in_folder.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datadest(self):
@@ -1857,7 +1857,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフロー(フォルダデータデスト)の作成
         from .make_flow_json import folder_dst_json
@@ -1883,7 +1883,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('この世界で君に会えた日から輝き始めてる'))
         self.assertTrue(out_frame.file_exists)
 
@@ -1892,7 +1892,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         folder_dst.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datadest2(self):
@@ -1978,7 +1978,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフロー(フォルダデータデスト)の作成
         from .make_flow_json import two_savers_folder_dst_json
@@ -2006,12 +2006,12 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(lasts['f0_d3'], 'SaverCommandは結果(f0_d3)を出力しませんでした')
         # 一つ目の出力結果が出力されていること
         out_frame1 = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.label.startswith('ひとつひとつ叶えて行けるかな　そばにいて'))
         self.assertTrue(out_frame1.file_exists)
         # 二つ目の出力結果が出力されていること
         out_frame2 = lasts['f0_d3']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.label.startswith('ひとつひとつ叶えて行けるかな　そばにいて'))
         self.assertTrue(out_frame2.file_exists)
 
@@ -2020,7 +2020,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         folder_dst.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datasource_and_dest(self):
@@ -2110,7 +2110,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # 入力フォルダを作成する
         in_folder = root.create_folder('入力フォルダ')
@@ -2159,7 +2159,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f1_d2'], 'SaverCommandは結果(f1_d2)を出力しませんでした')
         out_frame = lasts['f1_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('どこにいても見えない　未来なんてもっと退屈な光'))
         self.assertTrue(out_frame.file_exists)
 
@@ -2172,7 +2172,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('どこにいても見えない　未来なんてもっと退屈な光'))
         self.assertTrue(out_frame.file_exists)
 
@@ -2183,7 +2183,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         in_folder.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datedst_and_out_point(self):
@@ -2339,7 +2339,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフロー(フォルダデータデスト)の作成
         from .make_flow_json import folder_dst_json
@@ -2366,13 +2366,13 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # 
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame1 = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.label.startswith('とっておきの場所で一緒に隠れた　陽射し揺れて'))
         self.assertTrue(out_frame1.file_exists)
         # 
         self.assertIsNotNone(lasts['D1'], 'SaverCommandは結果(D1)を出力しませんでした')
         out_frame2 = lasts['D1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.label.startswith('D1'))
         self.assertTrue(out_frame2.file_exists)
 
@@ -2381,7 +2381,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         folder_dst.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datedst_and_out_point2(self):
@@ -2536,7 +2536,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフロー(フォルダデータデスト)の作成
         from .make_flow_json import folder_dst_json
@@ -2563,7 +2563,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # 
         self.assertIsNotNone(lasts['D1'], 'SaverCommandは結果(D1)を出力しませんでした')
         out_frame2 = lasts['D1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.label.startswith('D1'))
         self.assertTrue(out_frame2.file_exists)
 
@@ -2572,7 +2572,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         folder_dst.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_hasnot_in_and_out_point(self):
@@ -2637,7 +2637,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフロー(フォルダデータデスト)の作成
         from .make_flow_json import folder_dst_json
@@ -2663,7 +2663,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(lasts), 1)
         self.assertIsNotNone(lasts['f0_d2'], 'SaverCommandは結果(f0_d2)を出力しませんでした')
         out_frame = lasts['f0_d2']
-        self.assertTrue(self.factory.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame.label.startswith('いつだってもどかしいよ　離れないで'))
         self.assertTrue(out_frame.file_exists)
 
@@ -2672,7 +2672,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         folder_dst.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_hasnot_in_and_out_point2(self):
@@ -2748,7 +2748,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
@@ -2773,7 +2773,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         sub_flow.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datadst_after_outs(self):
@@ -2782,7 +2782,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         ある経路の場合はそこで処理が打ち切られ、ない経路の場合はデータデストまで処理が行われること
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -3423,7 +3423,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datadst_after_outs2(self):
@@ -3433,7 +3433,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         (サブサブフローの直前にフロー出力Pointを設定する)
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -4147,7 +4147,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_saver_after_outs(self):
@@ -4156,7 +4156,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         そのSaverコマンドは例外を送出し、フローは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -4336,7 +4336,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_out_point_between_savers(self):
@@ -4345,7 +4345,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         そのフロー出力Pointより後のSaverコマンドは例外を送出し、フローは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -4551,7 +4551,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_run_flow_cmd(self):
@@ -4610,7 +4610,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('Main', FlowData(flow_json))
@@ -4630,7 +4630,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(apparentOuts.outs[0].out_point.id, 'd1')
         # apparentOutは出力frameを持っていること
         out_frame1 = apparentOuts.outs[0].datum
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
     async def test_run_cmd(self):
@@ -4692,7 +4692,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         from streamcat.core import Tmp
 
         # ルートデータストアを取得する
-        root = self.factory3.data.load_root()
+        root = self.finder3.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -4818,7 +4818,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # D
         self.assertIsNotNone(outs['D'], 'SaverCommandは結果(D)を出力しませんでした')
         out_frame1 = outs['D']
-        self.assertTrue(self.factory3.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder3.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.label.startswith('モナリザ'))
         self.assertTrue(out_frame1.file_exists)
 
@@ -4831,7 +4831,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory3.data.load_trash_folder()
+        trash = self.finder3.data.load_trash_folder()
         trash.trash_all()
 
     async def test_vis_optimization(self):
@@ -4904,7 +4904,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('vis test', FlowData(flow_json))
@@ -5004,7 +5004,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
     
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('vis test', FlowData(flow_json))
@@ -5042,7 +5042,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         """
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
         # 参照先フレームを作成する
         frame1 = root.create_frame('CSV1', io.BytesIO(b''))
         frame1.save()
@@ -5468,7 +5468,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         } 
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフロー4を作成する
         sub_flow4 = root.create_flow('Sub', FlowData(sub_flow4))
@@ -5534,7 +5534,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         sub_flow4.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_deep_datadest_call(self):
@@ -5842,7 +5842,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # DBストアの作成
         db = root.create_database('postgresql', self.database_conn)
@@ -5895,8 +5895,8 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(lasts['f1_d2_1'], 'SaverCommandは結果(f1_d2_1)を出力しませんでした')
         out_frame1 = lasts['f1_d2']
         out_frame2 = lasts['f1_d2_1']
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FLOW_TYPE))
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame1.uuid, type=SavableDatum.FLOW_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame2.uuid, type=SavableDatum.FLOW_TYPE))
         print(out_frame1.label)
         self.assertTrue(out_frame1.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
         self.assertTrue(out_frame2.label.startswith('この世界に君が居てくれる道は　不思議と好きになる'))
@@ -5913,7 +5913,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         db.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     @unittest.skip('テストケースの実行ログが溢れるのでテストしない')
@@ -5979,7 +5979,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('loop', FlowData(main_flow))
@@ -6067,7 +6067,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # サブフローを作成する
         sub_flow = root.create_flow('Sub', FlowData(sub_flow_json))
@@ -6101,7 +6101,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         sub_flow.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_inner_subflow(self):
@@ -6226,7 +6226,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('inner subflow test', FlowData(flow_json))
@@ -6263,7 +6263,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results), 1)
         self.assertIsNotNone(results['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
         out_frame2 = results['d1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
 
     async def test_inner_subflow_has_makecache(self):
@@ -6391,7 +6391,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
 
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # フローを作成する
         flow = root.create_flow('inner make cache subflow test', FlowData(flow_json))
@@ -6428,7 +6428,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results), 1)
         self.assertIsNotNone(results['d1'], 'SaverCommandは結果(d1)を出力しませんでした')
         out_frame2 = results['d1']
-        self.assertTrue(self.factory.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame2.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame2.file_exists)
 
     async def test_run_flow_cmd_reentrant(self):
@@ -6436,7 +6436,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         Flow Commandのrun()を再実行できること
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         flow_json ={
             "label": "flow", 
@@ -6552,7 +6552,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(apparentOuts.outs[0].out_point.id, 'd')
         # apparentOutは出力frameを持っていること
         out_frame1 = apparentOuts.outs[0].datum
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
         # 同じFlowCommandオブジェクトを用いて
@@ -6570,7 +6570,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(apparentOuts.outs[0].out_point.id, 'd')
         # apparentOutは出力frameを持っていること
         out_frame2 = apparentOuts.outs[0].datum
-        self.assertTrue(self.factory.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
+        self.assertTrue(self.finder.data.exists(out_frame1.uuid, type=SavableDatum.FRAME_TYPE))
         self.assertTrue(out_frame1.file_exists)
 
         # 初回と再実行はそれぞれ異なる出力結果を出力すること
@@ -6582,7 +6582,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         実行結果は出力されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -6680,7 +6680,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_datedest_after_empty_point(self):
@@ -6689,7 +6689,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         実行結果は出力されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -6856,7 +6856,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_forked_branch_after_out(self):
@@ -6865,7 +6865,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         分岐の後のデータデストとフロー出力Pointが機能すること
         """
         # ルートデータストアを取得する
-        root = self.factory.data.load_root()
+        root = self.finder.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -7291,7 +7291,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_subflow_has_inout_at_same_point(self):
@@ -7300,7 +7300,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         そららのデータデストは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -7711,10 +7711,10 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # 作成と変更を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_vis_outside_subflow(self):
@@ -7722,7 +7722,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         メインフロー内において、プレビューの経路にないコマンド(サブフロー)は実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -7937,10 +7937,10 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # 作成と変更を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_vis_subflow_has_outside_datadst(self):
@@ -7948,7 +7948,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         サブフロー内において、プレビュー実行の経路にないデータデストは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -8166,10 +8166,10 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # 作成と変更を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_vis_subflow_has_outside_path(self):
@@ -8177,7 +8177,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         サブフロー内において、プレビュー実行の経路にないコマンドは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -8418,10 +8418,10 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # 作成と変更を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()
 
     async def test_vis_mainflow_has_outside_path(self):
@@ -8429,7 +8429,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         メインフロー内において、プレビュー実行の経路にないコマンドは実行されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('プロジェクト')
@@ -8710,8 +8710,8 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         project.throw_away()
 
         # 作成と変更を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # ゴミ箱を空にする
-        trash = self.factory.data.load_trash_folder()
+        trash = self.finder.data.load_trash_folder()
         trash.trash_all()

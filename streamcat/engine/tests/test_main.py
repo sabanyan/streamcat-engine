@@ -473,7 +473,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self) -> None:
         await super().asyncSetUp()
-        self.root = self.factory.data.load_root()
+        self.root = self.finder.data.load_root()
         self.TESTDATA_DIR = self.root.path
 
     # @unittest.skip
@@ -492,7 +492,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d1': [['顧客', '数量'], ['A', '1'], ['A', '2'], ['B', '1'], ['B', '3'], ['B', '1']]}
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
@@ -543,7 +543,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result = self.get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
@@ -761,8 +761,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
@@ -877,7 +877,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
@@ -903,8 +903,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
@@ -938,7 +938,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d3 = self.get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result_d3, correct['d2'])
@@ -969,7 +969,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d3, correct['d3'])
@@ -1087,8 +1087,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d4'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d4'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
         result_d4 = self.get_frame_by_uuid(lasts['d4'].uuid)
@@ -1260,7 +1260,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         result = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
@@ -1286,8 +1286,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
 
         # 実ファイルが指定ディレクトリに存在するか
         result = self.get_frame_by_uuid(lasts['d2'].uuid)
@@ -1362,7 +1362,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result = self.get_frame_by_uuid(lasts['dd3'].uuid, header=False)
         self.assertEqual(result, correct['dd3'])
@@ -1434,7 +1434,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result = self.get_frame_by_uuid(lasts['dd3'].uuid, header=False)
         self.assertEqual(result, correct['dd3'])
@@ -1590,8 +1590,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_dd2 = self.get_frame_by_uuid(lasts['dd2'].uuid)
         result_dd3 = self.get_frame_by_uuid(lasts['dd3'].uuid)
@@ -1891,8 +1891,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd4'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd5'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd4'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd5'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_dd4 = self.get_frame_by_uuid(lasts['dd4'].uuid)
         result_dd5 = self.get_frame_by_uuid(lasts['dd5'].uuid)
@@ -2257,19 +2257,19 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         result = self.get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
         cache_uuids = []
         # uuidが書き換わっているかのテスト
-        flow = self.factory.data.find_by_uuid(flow.uuid)
+        flow = self.finder.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
         cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['d2']]
         for node in cache_nodes:
             # キャッシュが生成されているか
             self.assertIsNotNone(node['uuid'])
-            self.assertIsNotNone(self.factory.data.find_by_uuid(node['uuid']))
+            self.assertIsNotNone(self.finder.data.find_by_uuid(node['uuid']))
             cache_uuids.append(node['uuid'])
 
         # 後片付け
@@ -2355,18 +2355,18 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         result = self.get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
         cache_uuids = []
         # uuidが書き換わっているかのテスト
-        flow = self.factory.data.find_by_uuid(flow.uuid)
+        flow = self.finder.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
         cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['d3']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
-            self.assertIsNotNone(self.factory.data.find_by_uuid(node['uuid']))
+            self.assertIsNotNone(self.finder.data.find_by_uuid(node['uuid']))
             cache_uuids.append(node['uuid'])
 
         # 後片付け
@@ -2505,8 +2505,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # テスト
 
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd4'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd5'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd4'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd5'].uuid))
         result_dd4 = self.get_frame_by_uuid(lasts['dd4'].uuid)
         result_dd5 = self.get_frame_by_uuid(lasts['dd5'].uuid)
         self.assertEqual(result_dd4, correct['dd4'])
@@ -2514,12 +2514,12 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         cache_uuids = []
         # uuidが書き換わっているかのテスト
-        flow = self.factory.data.find_by_uuid(flow.uuid)
+        flow = self.finder.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
         cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['dd2', 'dd5']]
         for node in cache_nodes:
             self.assertIsNotNone(node['uuid'])
-            self.assertIsNotNone(self.factory.data.find_by_uuid(node['uuid']))
+            self.assertIsNotNone(self.finder.data.find_by_uuid(node['uuid']))
             cache_uuids.append(node['uuid'])
 
         # 後片付け
@@ -2593,8 +2593,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd3'].uuid))
         result_dd2 = self.get_frame_by_uuid(lasts['dd2'].uuid)
         result_dd3 = self.get_frame_by_uuid(lasts['dd3'].uuid)
         self.assertEqual(result_dd2, correct['dd2'])
@@ -2670,8 +2670,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['dd3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['dd3'].uuid))
         result_dd2 = self.get_frame_by_uuid(lasts['dd2'].uuid)
         result_dd3 = self.get_frame_by_uuid(lasts['dd3'].uuid)
         self.assertEqual(result_dd2, correct['dd2'])
@@ -2712,7 +2712,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         result = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
@@ -2801,7 +2801,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         result = self.get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result, correct['d3'])
 
@@ -2843,8 +2843,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d4'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d4'].uuid))
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
         result_d4 = self.get_frame_by_uuid(lasts['d4'].uuid)
         self.assertEqual(result_d3, correct['d3'])
@@ -2894,8 +2894,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d4'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d4'].uuid))
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
         result_d4 = self.get_frame_by_uuid(lasts['d4'].uuid)
         self.assertEqual(result_d3, correct['d3'])
@@ -2929,7 +2929,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         result = self.get_frame_by_uuid(lasts['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
@@ -2977,7 +2977,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         result = self.get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result, correct['d2'])
 
@@ -3019,25 +3019,25 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(results['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(results['d1'].uuid))
         result = self.get_frame_by_uuid(results['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         # キャッシュが生成されているか
         self.assertEqual(len(caches), 1, msg='Cache CommandのPort(u)をActivity Commandに繋げてないためcacheを取得できない')
-        self.assertIsNotNone(self.factory.data.find_by_uuid(caches['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(caches['d1'].uuid))
         result = self.get_frame_by_uuid(caches['d1'].uuid)
         self.assertEqual(result, correct['d1'])
 
         cache_uuids = []
         # uuidが書き換わっているかのテスト
-        flow = self.factory.data.find_by_uuid(flow.uuid)
+        flow = self.finder.data.find_by_uuid(flow.uuid)
         flow_data = flow.flow_data
         cache_nodes = [node for node in flow_data.get_nodes() if node['id'] in ['d1']]
         for node in cache_nodes:
             # キャッシュが生成されているか
             self.assertIsNotNone(node['uuid'])
-            self.assertIsNotNone(self.factory.data.find_by_uuid(node['uuid']))
+            self.assertIsNotNone(self.finder.data.find_by_uuid(node['uuid']))
             cache_uuids.append(node['uuid'])
 
         # 後片付け
@@ -3075,8 +3075,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d2 = self.get_frame_by_uuid(lasts['d2'].uuid)
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
@@ -3125,7 +3125,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d3 = self.get_frame_by_uuid(lasts['d2'].uuid)
         self.assertEqual(result_d3, correct['d2'])
@@ -3171,7 +3171,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # テスト
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d3'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d3'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         result_d3 = self.get_frame_by_uuid(lasts['d3'].uuid)
         self.assertEqual(result_d3, correct['d3'])
@@ -3269,7 +3269,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは2つ生成されているか
         self.assertEqual(1, len(lasts))
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d2 = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'],
                       ['B','1','50'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
@@ -3381,7 +3381,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは2つ生成されているか
         self.assertEqual(1, len(lasts))
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d2 = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50'],
                       ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
@@ -3505,8 +3505,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは2つ生成されているか
         self.assertEqual(2, len(lasts))
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d2'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d2'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d1 = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
@@ -3604,7 +3604,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは2つ生成されているか
         self.assertEqual(1, len(lasts))
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d = self.get_frame_by_uuid(lasts['d'].uuid)
@@ -3702,8 +3702,8 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは2つ生成されているか
         self.assertEqual(2, len(lasts))
         # DBにframeデータが生成されているか
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d'].uuid))
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d = [['顧客', '数量', '金額'], ['A','1','10'], ['A','2','20'], ['B','1','30'], ['B','3','40'], ['B','1','50']]
         result_d = self.get_frame_by_uuid(lasts['d'].uuid)
@@ -3814,7 +3814,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
         # DBにframeデータが生成されている
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d1 = [['顧客', '数量', '金額'], ['B','3','40'], ['B','1','50']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
@@ -4649,7 +4649,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは1つ生成されているか
         self.assertEqual(1, len(lasts))
         # DBにframeデータが生成されている
-        self.assertIsNotNone(self.factory.data.find_by_uuid(lasts['d1'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(lasts['d1'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         correct_d1 = [['fld1', 'fld2', 'covar'],['B', 'C', '2.5']]
         result_d1 = self.get_frame_by_uuid(lasts['d1'].uuid)
@@ -4758,7 +4758,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         # frameデータは1つ生成されているか
         self.assertEqual(1, len(outs))
         # DBにframeデータが生成されている
-        self.assertIsNotNone(self.factory.data.find_by_uuid(outs['d9'].uuid))
+        self.assertIsNotNone(self.finder.data.find_by_uuid(outs['d9'].uuid))
         # 実ファイルが指定ディレクトリに存在するか
         expected = [['A', 'B',  'C'],
                     ['a', '0',  '0'],
@@ -6269,7 +6269,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         """
         import csv
         result = []
-        frame = self.factory.data.find_by_uuid(uuid)
+        frame = self.finder.data.find_by_uuid(uuid)
         try:
           with open(frame.path, 'r') as f:
               rows = csv.reader(f)
@@ -6335,7 +6335,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
     def delete_flow(self, uuid):
         try:
-            flow = self.factory.data.find_by_uuid(uuid)
+            flow = self.finder.data.find_by_uuid(uuid)
             flow.delete()
         except Exception as e:
             print(e)
@@ -6344,7 +6344,7 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
     def delete_caches(self, cache_uuids):
         for cache_uuid in cache_uuids:
-          cache = self.factory.data.find_by_uuid(cache_uuid)
+          cache = self.finder.data.find_by_uuid(cache_uuid)
           cache.delete()
 
 def update_flow_node_uuid(flow_json, node_id, uuid):
