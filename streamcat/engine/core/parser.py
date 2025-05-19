@@ -1,6 +1,6 @@
 from streamcat.core import Port
 from streamcat.store import Flow, FlowData
-from streamcat.store.finder import DatumFactory
+from streamcat.store.finder import DatumFinder
 from .. import FlowCommand
 from ..elements import FlowElements, Steps, Point, Points, FlowPort, FlowPorts
 
@@ -69,7 +69,7 @@ class Parser:
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow_data:FlowData, datum_factory:DatumFactory, is_main:bool=False) -> None:
+    def __init__(self, flow_data:FlowData, datum_factory:DatumFinder, is_main:bool=False) -> None:
         self._flow_data = flow_data
         self._datum_factory = datum_factory
         self._is_main = is_main

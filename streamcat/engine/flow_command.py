@@ -29,8 +29,8 @@ class FlowCommand(Command):
         self._flow_data = flow.flow_data.copy()
 
         # データソースを追加する
-        from streamcat.store.finder import DatumFactory
-        self._datum_factory = DatumFactory(flow._session)
+        from streamcat.store.finder import DatumFinder
+        self._datum_factory = DatumFinder(flow._session)
 
         # 仮引数を保持する
         self.params = self._flow_data.params or {}
