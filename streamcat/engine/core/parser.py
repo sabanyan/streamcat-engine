@@ -112,7 +112,7 @@ class Parser:
             rets.add(new_port)
         return rets
 
-    def _replace_variadic_port(self, ports, targets:dict):
+    def _replace_variadic_port(self, ports:list[Port], targets:dict):
         """
         *のPortを複数のPortに変換する
         """
@@ -123,6 +123,16 @@ class Parser:
             else:
                 ret.append(port)
         return ret
+
+    def _replace_variadic_flow_port(self, ports:FlowPorts, targets:dict):
+        """
+        *のFlowPortを複数のFlowPortに変換する
+        """
+        for port in ports:
+            if port.label == '*':
+                raise NotImplementedError('FlowCommandのportに"*"を設定した場合の処理は実装していません')
+        # NOTE: FlowCommandのo_portsはStepと共有する必要があるので同じオブジェクトを返すこと
+        return ports
 
     def _get_port_by_label(self, runnable_ports, port_label):
         """
@@ -171,16 +181,21 @@ class Parser:
             # 
             cmd = self._create_command(node, use_cache)
 
-            # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
-            # 'args'の下にフロー変数を格納する
-            # (params:仮引数、args:実引数)
             if node.type == 'flow':
+                # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
+                # 'args'の下にフロー変数を格納する
+                # (params:仮引数、args:実引数)
                 args = {'flow_args':args, 'use_cache':use_cache}
 
-            # CommandoのPortのlabelに'*'が指定されていれば、可変長Port指定なので
-            # Commandノードの入出力Port指定(srcsまたはdsts)からPortを生成する
-            i_ports = self._replace_variadic_port(cmd.i_ports, srcs)
-            o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
+                # FlowCommandのPortは'*'指定に今のところ対応していない
+                # FlowCommandのportsオブジェクトはStepと共有する
+                i_ports = self._replace_variadic_flow_port(cmd.i_ports, srcs)
+                o_ports = self._replace_variadic_flow_port(cmd.o_ports, srcs)
+            else:
+                # CommandのPortのlabelに'*'が指定されていれば、可変長Port指定なので
+                # Commandノードの入出力Port指定(srcsまたはdsts)からPortを生成する
+                i_ports = self._replace_variadic_port(cmd.i_ports, srcs)
+                o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
 
             # runnableのインスタンス化を行う
             step = Step(node.id, cmd, args, o_ports=o_ports, classification=node.get('classification'))

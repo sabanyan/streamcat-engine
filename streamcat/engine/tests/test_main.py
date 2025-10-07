@@ -6392,7 +6392,7 @@ def convert_from_job_cache(job):
 def convert_from_job_exs(job):
     """
     await aexecute()の戻り値から
-    pointのidとframeのDictに置き換える
+    pointのidとExceptionに置き換える
     """
     from streamcat.store import ApparentOuts
     # Activityを取得して返り値とする
