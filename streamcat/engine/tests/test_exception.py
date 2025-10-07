@@ -3,6 +3,10 @@
 """
 
 import unittest
+from streamcat.engine import FlowCommand, aexecute
+from streamcat.store import FlowData, CommandException
+from streamcat.store.tests.test_case_base import TestCaseBase
+from .test_main import convert_from_job_exs
 
 def do_something(first_pow):
     i = 0
@@ -16,9 +20,11 @@ def do_something(first_pow):
     #     return ex
     return i
 
-@unittest.skip('例外処理の実装待ち?')
-class ErrorHandlingTest(unittest.TestCase):
-    @unittest.skip
+class ErrorHandlingTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        await super().asyncSetUp()
+
+    @unittest.skip('例外処理の実装待ち?')
     def test_concurrent_errors(self):
         """
         エラーを並列で発生させられるかどうかのテスト
@@ -40,12 +46,14 @@ class ErrorHandlingTest(unittest.TestCase):
                 msg = '{n}: {prime}'.format(n=target, prime=result)
                 print(msg)
 
+    @unittest.skip('例外処理の実装待ち?')
     def test_websocket(self):
         """
         websocketの動作確認
         """
         # a = 1 / 0
 
+    @unittest.skip('例外処理の実装待ち?')
     def test_mcmd_error(self):
         """
         mcmdは直接excepionを吐かないが、それを起点にした返し
@@ -69,3 +77,82 @@ class ErrorHandlingTest(unittest.TestCase):
         m = McutTest()
         with self.assertRaises(MCMDError):
             m.run({'f': 'customer,amuont'}, {'i': dat})
+
+    async def test_runs_error(self):
+        """
+        Runsコマンドのrun()から例外が送出された場合でもエラーが取得できること
+        """
+        # selectコマンドの引数(args)に不正な値を設定する
+        flow_json = {
+            'label': 'MSYOLコマンドによるフロー',
+            'params': [],
+            'ports': [[],[]],
+            'nodes': [
+                {
+                    'id': 'c',
+                    'type': 'command',
+                    'commandId': 'new',
+                    'label': 'new',
+                    'srcs': {},
+                    'dsts': {
+                        'o': 'd'
+                    },
+                    'args': {},
+                },
+                {
+                    'id': 'd',
+                    'type': 'frame',
+                    'label': 'd',
+                    'dataSource': 'csv'
+                },
+                {
+                    'id': 'c1',
+                    'type': 'command',
+                    'commandId': 'select',
+                    'label': 'select',
+                    'srcs': {
+                        'i': 'd'
+                    },
+                    'dsts': {
+                        'o': 'd1'
+                    },
+                    'args': {
+                        'cols': 'A'
+                    },
+                },
+                {
+                    'id': 'd1',
+                    'type': 'frame',
+                    'label': 'd1',
+                    'dataSource': 'csv'
+                },
+            ],
+        }
+
+        vis_args = {
+          "d1": {
+            "args": {
+              "visualizer": "csvtohtmltable",
+              "offset": 0,
+              "limit": 108
+            }
+          }
+        }
+
+        # ルートデータストアを取得する
+        root = self.finder2.data.load_root()
+
+        # フローを実行する
+        # selectコマンドのrun()が実行され例外が送出される
+        flow = root.create_flow(flow_json['label'], FlowData(flow_json))
+        job = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
+        results = convert_from_job_exs(job)
+
+        # visデータは1つ生成されているか
+        self.assertEqual(1, len(results))
+
+        # 期待するExceptionが得られるか
+        # Exception("col引数に<class 'str'>型の要素が指定されました")
+        ex = results['d1'][0]
+        self.assertIsInstance(ex, CommandException)
+        self.assertIsInstance(ex.innerException, Exception)
