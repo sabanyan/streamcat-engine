@@ -6090,12 +6090,12 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         }
         lasts = await aexecute(FlowCommand(flow), {'vis':vis_args}, {})
         results = convert_from_job_vis(lasts)
-        self.assertIsNone(results)
+        self.assertEqual(results, {})
 
         # 実行しても結果は得られない
         lasts = await aexecute(FlowCommand(flow), {}, {})
         results = convert_from_job(lasts)
-        self.assertIsNone(results)
+        self.assertEqual(results, {})
 
         # ほかす
         sub_flow.throw_away()
@@ -6674,7 +6674,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         outs = convert_from_job(outs)
 
         # 結果は出力されないこと
-        self.assertIsNone(outs)
+        self.assertEqual(outs, {})
     
         # プロジェクトをほかす
         project.throw_away()
@@ -6850,7 +6850,7 @@ class DataSourceTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         outs = convert_from_job(outs)
 
         # 結果は出力されないこと
-        self.assertIsNone(outs)
+        self.assertEqual(outs, {})
 
         # プロジェクトをほかす
         project.throw_away()

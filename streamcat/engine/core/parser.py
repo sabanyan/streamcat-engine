@@ -333,6 +333,10 @@ class Parser:
             # 指定したidのPointが無ければ、新たにPointを生成する
             point = Point(id, src_tube, None, dst_tube)
             points.add(point)
+        elif id == '':
+            # ポートの入出力先が未設定の場合は空文字が設定される
+            # 未設定のポートにはPointを繋げないようにする
+            pass
         else:
             # 既存のpointを更新する
             src_tube is None or point.add_src_tube(src_tube)

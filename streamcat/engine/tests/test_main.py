@@ -5591,6 +5591,158 @@ class MainTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         correct = {'d2': [['A','1','10'], ['A','2','20'],['B','1','30'], ['B','3','40'], ['B','1','50']]}
         self.assertDictEqual(lasts, correct)
 
+    async def test_vizs_two_outputs_cmd_without_points(self):
+        """
+        1入力2出力のコマンドに紐づくポイントが無くても例外が送出されないこと
+        """
+        # mselコマンドに1入力ポイントと2出力ポイントが紐づくフロー
+        flow_json_1in_2outs ={
+            'label': 'Only msel cmd (1in_2outs)',
+            'nodes': [
+                {
+                    'id': 'd',
+                    'label': 'd',
+                    'type': 'frame',
+                    'dataSource': 'csv'
+                },
+                {
+                    'id': 'c1',
+                    'label': '条件式による行選択',
+                    'type': 'command',
+                    'commandId': 'msel',
+                    'srcs': {
+                        'i': 'd'
+                    },
+                    'dsts': {
+                        'o': 'd1',
+                        'u': 'd2'
+                    },
+                    'args': {
+                        'c': '1==1'
+                    }
+                },
+                {
+                    'id': 'd1',
+                    'label': 'd1',
+                    'type': 'frame',
+                    'dataSource': 'csv'
+                },
+                {
+                    'id': 'd2',
+                    'label': 'd2',
+                    'type': 'frame',
+                    'dataSource': 'csv'
+                },
+            ]
+        }
+
+        # mselコマンドに2出力ポイントのみが紐づくフロー
+        flow_json_2outs ={
+            'label': 'Only msel cmd (1in_2outs)',
+            'nodes': [
+                {
+                    'id': 'c1',
+                    'label': '条件式による行選択',
+                    'type': 'command',
+                    'commandId': 'msel',
+                    'srcs': {
+                        'i': ''
+                    },
+                    'dsts': {
+                        'o': 'd1',
+                        'u': 'd2'
+                    },
+                    'args': {
+                        'c': '1==1'
+                    }
+                },
+                {
+                    'id': 'd1',
+                    'label': 'd1',
+                    'type': 'frame',
+                    'dataSource': 'csv'
+                },
+                {
+                    'id': 'd2',
+                    'label': 'd2',
+                    'type': 'frame',
+                    'dataSource': 'csv'
+                },
+            ]
+        }
+
+        # mselコマンドに1出力ポイントのみが紐づくフロー
+        flow_json_1out ={
+            'label': 'Only msel cmd (1in_2outs)',
+            'nodes': [
+                {
+                    'id': 'c1',
+                    'label': '条件式による行選択',
+                    'type': 'command',
+                    'commandId': 'msel',
+                    'srcs': {
+                        'i': ''
+                    },
+                    'dsts': {
+                        'o': 'd1',
+                        'u': ''
+                    },
+                    'args': {
+                        'c': '1==1'
+                    }
+                },
+                {
+                    'id': 'd1',
+                    'label': 'd1',
+                    'type': 'frame',
+                    'dataSource': 'csv'
+                }
+            ]
+        }
+
+        vis_args = {
+          'd1': {
+            'args': {
+              'visualizer': 'csvtohtmltable',
+              'offset': 0,
+              'limit': 108
+            }
+          }
+        }
+
+        # 
+        # フローを作成する(1入力ポイントと2出力ポイント)
+        # 
+        flow = self.root.create_flow(flow_json_1in_2outs['label'], FlowData(flow_json_1in_2outs))
+        # フローを実行する
+        flowCmd = FlowCommand(flow)
+        job = await aexecute(flowCmd, {'vis':vis_args}, {})
+        results = convert_from_job_vis(job)
+        # visデータは生成されない
+        self.assertEqual(0, len(results))
+
+        # 
+        # フローを作成する(2出力ポイント)
+        # 
+        flow = self.root.create_flow(flow_json_2outs['label'], FlowData(flow_json_2outs))
+        # フローを実行する
+        flowCmd = FlowCommand(flow)
+        job = await aexecute(flowCmd, {'vis':vis_args}, {})
+        results = convert_from_job_vis(job)
+        # visデータは生成されない
+        self.assertEqual(0, len(results))
+
+        # 
+        # フローを作成する(1出力ポイント)
+        # 
+        flow = self.root.create_flow(flow_json_1out['label'], FlowData(flow_json_1out))
+        # フローを実行する
+        flowCmd = FlowCommand(flow)
+        job = await aexecute(flowCmd, {'vis':vis_args}, {})
+        results = convert_from_job_vis(job)
+        # visデータは生成されない
+        self.assertEqual(0, len(results))
+
     @unittest.skip('メインフローのflowオブジェクトで送出された例外はActivityに渡されない')
     async def test_visz_subflow_with_datasource(self):
         """
@@ -6367,6 +6519,8 @@ def convert_from_job(job):
     for point_id, datum in job.join().items():
         if isinstance(datum, ApparentOuts):
             return {out.out_point.id : out.datum for out in datum.outs}
+    # ApparentOutsを取得できなかった場合は空Dictを返す
+    return {}
 
 def convert_from_job_vis(job):
     """
@@ -6377,6 +6531,8 @@ def convert_from_job_vis(job):
     for point_id, datum in job.join().items():
         if isinstance(datum, ApparentOuts):
             return {out.out_point.id : out.datum.result['reader'] for out in datum.outs}
+    # ApparentOutsを取得できなかった場合は空Dictを返す
+    return {}
 
 def convert_from_job_cache(job):
     """
@@ -6388,6 +6544,8 @@ def convert_from_job_cache(job):
     for point_id, datum in job.join().items():
         if isinstance(datum, ApparentOuts):
             return {cache.out_point.id : cache.datum for cache in datum.caches}
+    # ApparentOutsを取得できなかった場合は空Dictを返す
+    return {}
 
 def convert_from_job_exs(job):
     """
@@ -6399,3 +6557,5 @@ def convert_from_job_exs(job):
     for point_id, datum in job.join().items():
         if isinstance(datum, ApparentOuts):
             return {ex.out_point.id : ex.exs for ex in datum.exs}
+    # ApparentOutsを取得できなかった場合は空Dictを返す
+    return {}
