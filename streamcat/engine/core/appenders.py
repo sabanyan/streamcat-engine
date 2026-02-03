@@ -147,17 +147,35 @@ class VisDataDestAppender():
         tolist_step = Step(tolist_cmd.label, tolist_cmd)
 
         # ToListの出力Pointを作成する
-        point_id = point.id + '_tolist_o'
-        tolist_point_o = Point(point_id, Tube(Port('o', 'mysol'), tolist_step))
-
-        # pointにToList Stepを繋げる
-        point.add_dst_tube(Tube(Port('i', 'mysol'), tolist_step))
+        point_id = point.id + '_tolist'
+        tolist_point = Point(point_id, Tube(Port('o', 'mysol'), tolist_step))
 
         # 作成したPointとStepをフローコマンドに登録する
-        flow_cmd.steps.add(tolist_step)
-        flow_cmd.points.add(tolist_point_o)
+        flow_cmd.steps.add(tolist_step, avoid_id_collision=True)
+        flow_cmd.points.add(tolist_point)
 
-        return tolist_point_o, None
+        if vcmd_is_table:
+            # pointにToList Stepを繋げる
+            point.add_dst_tube(Tube(Port('i', 'mysol'), tolist_step))
+
+        else:
+            # Transpose Stepを作成する
+            transpose_cmd = CommandLink('transpose').resolve()
+            transpose_step = Step(transpose_cmd.label, transpose_cmd)
+
+            # Transposeの出力Pointを作成する
+            point_id = point.id + '_transpose'
+            transpose_point = Point(point_id, Tube(Port('o', 'mysol'), transpose_step), None, Tube(Port('i', 'mysol'), tolist_step))
+
+            # pointにTranspose Stepを繋げる
+            point.add_dst_tube(Tube(Port('i', 'mysol'), transpose_step))
+
+            # 作成したPointとStepをフローコマンドに登録する
+            flow_cmd.steps.add(transpose_step, avoid_id_collision=True)
+            flow_cmd.points.add(transpose_point)
+
+        # uポートにヘッダ行は出力しない
+        return tolist_point, None
 
     def _append_mcmds(self, flow_cmd:FlowCommand, point:Point, vcmd_args:dict, vcmd_is_table:bool):
 
@@ -194,11 +212,11 @@ class VisDataDestAppender():
         # ToListの出力Pointを作成する
         point_id = point.id + '_tolist_o'
         tolist_point_o = Point(point_id, Tube(Port('o', 'mcmd'), tolist_step))
-        if not vcmd_is_table:
+        if vcmd_is_table:
+            tolist_point_u = None
+        else:
             point_id = point.id + '_tolist_u'
             tolist_point_u = Point(point_id, Tube(Port('u', 'mcmd'), tolist_step))
-        else:
-            tolist_point_u = None
 
         # pointにConvToUtf8 Stepを繋げる
         point.add_dst_tube(Tube(Port('i', ['mcmd','matrix']), convtoutf8_step))
