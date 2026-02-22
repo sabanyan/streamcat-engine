@@ -82,7 +82,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         フロー実行後にアクティビティが出力されること
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('上様・・お手向かい致しますぞ')
@@ -100,7 +100,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # USER2は、フローを実行する
-        readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
+        readonly_flow = self.finder2.data.find_by_uuid(flow.uuid)
         job = await aexecute(FlowCommand(readonly_flow), args={'param1':1234})
         results1 = convert_from_job(job)
 
@@ -110,7 +110,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d1', results1)
 
         # アクティビティフォルダにアクティビティが作成されていること
-        activity_folder = self.factory2.data.load_activity_folder()
+        activity_folder = self.finder2.data.load_activity_folder()
         activity = activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # アクティビティの保持する値を取得する
@@ -146,14 +146,14 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # プロジェクトをほかして、ゴミ箱を空にする
         project.throw_away()
-        self.factory2.data.find_trashcan().trash_all()
+        self.finder2.data.find_trashcan().trash_all()
 
     async def test_save_activity_if_error(self):
         """
         フロー実行で例外が発生してもアクティビティが出力されること
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('上さまを騙る不届き者！叩き切れ！')
@@ -171,11 +171,11 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # 変更を確定する
-        self.factory2.end()
+        self.finder2.end()
 
         # USER3は、フローを実行する
         # USER3は、プロジェクトの閲覧者メンバなので、実行結果の出力で例外が送出される
-        readonly_flow = self.factory3.data.find_by_uuid(flow.uuid)
+        readonly_flow = self.finder3.data.find_by_uuid(flow.uuid)
         job = await aexecute(FlowCommand(readonly_flow))
         results1 = convert_from_job_exs(job)
 
@@ -185,7 +185,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d1', results1)
 
         # アクティビティフォルダにアクティビティが作成されていること
-        activity_folder = self.factory3.data.load_activity_folder()
+        activity_folder = self.finder3.data.load_activity_folder()
         activity = activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # アクティビティの保持する値を取得する
@@ -219,14 +219,14 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # プロジェクトをほかして、ゴミ箱を空にする
         project.throw_away()
-        self.factory.data.find_trashcan().trash_all()
+        self.finder.data.find_trashcan().trash_all()
 
     async def test_save_activity_if_empty(self):
         """
         フロー実行の結果がない場合でもアクティビティが出力されること
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('もはやこれまで、お命頂戴つかまつる')
@@ -244,7 +244,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # USER2は、フローを実行する
-        readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
+        readonly_flow = self.finder2.data.find_by_uuid(flow.uuid)
         job = await aexecute(FlowCommand(readonly_flow), {'use_cache':True})
         results1 = convert_from_job(job)
 
@@ -252,7 +252,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(results1), 0)
 
         # アクティビティフォルダにアクティビティが作成されていること
-        activity_folder = self.factory2.data.load_activity_folder()
+        activity_folder = self.finder2.data.load_activity_folder()
         activity = activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # アクティビティの保持する値を取得する
@@ -282,14 +282,14 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
 
         # プロジェクトをほかして、ゴミ箱を空にする
         project.throw_away()
-        self.factory.data.find_trashcan().trash_all()
+        self.finder.data.find_trashcan().trash_all()
 
     async def test_no_activity_by_preview(self):
         """
         プレビュー実行ではアクティビティが出力されないこと
         """
         # ルートデータストアを取得する
-        root = self.factory2.data.load_root()
+        root = self.finder2.data.load_root()
 
         # プロジェクトを作成する
         project = root.create_project_folder('えーい、何が上様じゃ！出会え！出会え！！')
@@ -307,7 +307,7 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         flow = flow.reload()
 
         # USER2は、フローをプレビューする
-        readonly_flow = self.factory2.data.find_by_uuid(flow.uuid)
+        readonly_flow = self.finder2.data.find_by_uuid(flow.uuid)
         vis_args = {
           "d1": {
             "args": {
@@ -325,10 +325,10 @@ class ActivityTest(TestCaseBase, unittest.IsolatedAsyncioTestCase):
         self.assertIn('d1', results1)
 
         # アクティビティフォルダにアクティビティが作成されないこと
-        activity_folder = self.factory2.data.load_activity_folder()
+        activity_folder = self.finder2.data.load_activity_folder()
         with self.assertRaises(NoResultFound):
             activity_folder.find_child_by_uuid(job.activity_uuid)
 
         # プロジェクトをほかして、ゴミ箱を空にする
         project.throw_away()
-        self.factory.data.find_trashcan().trash_all()
+        self.finder.data.find_trashcan().trash_all()

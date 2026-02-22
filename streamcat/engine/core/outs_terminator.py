@@ -5,7 +5,7 @@ class OutsTerminator:
     """
     RunsコマンドとActivityコマンドを付加する
     """
-    def __init__(self, flow_cmd:FlowCommand, flow, datum_factory, lock_uuid:str, activity) -> None:
+    def __init__(self, flow_cmd:FlowCommand, flow, datum_finder, lock_uuid:str, activity) -> None:
         from .appenders import (
             CacheDataDestAppender,
             VisDataDestAppender,
@@ -19,7 +19,7 @@ class OutsTerminator:
 
         # Appenders
         start_at = self._activity_data_dest_appender.activity._start_at
-        self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_factory, lock_uuid, start_at)
+        self._cache_data_dest_appender = CacheDataDestAppender(flow, datum_finder, lock_uuid, start_at)
         self._vis_data_dest_appender = VisDataDestAppender()
 
         # FlowCommand

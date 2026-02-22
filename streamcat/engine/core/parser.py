@@ -1,6 +1,6 @@
 from streamcat.core import Port
 from streamcat.store import Flow, FlowData
-from streamcat.store.factory import DatumFactory
+from streamcat.store.finder import DatumFinder
 from .. import FlowCommand
 from ..elements import FlowElements, Steps, Point, Points, FlowPort, FlowPorts
 
@@ -69,13 +69,13 @@ class Parser:
             """
             return self.get('cacheCreatedAt') is not None and self.get('uuid') is not None
 
-    def __init__(self, flow_data:FlowData, datum_factory:DatumFactory, is_main:bool=False) -> None:
+    def __init__(self, flow_data:FlowData, datum_finder:DatumFinder, is_main:bool=False) -> None:
         self._flow_data = flow_data
-        self._datum_factory = datum_factory
+        self._datum_finder = datum_finder
         self._is_main = is_main
 
         from .appenders import FolderDataSourcePrepender
-        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_factory)
+        self._folder_data_source_prepender = FolderDataSourcePrepender(self._datum_finder)
 
     def parse(self, use_cache:bool):
         # フローJSONからFlowElementsを生成する
@@ -112,7 +112,7 @@ class Parser:
             rets.add(new_port)
         return rets
 
-    def _replace_variadic_port(self, ports, targets:dict):
+    def _replace_variadic_port(self, ports:list[Port], targets:dict):
         """
         *のPortを複数のPortに変換する
         """
@@ -123,6 +123,16 @@ class Parser:
             else:
                 ret.append(port)
         return ret
+
+    def _replace_variadic_flow_port(self, ports:FlowPorts, targets:dict):
+        """
+        *のFlowPortを複数のFlowPortに変換する
+        """
+        for port in ports:
+            if port.label == '*':
+                raise NotImplementedError('FlowCommandのportに"*"を設定した場合の処理は実装していません')
+        # NOTE: FlowCommandのo_portsはStepと共有する必要があるので同じオブジェクトを返すこと
+        return ports
 
     def _get_port_by_label(self, runnable_ports, port_label):
         """
@@ -171,16 +181,21 @@ class Parser:
             # 
             cmd = self._create_command(node, use_cache)
 
-            # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
-            # 'args'の下にフロー変数を格納する
-            # (params:仮引数、args:実引数)
             if node.type == 'flow':
+                # フロー変数がフローコマンドの他の引数と名称が重複しないようにするため
+                # 'args'の下にフロー変数を格納する
+                # (params:仮引数、args:実引数)
                 args = {'flow_args':args, 'use_cache':use_cache}
 
-            # CommandoのPortのlabelに'*'が指定されていれば、可変長Port指定なので
-            # Commandノードの入出力Port指定(srcsまたはdsts)からPortを生成する
-            i_ports = self._replace_variadic_port(cmd.i_ports, srcs)
-            o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
+                # FlowCommandのPortは'*'指定に今のところ対応していない
+                # FlowCommandのportsオブジェクトはStepと共有する
+                i_ports = self._replace_variadic_flow_port(cmd.i_ports, srcs)
+                o_ports = self._replace_variadic_flow_port(cmd.o_ports, srcs)
+            else:
+                # CommandのPortのlabelに'*'が指定されていれば、可変長Port指定なので
+                # Commandノードの入出力Port指定(srcsまたはdsts)からPortを生成する
+                i_ports = self._replace_variadic_port(cmd.i_ports, srcs)
+                o_ports = self._replace_variadic_port(cmd.o_ports, dsts)
 
             # runnableのインスタンス化を行う
             step = Step(node.id, cmd, args, o_ports=o_ports, classification=node.get('classification'))
@@ -247,7 +262,7 @@ class Parser:
             # Storeの場合、StoreオブジェクトをPointに格納する
             if node.is_store:
                 store_uuid = node.get('uuid')
-                store = self._datum_factory.find_by_uuid(store_uuid)
+                store = self._datum_finder.find_by_uuid(store_uuid)
 
                 # StoreにDatabaseを設定する
                 target_point.datum = store
@@ -292,11 +307,11 @@ class Parser:
             flow_uuid = node.get('uuid')
             if flow_json is not None:
                 # リテラル定義されたフローを取得する
-                sub_flow = Flow(self._datum_factory._session, None, node.get('label'), FlowData(flow_json))
+                sub_flow = Flow(self._datum_finder._session, None, node.get('label'), FlowData(flow_json))
             elif flow_uuid is not None:
                 try:
                     # サブフローをDBから取得する
-                    sub_flow = self._datum_factory.find_by_uuid(flow_uuid)
+                    sub_flow = self._datum_finder.find_by_uuid(flow_uuid)
                 except NotAuthorizedException:
                     raise NotAuthorizedException(f'共有フロー({node})の参照権限がありません')
             else:
@@ -318,6 +333,10 @@ class Parser:
             # 指定したidのPointが無ければ、新たにPointを生成する
             point = Point(id, src_tube, None, dst_tube)
             points.add(point)
+        elif id == '':
+            # ポートの入出力先が未設定の場合は空文字が設定される
+            # 未設定のポートにはPointを繋げないようにする
+            pass
         else:
             # 既存のpointを更新する
             src_tube is None or point.add_src_tube(src_tube)

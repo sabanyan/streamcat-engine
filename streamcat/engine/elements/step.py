@@ -21,7 +21,8 @@ class Step:
         
         # 可変長Port'*'の展開済みのo_ports
         # make_exception_outs()でのみ用いる
-        self._o_ports = o_ports or command.o_ports
+        # NOTE: RunsCommandAppenderにおいてStepの生成時点では空のListが渡されることに留意
+        self._o_ports = command.o_ports if o_ports is None else o_ports
 
     def __repr__(self):
         return self.id
